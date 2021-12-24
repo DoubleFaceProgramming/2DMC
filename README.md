@@ -3,6 +3,7 @@
 
 ## Installation
 Clone the repository at https://github.com/DaNubCoding/2DMC, run the file named "main.py"
+
 Modules to install (pip install [module]):
 - pygame
 - opensimplex
