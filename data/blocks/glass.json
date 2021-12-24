@@ -1,0 +1,6 @@
+{
+    "name": "glass", 
+    "collision_box": "full", 
+    "bounding_box": "full", 
+    "support": false
+}

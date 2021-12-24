@@ -1,0 +1,6 @@
+{
+    "name": "oak_planks", 
+    "collision_box": "full", 
+    "bounding_box": "full", 
+    "support": false
+}

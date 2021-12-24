@@ -1,0 +1,57 @@
+Additions:
+- Player animation
+- New blocks
+    - Oak log
+        - Naturally generate in trees
+    - Oak leaves
+        - Naturally generate in trees
+    - Leafed oak log
+        - Naturally generate in trees
+        - Has 2 layers, first layer is oak leaves, second layer is oak log
+    - Poppy
+        - Naturally generate
+    - Dandelion
+        - Naturally generate
+    - Tall grass
+        - Naturally generate
+    - Oak planks
+    - Cobblestone
+    - Glass
+- Tree generation
+    - 5 different tree types
+        - Regular oak tree
+        - Short oak tree
+        - Medium oak tree
+        - Balloon oak tree
+        - Large oak tree
+- Crosshair
+    - Changes color according to the color of the pixels underneath it
+- Particles
+    - When blocks are broken
+- Maximized FPS (FPS can go as high as possible instead of being restrained at 60)
+- Hotbar
+    - Control with the numbers 1-9 or with the mouse scroll wheel
+- Inventory
+    - By clicking the item you want to move, and clicking again to drop it off
+- Minecraft font
+
+Changes:
+- Player speed has been increased slightly
+- Doubled game resolution
+- Thinner, less obstructive lines
+- The texture of grass has been tweeked slightly
+- The debug info is now offset 6 pixels from the left of the window
+- The debug info on blocks is now offset from the cursor so that it can be seen more clearly
+
+Bug fixes:
+- Player x velocity no longer stays fast when not jumping (player slows down when on the ground)
+- Block no longer gets placed on grass if the player is standing in the grass
+- Fixed the bug where red squares stack up when debug mode is not on, and appear all at once when debug mode is turned on
+- Frame rate independent movement: The game no longer slows down when the FPS drops
+- Grass on chunk borders no longer breaks off when the block below is gets unloaded
+- Fixed glitchy movement when player is moving at max speed
+
+Technical changes:
+- Block update system as in real Minecraft
+- Data folder to store all text based information
+- Cleaned up the code

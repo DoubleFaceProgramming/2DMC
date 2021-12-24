@@ -1,0 +1,9 @@
+{
+    "name": "tall_grass_top", 
+    "collision_box": "none", 
+    "bounding_box": "full", 
+    "support": {
+        "0 1": ["tall_grass"]
+    }, 
+    "replaceable": true
+}

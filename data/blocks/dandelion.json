@@ -1,0 +1,8 @@
+{
+    "name": "dandelion", 
+    "collision_box": "none", 
+    "bounding_box": "full", 
+    "support": {
+        "0 1": ["grass_block", "dirt"]
+    }
+}

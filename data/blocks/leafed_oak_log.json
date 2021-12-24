@@ -1,0 +1,7 @@
+{
+    "name": "leafed_oak_log", 
+    "collision_box": "none", 
+    "bounding_box": "full", 
+    "support": false, 
+    "next_layer": "oak_log"
+}
