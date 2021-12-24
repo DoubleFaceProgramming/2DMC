@@ -6,8 +6,8 @@ import json
 import os
 import opensimplex
 import time
+import win32api
 
-FPS = 1024
 WIDTH, HEIGHT = 1200, 600
 SCR_DIM = (WIDTH, HEIGHT)
 GRAVITY = 0.5
@@ -16,6 +16,10 @@ TERMINAL_VEL = 24
 BLOCK_SIZE = 64
 CHUNK_SIZE = 8
 SEED = randint(-2147483648, 2147483647)
+
+settings = win32api.EnumDisplaySettings(win32api.EnumDisplayDevices().DeviceName, -1)
+monitor_refresh_rate = getattr(settings, "DisplayFrequency")
+FPS = monitor_refresh_rate
 
 def loading():
     font = pygame.font.Font("assets/fonts/regular.ttf", 120)
@@ -118,16 +122,19 @@ def text(text, color=(0, 0, 0)):
 def smol_text(text, color=(255, 255, 255)):
     return font20.render(text, True, color)
 
-def blit_text_box(text, pos):
+def blit_text_box(screen, text, pos, opacity):
     text_rect = text.get_rect()
     blit_pos = pos
-    pygame.draw.rect(screen, (0, 0, 0), (blit_pos[0]-6, blit_pos[1]-4, text_rect.width+12, text_rect.height+8))
-    pygame.draw.rect(screen, (0, 0, 0), (blit_pos[0]-8, blit_pos[1]-2, text_rect.width+16, text_rect.height+4))
-    pygame.draw.rect(screen, (44, 8, 99), (blit_pos[0]-6, blit_pos[1]-2, text_rect.width+12, 2))
-    pygame.draw.rect(screen, (44, 8, 99), (blit_pos[0]-6, blit_pos[1]+text_rect.height, text_rect.width+12, 2))
-    pygame.draw.rect(screen, (44, 8, 99), (blit_pos[0]-6, blit_pos[1]-2, 2, text_rect.height+4))
-    pygame.draw.rect(screen, (44, 8, 99), (blit_pos[0]+text_rect.width+4, blit_pos[1]-2, 2, text_rect.height+4))
-    screen.blit(text, blit_pos)
+    surface = pygame.Surface((text_rect.width+16, text_rect.height+8), SRCALPHA)
+    surface.set_alpha(opacity)
+    pygame.draw.rect(surface, (0, 0, 0), (2, 0, text_rect.width+12, text_rect.height+8))
+    pygame.draw.rect(surface, (0, 0, 0), (0, 2, text_rect.width+16, text_rect.height+4))
+    pygame.draw.rect(surface, (44, 8, 99), (2, 2, text_rect.width+12, 2))
+    pygame.draw.rect(surface, (44, 8, 99), (2, 4+text_rect.height, text_rect.width+12, 2))
+    pygame.draw.rect(surface, (44, 8, 99), (2, 2, 2, text_rect.height+4))
+    pygame.draw.rect(surface, (44, 8, 99), (12+text_rect.width, 2, 2, text_rect.height+4))
+    surface.blit(text, (8, 4))
+    screen.blit(surface, blit_pos)
 
 detecting_rects = []
 def block_collide(ax, ay, width, height, b):
@@ -203,25 +210,34 @@ class Camera(pygame.sprite.Sprite):
         self.pos = self.master.pos - self.pos - vec(SCR_DIM) / 2 + self.master.size / 2
 
     def update(self):
+        mpos = pygame.mouse.get_pos()
         tick_offset = self.master.pos - self.pos - vec(SCR_DIM) / 2 + self.master.size / 2
         if -1 < tick_offset.x < 1:
             tick_offset.x = 0
         if -1 < tick_offset.y < 1:
             tick_offset.y = 0
-        self.pos += tick_offset / 10 * dt
+        if not inventory.visible:
+            x_dist, y_dist = mpos[0] - SCR_DIM[0] / 2, mpos[1] - SCR_DIM[1] / 2
+        else:
+            x_dist, y_dist = 0, 0
+        dist_squared = vec(x_dist**2 if x_dist > 0 else -x_dist**2, y_dist**2*2.5 if y_dist > 0 else -y_dist**2*2.5)
+        self.pos += (tick_offset / 10 + vec(dist_squared) / 18000) * dt
 
 class Player(pygame.sprite.Sprite):
     def __init__(self):
         pygame.sprite.Sprite.__init__(self)
         self.size = vec(0.225*BLOCK_SIZE, 1.8*BLOCK_SIZE)
         self.width, self.height = self.size.x, self.size.y
-        self.start_pos = vec(0, 3) * BLOCK_SIZE # Far lands: 9007199254740993
+        self.start_pos = vec(0, 3) * BLOCK_SIZE # Far lands: 9007199254740993 (aka 2^53)
         self.pos = vec(self.start_pos)
         self.coords = self.pos // BLOCK_SIZE
         self.acc = vec(0, 0)
         self.vel = vec(0, 0)
-        self.max_speed = 5.306
-        self.jumping_max_speed = 6.6
+        # Walking speed: 4.317 bps
+        # Sprinting speed: 5.612 bps
+        # Sprint-jumping speed: 7.127 bps
+        self.max_speed = 5.153
+        self.jumping_max_speed = 6.7
         self.rect = pygame.Rect((0, 0, 0.225*BLOCK_SIZE, 1.8*BLOCK_SIZE))
         self.bottom_bar = pygame.Rect((self.rect.x+1, self.rect.bottom), (self.width-2, 1))
         self.on_ground = False
@@ -254,7 +270,7 @@ class Player(pygame.sprite.Sprite):
             self.vel.x -= SLIDE * dt
         if keys[K_w] and self.on_ground and not inventory.visible:
             self.vel.y = -9.2
-            self.vel.x *= 1.1
+            self.vel.x *= 1.133
             if self.vel.x > self.jumping_max_speed:
                 self.vel.x = self.jumping_max_speed
             elif self.vel.x < -self.jumping_max_speed:
@@ -272,9 +288,9 @@ class Player(pygame.sprite.Sprite):
             self.vel.y = TERMINAL_VEL
         if self.on_ground:
             if self.vel.x < 0:
-                self.vel.x += 0.025 * dt
+                self.vel.x += 0.03 * dt
             elif self.vel.x > 0:
-                self.vel.x -= 0.025 * dt
+                self.vel.x -= 0.03 * dt
         self.move()
         self.bottom_bar = pygame.Rect((self.rect.left+1, self.rect.bottom), (self.width-2, 1))
         for block in blocks:
@@ -514,10 +530,10 @@ class Item(object):
         self.nbt = {}
 
 class Inventory(object):
-    def __init__(self, items={}):
+    def __init__(self):
         self.slot_start = vec(400, 302)
         self.slot_size = (40, 40)
-        self.items = items
+        self.items = {}
         self.hotbar = Hotbar(self)
         self.visible = False
         self.selected = None
@@ -571,7 +587,8 @@ class Inventory(object):
             if in_dict(self.items, self.hovering):
                 name = self.items[self.hovering].name.replace("_", " ").capitalize()
                 mpos = pygame.mouse.get_pos()
-                blit_text_box(smol_text(name), (mpos[0]+12, mpos[1]-24))
+                if self.selected == None:
+                    blit_text_box(screen, smol_text(name), (mpos[0]+12, mpos[1]-24), 255)
             player.leg2.rect = player.leg2.image.get_rect(center=(593+player.width/2, 140+72))
             screen.blit(player.leg2.image, player.leg2.rect.topleft)
             player.arm2.rect = player.arm2.image.get_rect(center=(593+player.width/2, 140+35))
@@ -610,6 +627,7 @@ class Hotbar(object):
                 items[slot[0]] = self.inventory.items[slot]
         self.items = items
         self.selected = 0
+        self.fade_timer = 0
 
     def update(self, scroll):
         hotbar_items = {}
@@ -622,6 +640,7 @@ class Hotbar(object):
             for i in range(K_1, K_9+1):
                 if keys[i]:
                     self.selected = i-K_0-1
+                    self.fade_timer = time.time()
             if scroll == 4:
                 if self.selected == 0:
                     self.selected = 8
@@ -632,6 +651,8 @@ class Hotbar(object):
                     self.selected = 0
                 else:
                     self.selected += 1
+            if scroll:
+                self.fade_timer = time.time()
         if in_dict(self.items, self.selected):
             player.holding = self.items[self.selected].name
         else:
@@ -643,9 +664,11 @@ class Hotbar(object):
         for slot in self.items:
             item_img = pygame.transform.scale(block_textures[self.items[slot].name], self.slot_size)
             screen.blit(item_img, self.slot_start+vec(8, 0)+vec(slot*(self.slot_size[0]+10), 8))
-        if in_dict(self.items, self.selected):
-            blitted_text = smol_text(self.items[self.selected].name.replace("_", " ").capitalize())
-            blit_text_box(blitted_text, (WIDTH/2-blitted_text.get_width()/2, HEIGHT-92))
+        if (time_elapsed := time.time() - self.fade_timer) < 3:
+            if in_dict(self.items, self.selected):
+                opacity = 255 * (3-time_elapsed) if time_elapsed > 2 else 255
+                blitted_text = smol_text(self.items[self.selected].name.replace("_", " ").capitalize())
+                blit_text_box(screen, blitted_text, (WIDTH/2-blitted_text.get_width()/2-8, HEIGHT-92), opacity)
 
 def get_structures(x, y, generator, chance):
     out = []
@@ -694,7 +717,7 @@ def generate_chunk(x, y):
             target = (x * CHUNK_SIZE + x_pos, y * CHUNK_SIZE + y_pos)
             block_name = ""
             height = terrain_generate(target[0])
-            # Plains: height = -int(noise.noise2d(target[0]*0.05, 0)*3)+5
+            # Plains: height = -int(noise.noise2d(target[0]*0.05, 0)*3)+5s
             if target[1] == height:
                 block_name = "grass_block"
             elif height+1 <= target[1] < height+4:
@@ -782,7 +805,7 @@ running = True
 debug = False
 
 while running:
-    dt = clock.tick(FPS) / 16
+    dt = clock.tick_busy_loop(FPS) / 16
     if dt > 12: dt = 12
     pygame.display.set_caption(f"2D Minecraft | FPS: {int(clock.get_fps())}")
 
