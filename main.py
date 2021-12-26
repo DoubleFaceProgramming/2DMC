@@ -5,6 +5,7 @@ from math import *
 import json
 import os
 import opensimplex
+from perlin_noise import PerlinNoise
 import time
 import win32api
 
@@ -35,6 +36,7 @@ clock = pygame.time.Clock()
 mixer = pygame.mixer.init()
 vec = pygame.math.Vector2
 noise = opensimplex.OpenSimplex(seed=SEED)
+pnoise = PerlinNoise(seed=SEED)
 seed(SEED)
 
 font24 = pygame.font.Font("assets/fonts/regular.ttf", 24)
@@ -677,6 +679,8 @@ def get_structures(x, y, generator, chance):
         if randint(0, chance[1]) == 0:
             block_x = x * CHUNK_SIZE + randrange(0, CHUNK_SIZE)
             grass_y = terrain_generate(block_x)-1
+            if (92.7 < cave_generate([block_x/70, grass_y/70]) < 100):
+                return out
             if not 0 <= grass_y - y * CHUNK_SIZE < CHUNK_SIZE:
                 return out
             out.append(generator.generate((block_x, grass_y)))
@@ -709,6 +713,12 @@ def generate_structures(x, y, chunk_data, generator, chance):
 def terrain_generate(x):
     return -int(noise.noise2d(x*0.1, 0)*5)+5
 
+def cave_generate(coords):
+    noise_height = pnoise(coords)
+    noise_height = noise_height + 0.5 if noise_height > 0 else 0
+    noise_height = int(pow(noise_height * 255, 0.9))
+    return noise_height
+
 def generate_chunk(x, y):
     seed(x*CHUNK_SIZE+y*CHUNK_SIZE)
     chunk_data = {}
@@ -716,21 +726,24 @@ def generate_chunk(x, y):
         for x_pos in range(CHUNK_SIZE):
             target = (x * CHUNK_SIZE + x_pos, y * CHUNK_SIZE + y_pos)
             block_name = ""
-            height = terrain_generate(target[0])
-            # Plains: height = -int(noise.noise2d(target[0]*0.05, 0)*3)+5s
-            if target[1] == height:
-                block_name = "grass_block"
-            elif height+1 <= target[1] < height+4:
-                block_name = "dirt"
-            elif target[1] >= height+4:
-                block_name = "stone"
-            if target[1] == height-1:
-                if randint(0, 2) == 0:
-                    block_name = "grass"
-                if randint(0, 21) == 0:
-                    block_name = choices(["poppy", "dandelion"], weights=[1, 2])[0]
-            if block_name != "":
-                chunk_data[target] = block_name
+            # Plains: height = -int(noise.noise2d(target[0]*0.05, 0)*3)+5
+            noise_map_coords = [target[0]/70, target[1]/70]
+            if not (92.7 < cave_generate(noise_map_coords) < 100):
+                height = terrain_generate(target[0])
+                if target[1] == height:
+                    block_name = "grass_block"
+                elif height+1 <= target[1] < height+4:
+                    block_name = "dirt"
+                elif target[1] >= height+4:
+                    block_name = "stone"
+                if target[1] == height-1:
+                    if randint(0, 2) == 0:
+                        block_name = "grass"
+                    if randint(0, 21) == 0:
+                        block_name = choices(["poppy", "dandelion"], weights=[1, 2])[0]
+                if block_name != "":
+                    chunk_data[target] = block_name
+
     generator = StructureGenerator("oak_tree", obstruction=False)
     chunk_data = generate_structures(x, y, chunk_data, generator, (1, 2))
     generator = StructureGenerator("tall_grass", obstruction=True)
