@@ -21,9 +21,10 @@ SEED = randint(-2147483648, 2147483647)
 settings = win32api.EnumDisplaySettings(win32api.EnumDisplayDevices().DeviceName, -1)
 monitor_refresh_rate = getattr(settings, "DisplayFrequency")
 FPS = monitor_refresh_rate
+REGULAR_FONT_LOC = "assets/fonts/regular.ttf"
 
 def loading():
-    font = pygame.font.Font("assets/fonts/regular.ttf", 120)
+    font = pygame.font.Font(REGULAR_FONT_LOC, 120)
     textsurface = font.render("Generating World...", True, (255, 255, 255))
     screen.blit(textsurface, (50, 200))
     pygame.display.flip()
@@ -39,8 +40,8 @@ noise = opensimplex.OpenSimplex(seed=SEED)
 pnoise = PerlinNoise(seed=SEED)
 seed(SEED)
 
-font24 = pygame.font.Font("assets/fonts/regular.ttf", 24)
-font20 = pygame.font.Font("assets/fonts/regular.ttf", 20)
+font24 = pygame.font.Font(REGULAR_FONT_LOC, 24)
+font20 = pygame.font.Font(REGULAR_FONT_LOC, 20)
 
 block_textures = {}
 for img in os.listdir("assets/textures/blocks/"):
@@ -159,7 +160,6 @@ def remove_block(pos, data, neighbors):
         del blocks[pos]
         del chunks[chunk].block_data[pos]
     for neighbor in neighbors:
-        chunk = (neighbors[neighbor][0] // CHUNK_SIZE, neighbors[neighbor][1] // CHUNK_SIZE)
         if in_dict(blocks, neighbors[neighbor]):
             blocks[neighbors[neighbor]].update()
 
@@ -185,12 +185,10 @@ def is_occupied(pos):
     return True
 
 def is_supported(pos, data, neighbors, c=False):
-    chunk = (pos[0] // CHUNK_SIZE, pos[1] // CHUNK_SIZE)
     if data["support"]:
         supports = data["support"]
         for support in supports:
             if inttup(support.split(" ")) != inttup(vec(c)-vec(pos)):
-                target = (neighbors[support][0]//CHUNK_SIZE, neighbors[support][1]//CHUNK_SIZE)
                 if in_dict(blocks, neighbors[support]):
                     if blocks[neighbors[support]].name not in supports[support]:
                         return False
@@ -672,33 +670,65 @@ class Hotbar(object):
                 blitted_text = smol_text(self.items[self.selected].name.replace("_", " ").capitalize())
                 blit_text_box(screen, blitted_text, (WIDTH/2-blitted_text.get_width()/2-8, HEIGHT-92), opacity)
 
-def get_structures(x, y, generator, chance):
+def get_structures(x: int, y: int, generator: StructureGenerator, chance: tuple) -> list:
+    """Get structures inside the current chunk (x, y)
+
+    Args:
+        x (int): chunk position x
+        y (int): chunk position y
+        generator (StructureGenerator): structure object to generate
+        chance (tuple): the odds of the structure generating, (number-of-structure-possible-per-chunk, odds-off-the-structure-generating-per-block-in-chunk)
+
+    Returns:
+        list: a list containing the block data of the structures in the chunk
+    """
     out = []
     seed(SEED + x * CHUNK_SIZE + y * CHUNK_SIZE)
     for _ in range(chance[0]):
         if randint(0, chance[1]) == 0:
             block_x = x * CHUNK_SIZE + randrange(0, CHUNK_SIZE)
+            # Generate on the surface of the world
             grass_y = terrain_generate(block_x)-1
+            # If it is cut off by a cave, don't generate
             if (92.7 < cave_generate([block_x/70, grass_y/70]) < 100):
                 return out
+            # Structures that are not in this chunk
             if not 0 <= grass_y - y * CHUNK_SIZE < CHUNK_SIZE:
                 return out
             out.append(generator.generate((block_x, grass_y)))
     return out
 
-def generate_structures(x, y, chunk_data, generator, chance):
+def generate_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerator, chance: tuple) -> dict:
+    """Check the surrounding chunks for structures that generates in the current chunk (x, y), and then returns the chunk data with the structure
+
+    Args:
+        x (int): chunk position x
+        y (int): chunk position y
+        chunk_data (dict): original chunk data
+        generator (StructureGenerator): the structure object to generate
+        chance (tuple): the odds of the structure generating, (number-of-structure-possible-per-chunk, odds-of-a-chunk-containing-the-structure)
+
+    Returns:
+        dict: the chunk data with the structure
+    """
     chunk_data_orig = chunk_data.copy()
+    # Check all chunks around the current chunk within the size limit of the structure
     for ox in range(-generator.chunks_to_check[0], generator.chunks_to_check[0] + 1):
         for oy in range(-generator.chunks_to_check[1], generator.chunks_to_check[1] + 1):
+            # Get the surrounding structures that might protrude into the current chunk
             structs = get_structures(x + ox, y + oy, generator, chance)
             for struct in structs:
                 for block, block_name in struct.items():
+                    # If there are parts of that structure inside the current chunk, generate that part in this chunk
                     if 0 <= block[0]-x*CHUNK_SIZE < CHUNK_SIZE and 0 <= block[1]-y*CHUNK_SIZE < CHUNK_SIZE:
                         if in_dict(chunk_data, block):
+                            # Check if that position already has block and whether it can be overwritten by the structure
+                            # i.e. leaves can replace grass but not grass blocks
                             if in_dict(block_data[block_name], "overwriteable"):
                                 if chunk_data[block] in block_data[block_name]["overwriteable"]:
                                     chunk_data[block] = block_name
                                 else:
+                                    # Obstruction determines whether the struture can generate when there are non-overwriteable blocks in its way
                                     if generator.obstruction:
                                         return chunk_data_orig
                             else:
@@ -710,25 +740,30 @@ def generate_structures(x, y, chunk_data, generator, chance):
                             chunk_data[block] = block_name
     return chunk_data
 
-def terrain_generate(x):
+def terrain_generate(x: int) -> float:
+    """Takes the x position of a block and returns the height it has to be at"""
     return -int(noise.noise2d(x*0.1, 0)*5)+5
 
-def cave_generate(coords):
+def cave_generate(coords: list) -> float:
+    """Takes the coordinates of a block and returns the noise map value for cave generation"""
     noise_height = pnoise(coords)
     noise_height = noise_height + 0.5 if noise_height > 0 else 0
     noise_height = int(pow(noise_height * 255, 0.9))
     return noise_height
 
-def generate_chunk(x, y):
+def generate_chunk(x: int, y: int) -> dict:
+    """Takes the chunk coordinates and returns a dictionary containing the block data inside the chunk"""
     seed(x*CHUNK_SIZE+y*CHUNK_SIZE)
     chunk_data = {}
     for y_pos in range(CHUNK_SIZE):
         for x_pos in range(CHUNK_SIZE):
             target = (x * CHUNK_SIZE + x_pos, y * CHUNK_SIZE + y_pos)
             block_name = ""
-            # Plains: height = -int(noise.noise2d(target[0]*0.05, 0)*3)+5
+            # Cave noise map
             noise_map_coords = [target[0]/70, target[1]/70]
+            # Don't generate blocks if it satifies a certain range of values in the cave noise map, AKA a cave
             if not (92.7 < cave_generate(noise_map_coords) < 100):
+                # Generate terrain
                 height = terrain_generate(target[0])
                 if target[1] == height:
                     block_name = "grass_block"
@@ -744,6 +779,7 @@ def generate_chunk(x, y):
                 if block_name != "":
                     chunk_data[target] = block_name
 
+    # Generate structures
     generator = StructureGenerator("oak_tree", obstruction=False)
     chunk_data = generate_structures(x, y, chunk_data, generator, (1, 2))
     generator = StructureGenerator("tall_grass", obstruction=True)
@@ -781,6 +817,7 @@ def draw():
     for particle in particles:
         particle.draw(screen)
     player.draw(screen)
+    # Debug stuff
     if debug:
         for chunk in rendered_chunks:
             chunks[chunk].debug()
@@ -799,6 +836,7 @@ def draw():
                 screen.blit(text(f"{blocks[inttup(block_pos)].name.replace('_', ' ')}", color=(255, 255, 255)), (mpos[0]+12, mpos[1]-36))
     inventory.draw(screen)
     if not inventory.visible:
+        # Calculate crosshair color and draw it
         if in_dict(blocks, inttup(block_pos)):
             try:
                 surf = screen.subsurface((mpos[0]-16, mpos[1]-16, 32, 32))

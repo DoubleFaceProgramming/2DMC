@@ -1,6 +1,6 @@
 # 2DMC
 
-2DMC is an abrrieviation for 2 Dimensional Minecraft. This idea is originally created and implemented by Griffpatch on Scratch. This is a personal project of creating a Paper Minecraft clone in python, better, smoother, and more Minecrafty. 
+2DMC is an abrrieviation for 2 Dimensional Minecraft. This idea is originally created and implemented by Griffpatch on Scratch. This is a personal project of creating a Paper Minecraft clone in python, better, smoother, and more Minecrafty.
 
 ## Installation
 
