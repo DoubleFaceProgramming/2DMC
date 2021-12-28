@@ -23,7 +23,7 @@ SLIDE = 0.3
 TERMINAL_VEL = 24
 BLOCK_SIZE = 64
 CHUNK_SIZE = 8
-SEED = randint(-2147483648, 2147483647)
+SEED = -953031430#randint(-2147483648, 2147483647)
 
 settings = win32api.EnumDisplaySettings(win32api.EnumDisplayDevices().DeviceName, -1)
 monitor_refresh_rate = getattr(settings, "DisplayFrequency")
