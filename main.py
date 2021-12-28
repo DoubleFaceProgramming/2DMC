@@ -1,13 +1,20 @@
-import pygame
-from pygame.locals import *
-from random import *
-from math import *
+from io import TextIOWrapper
+from random import randint, seed, choices, randrange
+from math import cos, ceil, floor
 import json
 import os
 import opensimplex
 from perlin_noise import PerlinNoise
 import time
 import win32api
+import pygame
+from pygame.locals import  (
+    HWSURFACE, SRCALPHA, DOUBLEBUF,
+    K_w, K_e, K_a, K_d,
+    K_1, K_9, K_0, K_F5,
+    MOUSEBUTTONDOWN, KEYDOWN,
+    QUIT,
+)
 
 WIDTH, HEIGHT = 1200, 600
 SCR_DIM = (WIDTH, HEIGHT)
@@ -424,11 +431,11 @@ class Particle(pygame.sprite.Sprite):
             self.vel.y += GRAVITY * dt
         self.vel.x *= 0.93
         neighbors = [
-            inttup(self.coords), 
-            inttup((self.coords.x-1, self.coords.y)), 
-            inttup((self.coords.x+1, self.coords.y)), 
-            inttup((self.coords.x, self.coords.y-1)), 
-            inttup((self.coords.x, self.coords.y+1)), 
+            inttup(self.coords),
+            inttup((self.coords.x-1, self.coords.y)),
+            inttup((self.coords.x+1, self.coords.y)),
+            inttup((self.coords.x, self.coords.y-1)),
+            inttup((self.coords.x, self.coords.y+1)),
         ]
         for pos in neighbors:
             if in_dict(blocks, pos):
@@ -460,9 +467,9 @@ class Block(pygame.sprite.Sprite):
         self.coords = vec(pos)
         self.pos = self.coords * BLOCK_SIZE
         self.neighbors = {
-            "0 -1": inttup((self.coords.x, self.coords.y-1)), 
-            "0 1": inttup((self.coords.x, self.coords.y+1)), 
-            "-1 0": inttup((self.coords.x-1, self.coords.y)), 
+            "0 -1": inttup((self.coords.x, self.coords.y-1)),
+            "0 1": inttup((self.coords.x, self.coords.y+1)),
+            "-1 0": inttup((self.coords.x-1, self.coords.y)),
             "1 0": inttup((self.coords.x+1, self.coords.y))
         }
         self.image = block_textures[self.name]
@@ -506,7 +513,7 @@ class StructureGenerator(object):
         for file in self.files:
             if file != "distribution":
                 self.block_data[file] = structures[folder][file]
-                max_sizes.append((max(x for x, y in self.block_data[file][1]) - min(x for x, y in self.block_data[file][1]) + 1, 
+                max_sizes.append((max(x for x, y in self.block_data[file][1]) - min(x for x, y in self.block_data[file][1]) + 1,
                             max(y for x, y in self.block_data[file][1]) - min(y for x, y in self.block_data[file][1]) + 1))
         self.max_size = max(max_sizes)
         self.chunks_to_check = int(ceil(self.max_size[0] / CHUNK_SIZE)), int(ceil(self.max_size[1] / CHUNK_SIZE))
@@ -516,8 +523,8 @@ class StructureGenerator(object):
         file = choices(self.distribution["files"], weights=self.distribution["weights"])[0]
         mirror = randint(0, 1)
         block_data = {
-            (origin[0] + offset[0] if mirror else origin[0] - offset[0], origin[1] + offset[1]): 
-            (block if "," not in block else (choices([i.split("=")[0] for i in block.split(",")], 
+            (origin[0] + offset[0] if mirror else origin[0] - offset[0], origin[1] + offset[1]):
+            (block if "," not in block else (choices([i.split("=")[0] for i in block.split(",")],
             weights=[int(i.split("=")[1]) for i in block.split(",")])[0]))
             for offset, block in self.block_data[file][1].items()
         }
@@ -848,10 +855,21 @@ def draw():
         if 127-30 < color.r < 127+30 and 127-30 < color.g < 127+30 and 127-30 < color.b < 127+30:
             color = pygame.Color(255, 255, 255)
         color = pygame.Color(255, 255, 255) - color
-        pygame.draw.rect(screen, color, (mpos[0]-2, mpos[1]-16, 4, 32))
-        pygame.draw.rect(screen, color, (mpos[0]-16, mpos[1]-2, 32, 4))
+
+        # Modified version of this SO answer, thank you!
+        # https://stackoverflow.com/a/51979708/17303382
+        global col_step, crosshair_col, col_changeover
+        col_step = 1 if col_step > col_changeover else col_step
+        crosshair_col = [x + (((y - x) / col_changeover) * col_step) for x, y in zip(crosshair_col, color)]
+
+        pygame.draw.rect(screen, crosshair_col, (mpos[0]-2, mpos[1]-16, 4, 32))
+        pygame.draw.rect(screen, crosshair_col, (mpos[0]-16, mpos[1]-2, 32, 4))
     pygame.display.flip()
 
+col_step = 1
+col_changeover = 5000
+col_clock = pygame.time.Clock()
+crosshair_col = (0, 0, 0)
 running = True
 debug = False
 
@@ -860,6 +878,9 @@ while running:
     if dt > 12: dt = 12
     pygame.display.set_caption(f"2D Minecraft | FPS: {int(clock.get_fps())}")
 
+    col_step += dt # I presume this'll work?
+
+    
     mouse_state = 0
     for event in pygame.event.get():
         if event.type == QUIT:
@@ -870,9 +891,9 @@ while running:
                 mpos = vec(pygame.mouse.get_pos())
                 block_pos = inttup((player.pos+(mpos-player.rect.topleft))//BLOCK_SIZE)
                 neighbors = {
-                    "0 -1": inttup((block_pos[0], block_pos[1]-1)), 
-                    "0 1": inttup((block_pos[0], block_pos[1]+1)), 
-                    "-1 0": inttup((block_pos[0]-1, block_pos[1])), 
+                    "0 -1": inttup((block_pos[0], block_pos[1]-1)),
+                    "0 1": inttup((block_pos[0], block_pos[1]+1)),
+                    "-1 0": inttup((block_pos[0]-1, block_pos[1])),
                     "1 0": inttup((block_pos[0]+1, block_pos[1]))
                 }
                 if event.button == 1:
@@ -885,9 +906,9 @@ while running:
                             for counterpart in counterparts:
                                 c_pos = vec(block_pos)+vec(inttup(counterpart.split(" ")))
                                 c_neighbors = {
-                                    "0 -1": inttup((c_pos.x, c_pos.y-1)), 
-                                    "0 1": inttup((c_pos.x, c_pos.y+1)), 
-                                    "-1 0": inttup((c_pos.x-1, c_pos.y)), 
+                                    "0 -1": inttup((c_pos.x, c_pos.y-1)),
+                                    "0 1": inttup((c_pos.x, c_pos.y+1)),
+                                    "-1 0": inttup((c_pos.x-1, c_pos.y)),
                                     "1 0": inttup((c_pos.x+1, c_pos.y))
                                 }
                                 if not is_placeable(c_pos, block_data[counterparts[counterpart]], c_neighbors, c=block_pos):
@@ -901,9 +922,9 @@ while running:
                                     for counterpart in counterparts:
                                         c_pos = vec(block_pos)+vec(inttup(counterpart.split(" ")))
                                         c_neighbors = {
-                                            "0 -1": inttup((c_pos.x, c_pos.y-1)), 
-                                            "0 1": inttup((c_pos.x, c_pos.y+1)), 
-                                            "-1 0": inttup((c_pos.x-1, c_pos.y)), 
+                                            "0 -1": inttup((c_pos.x, c_pos.y-1)),
+                                            "0 1": inttup((c_pos.x, c_pos.y+1)),
+                                            "-1 0": inttup((c_pos.x-1, c_pos.y)),
                                             "1 0": inttup((c_pos.x+1, c_pos.y))
                                         }
                                         set_block(vec(block_pos)+vec(inttup(counterpart.split(" "))), counterparts[counterpart], c_neighbors)
@@ -927,7 +948,7 @@ while running:
     for y in range(int(HEIGHT/(CHUNK_SIZE*BLOCK_SIZE)+2)):
         for x in range(int(WIDTH/(CHUNK_SIZE*BLOCK_SIZE)+2)):
             chunk = (
-                x - 1 + int(round(camera.pos.x / (CHUNK_SIZE * BLOCK_SIZE))), 
+                x - 1 + int(round(camera.pos.x / (CHUNK_SIZE * BLOCK_SIZE))),
                 y - 1 + int(round(camera.pos.y / (CHUNK_SIZE * BLOCK_SIZE)))
             )
             rendered_chunks.append(chunk)
@@ -937,7 +958,7 @@ while running:
     for y in range(int(HEIGHT/(CHUNK_SIZE*BLOCK_SIZE)+4)):
         for x in range(int(WIDTH/(CHUNK_SIZE*BLOCK_SIZE)+4)):
             chunk = (
-                x - 2 + int(round(camera.pos.x / (CHUNK_SIZE * BLOCK_SIZE))), 
+                x - 2 + int(round(camera.pos.x / (CHUNK_SIZE * BLOCK_SIZE))),
                 y - 2 + int(round(camera.pos.y / (CHUNK_SIZE * BLOCK_SIZE)))
             )
             if in_dict(chunks, chunk):
@@ -950,9 +971,9 @@ while running:
                 del blocks[block]
     for block in remove_blocks:
         neighbors = {
-            "0 -1": inttup((block[0], block[1]-1)), 
-            "0 1": inttup((block[0], block[1]+1)), 
-            "-1 0": inttup((block[0]-1, block[1])), 
+            "0 -1": inttup((block[0], block[1]-1)),
+            "0 1": inttup((block[0], block[1]+1)),
+            "-1 0": inttup((block[0]-1, block[1])),
             "1 0": inttup((block[0]+1, block[1]))
         }
         remove_block(block, blocks[inttup(block)].data, neighbors)
