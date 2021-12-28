@@ -1,4 +1,3 @@
-from io import TextIOWrapper
 from random import randint, seed, choices, randrange
 from math import cos, ceil, floor
 import json
