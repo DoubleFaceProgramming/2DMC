@@ -679,33 +679,27 @@ class Hotbar(object):
 
 class Crosshair():
     def __init__(self, changespeed) -> None:
-        self.col = pygame.Color(0, 0, 0)
+        self.color = pygame.Color(0, 0, 0)
         self.changeover = changespeed
-
-    def get_col(self, mpos, block_pos) -> pygame.Color:
-        if in_dict(blocks, inttup(block_pos)):
-            try:
-                surf = screen.subsurface((mpos[0]-16, mpos[1]-16, 32, 32))
-                color = pygame.Color(pygame.transform.average_color(surf))
-            except:
-                color = screen.get_at(inttup(mpos))
-        else:
-            color = pygame.Color(135, 206, 250)
-
-        return color
-
-    def transform_col(self, col) -> None: 
-        if 127-30 < col.r < 127+30 and 127-30 < col.g < 127+30 and 127-30 < col.b < 127+30:
-            col = pygame.Color(255, 255, 255)
-        col = pygame.Color(255, 255, 255) - col
+        
+    def update(self, mpos):
+        try:
+            surf = screen.subsurface((mpos[0]-16, mpos[1]-16, 32, 32))
+            color = pygame.Color(pygame.transform.average_color(surf))
+        except:
+            color = screen.get_at(inttup(mpos))
+        
+        if 127-30 < color.r < 127+30 and 127-30 < color.g < 127+30 and 127-30 < color.b < 127+30:
+            color = pygame.Color(255, 255, 255)
+        color = pygame.Color(255, 255, 255) - color
 
         # Modified version of this SO answer, thank you!
         # https://stackoverflow.com/a/51979708/17303382
-        self.col = [x + (((y - x) / self.changeover) * 100 * dt) for x, y in zip(self.col, col)]
+        self.color = [x + (((y - x) / self.changeover) * 100 * dt) for x, y in zip(self.color, color)]
 
-    def draw(self, mpos) -> None:
-        pygame.draw.rect(screen, self.col, (mpos[0]-2, mpos[1]-16, 4, 32))
-        pygame.draw.rect(screen, self.col, (mpos[0]-16, mpos[1]-2, 32, 4))
+    def draw(self, screen, mpos) -> None:
+        pygame.draw.rect(screen, self.color, (mpos[0]-2, mpos[1]-16, 4, 32))
+        pygame.draw.rect(screen, self.color, (mpos[0]-16, mpos[1]-2, 32, 4))
 
 def get_structures(x: int, y: int, generator: StructureGenerator, chance: tuple) -> list:
     """Get structures inside the current chunk (x, y)
@@ -827,7 +821,7 @@ blocks = {}
 chunks = {}
 player = Player()
 camera = Camera(player)
-crosshair = Crosshair(2000)
+crosshair = Crosshair(1750)
 particles = []
 inventory = Inventory()
 inventory.add_item("grass_block")
@@ -846,7 +840,7 @@ inventory.add_item("tall_grass")
 pygame.mouse.set_visible(False)
 remove_blocks = []
 
-def draw():
+def draw(screen):
     screen.fill((135, 206, 250))
     mpos = vec(pygame.mouse.get_pos())
     block_pos = (player.pos+(mpos-player.rect.topleft))//BLOCK_SIZE
@@ -874,9 +868,7 @@ def draw():
                 screen.blit(text(f"{blocks[inttup(block_pos)].name.replace('_', ' ')}", color=(255, 255, 255)), (mpos[0]+12, mpos[1]-36))
     inventory.draw(screen)
     if not inventory.visible:
-        cross_col = crosshair.get_col(mpos, block_pos)
-        crosshair.transform_col(cross_col)
-        crosshair.draw(mpos)
+        crosshair.draw(screen, mpos)
 
     pygame.display.flip()
 
@@ -888,6 +880,8 @@ while running:
     if dt > 12: dt = 12
     pygame.display.set_caption(f"2D Minecraft | FPS: {int(clock.get_fps())}")
     
+    mpos = vec(pygame.mouse.get_pos())
+    
     mouse_state = 0
     for event in pygame.event.get():
         if event.type == QUIT:
@@ -895,7 +889,6 @@ while running:
         if event.type == MOUSEBUTTONDOWN:
             mouse_state = event.button
             if not inventory.visible:
-                mpos = vec(pygame.mouse.get_pos())
                 block_pos = inttup((player.pos+(mpos-player.rect.topleft))//BLOCK_SIZE)
                 neighbors = {
                     "0 -1": inttup((block_pos[0], block_pos[1]-1)),
@@ -993,7 +986,8 @@ while running:
     for particle in particles:
         particle.update()
     inventory.update(mouse_state)
-    draw()
+    crosshair.update(mpos)
+    draw(screen)
 
 pygame.quit()
 quit()
