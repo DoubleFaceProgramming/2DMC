@@ -228,6 +228,7 @@ class Camera(pygame.sprite.Sprite):
         else:
             x_dist, y_dist = 0, 0
         dist_squared = vec(x_dist**2 if x_dist > 0 else -x_dist**2, y_dist**2*2.5 if y_dist > 0 else -y_dist**2*2.5)
+        
         self.pos += (tick_offset / 10 + vec(dist_squared) / 18000) * dt
 
 class Player(pygame.sprite.Sprite):
@@ -250,6 +251,7 @@ class Player(pygame.sprite.Sprite):
         self.on_ground = False
         self.holding = "grass_block"
         self.direction = "right"
+        
         self.head, self.body, self.leg, self.leg2, self.arm, self.arm2 = [pygame.sprite.Sprite() for _ in range(6)]
         self.head.image, self.body.image, self.leg.image = player_head, player_body, player_leg
         self.leg2.image, self.arm.image, self.arm2.image = player_leg, player_arm, player_arm
@@ -298,6 +300,7 @@ class Player(pygame.sprite.Sprite):
                 self.vel.x += 0.03 * dt
             elif self.vel.x > 0:
                 self.vel.x -= 0.03 * dt
+                
         self.move()
         self.bottom_bar = pygame.Rect((self.rect.left+1, self.rect.bottom), (self.width-2, 1))
         for block in blocks:
@@ -306,6 +309,7 @@ class Player(pygame.sprite.Sprite):
                 break
         else:
             self.on_ground = False
+            
         self.coords = self.pos // BLOCK_SIZE
         self.chunk = self.coords // CHUNK_SIZE
         self.rect.topleft = self.pos - camera.pos
@@ -314,20 +318,26 @@ class Player(pygame.sprite.Sprite):
     def draw(self, screen):
         self.leg2.rect = self.leg2.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
         screen.blit(self.leg2.image, self.leg2.rect.topleft)
+        
         self.arm2.rect = self.arm2.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+35))
         screen.blit(self.arm2.image, self.arm2.rect.topleft)
+        
         self.body.rect = self.body.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+51))
         screen.blit(self.body.image, self.body.rect.topleft)
+        
         self.arm.rect = self.arm.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+35))
         screen.blit(self.arm.image, self.arm.rect.topleft)
+        
         self.head.rect = self.head.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+23))
         screen.blit(self.head.image, self.head.rect.topleft)
+        
         self.leg.rect = self.leg.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
         screen.blit(self.leg.image, self.leg.rect.topleft)
 
     def animate(self):
         m_pos = vec(pygame.mouse.get_pos())
         self.head.rot = -vec(self.head.rect.center).angle_to(m_pos-vec(self.head.rect.center))-25
+        
         if self.vel.x != 0:
             self.leg.count += 0.2 * dt
             if abs(self.vel.x) > self.max_speed * 1.05:
@@ -341,6 +351,7 @@ class Player(pygame.sprite.Sprite):
             self.arm2.rot = -self.arm.rot
         else:
             self.leg.count = self.leg.rot = self.leg2.rot = self.arm.rot = self.arm2.rot = 0
+            
         if abs(self.head.rot) < 90:
             rotate = pygame.transform.rotate
             self.head.image, self.body.image = rotate(player_head, self.head.rot), player_body
@@ -379,6 +390,7 @@ class Player(pygame.sprite.Sprite):
                                         flag = True
             self.pos.y += self.vel.y * dt / split
             if flag: break
+            
         flag = False
         for _ in range(split):
             for y in range(4):
@@ -406,6 +418,7 @@ class Particle(pygame.sprite.Sprite):
         self.type = type
         self.pos = vec(pos)
         self.coords = self.pos // BLOCK_SIZE
+        
         if self.type == "block":
             self.size = randint(6, 8)
             self.image = pygame.Surface((self.size, self.size))
@@ -417,6 +430,7 @@ class Particle(pygame.sprite.Sprite):
                 if color == (255, 255, 255):
                     particles.remove(self)
                     self.kill()
+                    
         self.timer = time.time()
         self.survive_time = randint(4, 8) / 10
 
@@ -424,12 +438,14 @@ class Particle(pygame.sprite.Sprite):
         if time.time() - self.timer > self.survive_time:
             particles.remove(self)
             self.kill()
+            
         if in_dict(blocks, inttup(self.coords)):
             if blocks[inttup(self.coords)].data["collision_box"] == "none":
                 self.vel.y += GRAVITY * dt
         else:
             self.vel.y += GRAVITY * dt
         self.vel.x *= 0.93
+        
         neighbors = [
             inttup(self.coords),
             inttup((self.coords.x-1, self.coords.y)),
@@ -447,8 +463,10 @@ class Particle(pygame.sprite.Sprite):
                     if pygame.Rect(block.pos.x, block.pos.y, BLOCK_SIZE, BLOCK_SIZE).collidepoint(self.pos.x, self.pos.y+self.vel.y*dt):
                         self.vel.y = 0
                         break
+                    
         self.pos += self.vel * dt
         self.coords = self.pos // BLOCK_SIZE
+        
         if inttup(self.coords // CHUNK_SIZE) not in rendered_chunks:
             try: particles.remove(self)
             except: pass
@@ -473,6 +491,7 @@ class Block(pygame.sprite.Sprite):
             "1 0": inttup((self.coords.x+1, self.coords.y))
         }
         self.image = block_textures[self.name]
+        
         if self.data["collision_box"] == "full":
             self.rect = pygame.Rect(self.pos, (BLOCK_SIZE, BLOCK_SIZE))
         elif self.data["collision_box"] == "none":
@@ -509,6 +528,7 @@ class StructureGenerator(object):
         self.files = structures[folder]
         self.distribution = structures[folder]["distribution"]
         self.block_data = {}
+        
         max_sizes = []
         for file in self.files:
             if file != "distribution":
@@ -516,18 +536,21 @@ class StructureGenerator(object):
                 max_sizes.append((max(x for x, y in self.block_data[file][1]) - min(x for x, y in self.block_data[file][1]) + 1,
                             max(y for x, y in self.block_data[file][1]) - min(y for x, y in self.block_data[file][1]) + 1))
         self.max_size = max(max_sizes)
+        
         self.chunks_to_check = int(ceil(self.max_size[0] / CHUNK_SIZE)), int(ceil(self.max_size[1] / CHUNK_SIZE))
 
     def generate(self, origin):
         seed(SEED + origin[0] * CHUNK_SIZE + origin[1] * CHUNK_SIZE)
         file = choices(self.distribution["files"], weights=self.distribution["weights"])[0]
         mirror = randint(0, 1)
+        
         block_data = {
             (origin[0] + offset[0] if mirror else origin[0] - offset[0], origin[1] + offset[1]):
             (block if "," not in block else (choices([i.split("=")[0] for i in block.split(",")],
             weights=[int(i.split("=")[1]) for i in block.split(",")])[0]))
             for offset, block in self.block_data[file][1].items()
         }
+        
         return block_data
 
 class Item(object):
@@ -554,6 +577,7 @@ class Inventory(object):
             y_test = self.slot_start.y < mpos.y < self.slot_start.y+(self.slot_size[1]+5)*3
             x_test = self.slot_start.x < mpos.x < self.slot_start.x+(self.slot_size[0]+5)*9
             hotbar_y_test = 446 < mpos.y < 446+(self.slot_size[1]+5)
+            
             if y_test:
                 self.hovering = inttup(((mpos.x-self.slot_start.x)//(self.slot_size[0]+5), (mpos.y-self.slot_start.y)//(self.slot_size[1]+5)+1))
             elif hotbar_y_test:
@@ -573,6 +597,7 @@ class Inventory(object):
                     if self.selected:
                         self.set_slot(self.hovering, self.selected.name)
                         self.selected = None
+                        
         if m_state == 4 or m_state == 5:
             self.hotbar.update(m_state)
         else:
@@ -583,6 +608,7 @@ class Inventory(object):
         if self.visible:
             screen.blit(self.transparent_background, (0, 0))
             screen.blit(inventory_img, (vec(SCR_DIM)/2-vec(inventory_img.get_width()/2, inventory_img.get_height()/2)))
+            
             for slot in self.items:
                 item_img = pygame.transform.scale(block_textures[self.items[slot].name], self.slot_size)
                 if slot[1] != 0:
@@ -596,6 +622,7 @@ class Inventory(object):
                 mpos = pygame.mouse.get_pos()
                 if self.selected == None:
                     blit_text_box(screen, smol_text(name), (mpos[0]+12, mpos[1]-24), 255)
+                    
             player.leg2.rect = player.leg2.image.get_rect(center=(593+player.width/2, 140+72))
             screen.blit(player.leg2.image, player.leg2.rect.topleft)
             player.arm2.rect = player.arm2.image.get_rect(center=(593+player.width/2, 140+35))
@@ -641,6 +668,7 @@ class Hotbar(object):
         for slot in self.inventory.items:
             if slot[1] == 0:
                 hotbar_items[slot[0]] = self.inventory.items[slot]
+
         self.items = hotbar_items
         if not self.inventory.visible:
             keys = pygame.key.get_pressed()
@@ -648,6 +676,7 @@ class Hotbar(object):
                 if keys[i]:
                     self.selected = i-K_0-1
                     self.fade_timer = time.time()
+                    
             if scroll == 4:
                 if self.selected == 0:
                     self.selected = 8
@@ -658,8 +687,10 @@ class Hotbar(object):
                     self.selected = 0
                 else:
                     self.selected += 1
+                    
             if scroll:
                 self.fade_timer = time.time()
+                
         if in_dict(self.items, self.selected):
             player.holding = self.items[self.selected].name
         else:
@@ -671,6 +702,7 @@ class Hotbar(object):
         for slot in self.items:
             item_img = pygame.transform.scale(block_textures[self.items[slot].name], self.slot_size)
             screen.blit(item_img, self.slot_start+vec(8, 0)+vec(slot*(self.slot_size[0]+10), 8))
+            
         if (time_elapsed := time.time() - self.fade_timer) < 3:
             if in_dict(self.items, self.selected):
                 opacity = 255 * (3-time_elapsed) if time_elapsed > 2 else 255
@@ -720,12 +752,14 @@ def get_structures(x: int, y: int, generator: StructureGenerator, chance: tuple)
             block_x = x * CHUNK_SIZE + randrange(0, CHUNK_SIZE)
             # Generate on the surface of the world
             grass_y = terrain_generate(block_x)-1
+            
             # If it is cut off by a cave, don't generate
             if (92.7 < cave_generate([block_x/70, grass_y/70]) < 100) or (92.7 < cave_generate([block_x/70, (grass_y+1)/70]) < 100):
                 return out
             # Structures that are not in this chunk
             if not 0 <= grass_y - y * CHUNK_SIZE < CHUNK_SIZE:
                 return out
+            
             out.append(generator.generate((block_x, grass_y)))
     return out
 
@@ -790,10 +824,12 @@ def generate_chunk(x: int, y: int) -> dict:
         for x_pos in range(CHUNK_SIZE):
             target = (x * CHUNK_SIZE + x_pos, y * CHUNK_SIZE + y_pos)
             block_name = ""
+            
             # Cave noise map
             cave_noise_map_coords = [target[0]/70, target[1]/70]
             # Don't generate blocks if it satifies a certain range of values in the cave noise map, AKA a cave
             cave_noise_map_value = cave_generate(cave_noise_map_coords)
+            
             if not (92.7 < cave_noise_map_value < 100):
                 # Generate terrain
                 height = terrain_generate(target[0])
@@ -851,6 +887,7 @@ def draw(screen):
     for particle in particles:
         particle.draw(screen)
     player.draw(screen)
+    
     # Debug stuff
     if debug:
         for chunk in rendered_chunks:
@@ -868,6 +905,7 @@ def draw(screen):
         if not inventory.visible:
             if in_dict(blocks, inttup(block_pos)):
                 screen.blit(text(f"{blocks[inttup(block_pos)].name.replace('_', ' ')}", color=(255, 255, 255)), (mpos[0]+12, mpos[1]-36))
+    
     inventory.draw(screen)
     if not inventory.visible:
         crosshair.draw(screen, mpos)
@@ -888,6 +926,7 @@ while running:
     for event in pygame.event.get():
         if event.type == QUIT:
             running = False
+            
         if event.type == MOUSEBUTTONDOWN:
             mouse_state = event.button
             if not inventory.visible:
@@ -898,9 +937,11 @@ while running:
                     "-1 0": inttup((block_pos[0]-1, block_pos[1])),
                     "1 0": inttup((block_pos[0]+1, block_pos[1]))
                 }
+                
                 if event.button == 1:
                     if in_dict(blocks, block_pos):
                         remove_block(block_pos, blocks[block_pos].data, neighbors)
+                        
                 if event.button == 3:
                     if player.holding:
                         if in_dict(block_data[player.holding], "counterparts"):
@@ -933,6 +974,7 @@ while running:
                         else:
                             if is_placeable(block_pos, block_data[player.holding], neighbors):
                                 set_block(block_pos, player.holding, neighbors)
+                                
         if event.type == KEYDOWN:
             if event.key == K_F5:
                 debug = not debug
@@ -956,6 +998,7 @@ while running:
             rendered_chunks.append(chunk)
             if chunk not in chunks:
                 chunks[chunk] = Chunk(chunk)
+                
     unrendered_chunks = []
     for y in range(int(HEIGHT/(CHUNK_SIZE*BLOCK_SIZE)+4)):
         for x in range(int(WIDTH/(CHUNK_SIZE*BLOCK_SIZE)+4)):
@@ -966,11 +1009,13 @@ while running:
             if in_dict(chunks, chunk):
                 if chunk not in rendered_chunks:
                     unrendered_chunks.append(chunk)
+                    
     for chunk in unrendered_chunks:
         for block in chunks[chunk].block_data:
             if block in blocks:
                 blocks[block].kill()
                 del blocks[block]
+                
     for block in remove_blocks:
         neighbors = {
             "0 -1": inttup((block[0], block[1]-1)),
@@ -979,8 +1024,8 @@ while running:
             "1 0": inttup((block[0]+1, block[1]))
         }
         remove_block(block, blocks[inttup(block)].data, neighbors)
+        
     remove_blocks = []
-
     detecting_rects = []
 
     camera.update()
@@ -989,6 +1034,7 @@ while running:
         particle.update()
     inventory.update(mouse_state)
     crosshair.update(mpos)
+    
     draw(screen)
 
 pygame.quit()
