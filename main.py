@@ -677,6 +677,36 @@ class Hotbar(object):
                 blitted_text = smol_text(self.items[self.selected].name.replace("_", " ").capitalize())
                 blit_text_box(screen, blitted_text, (WIDTH/2-blitted_text.get_width()/2-8, HEIGHT-92), opacity)
 
+class Crosshair():
+    def __init__(self, changespeed) -> None:
+        self.col = pygame.Color(0, 0, 0)
+        self.changeover = changespeed
+
+    def get_col(self, mpos, block_pos) -> pygame.Color:
+        if in_dict(blocks, inttup(block_pos)):
+            try:
+                surf = screen.subsurface((mpos[0]-16, mpos[1]-16, 32, 32))
+                color = pygame.Color(pygame.transform.average_color(surf))
+            except:
+                color = screen.get_at(inttup(mpos))
+        else:
+            color = pygame.Color(135, 206, 250)
+
+        return color
+
+    def transform_col(self, col) -> None: 
+        if 127-30 < col.r < 127+30 and 127-30 < col.g < 127+30 and 127-30 < col.b < 127+30:
+            col = pygame.Color(255, 255, 255)
+        col = pygame.Color(255, 255, 255) - col
+
+        # Modified version of this SO answer, thank you!
+        # https://stackoverflow.com/a/51979708/17303382
+        self.col = [x + (((y - x) / self.changeover) * 100 * dt) for x, y in zip(self.col, col)]
+
+    def draw(self, mpos) -> None:
+        pygame.draw.rect(screen, self.col, (mpos[0]-2, mpos[1]-16, 4, 32))
+        pygame.draw.rect(screen, self.col, (mpos[0]-16, mpos[1]-2, 32, 4))
+
 def get_structures(x: int, y: int, generator: StructureGenerator, chance: tuple) -> list:
     """Get structures inside the current chunk (x, y)
 
@@ -797,6 +827,7 @@ blocks = {}
 chunks = {}
 player = Player()
 camera = Camera(player)
+crosshair = Crosshair(2000)
 particles = []
 inventory = Inventory()
 inventory.add_item("grass_block")
@@ -843,33 +874,12 @@ def draw():
                 screen.blit(text(f"{blocks[inttup(block_pos)].name.replace('_', ' ')}", color=(255, 255, 255)), (mpos[0]+12, mpos[1]-36))
     inventory.draw(screen)
     if not inventory.visible:
-        # Calculate crosshair color and draw it
-        if in_dict(blocks, inttup(block_pos)):
-            try:
-                surf = screen.subsurface((mpos[0]-16, mpos[1]-16, 32, 32))
-                color = pygame.Color(pygame.transform.average_color(surf))
-            except:
-                color = screen.get_at(inttup(mpos))
-        else:
-            color = pygame.Color(135, 206, 250)
-        if 127-30 < color.r < 127+30 and 127-30 < color.g < 127+30 and 127-30 < color.b < 127+30:
-            color = pygame.Color(255, 255, 255)
-        color = pygame.Color(255, 255, 255) - color
+        cross_col = crosshair.get_col(mpos, block_pos)
+        crosshair.transform_col(cross_col)
+        crosshair.draw(mpos)
 
-        # Modified version of this SO answer, thank you!
-        # https://stackoverflow.com/a/51979708/17303382
-        global col_step, crosshair_col, col_changeover
-        col_step = 1 if col_step > col_changeover else col_step
-        crosshair_col = [x + (((y - x) / col_changeover) * col_step) for x, y in zip(crosshair_col, color)]
-
-        pygame.draw.rect(screen, crosshair_col, (mpos[0]-2, mpos[1]-16, 4, 32))
-        pygame.draw.rect(screen, crosshair_col, (mpos[0]-16, mpos[1]-2, 32, 4))
     pygame.display.flip()
 
-col_step = 1
-col_changeover = 5000
-col_clock = pygame.time.Clock()
-crosshair_col = (0, 0, 0)
 running = True
 debug = False
 
@@ -877,9 +887,6 @@ while running:
     dt = clock.tick_busy_loop(FPS) / 16
     if dt > 12: dt = 12
     pygame.display.set_caption(f"2D Minecraft | FPS: {int(clock.get_fps())}")
-
-    col_step += dt # I presume this'll work?
-
     
     mouse_state = 0
     for event in pygame.event.get():
