@@ -721,7 +721,7 @@ def get_structures(x: int, y: int, generator: StructureGenerator, chance: tuple)
             # Generate on the surface of the world
             grass_y = terrain_generate(block_x)-1
             # If it is cut off by a cave, don't generate
-            if (92.7 < cave_generate([block_x/70, grass_y/70]) < 100):
+            if (92.7 < cave_generate([block_x/70, grass_y/70]) < 100) or (92.7 < cave_generate([block_x/70, (grass_y+1)/70]) < 100):
                 return out
             # Structures that are not in this chunk
             if not 0 <= grass_y - y * CHUNK_SIZE < CHUNK_SIZE:
@@ -791,9 +791,10 @@ def generate_chunk(x: int, y: int) -> dict:
             target = (x * CHUNK_SIZE + x_pos, y * CHUNK_SIZE + y_pos)
             block_name = ""
             # Cave noise map
-            noise_map_coords = [target[0]/70, target[1]/70]
+            cave_noise_map_coords = [target[0]/70, target[1]/70]
             # Don't generate blocks if it satifies a certain range of values in the cave noise map, AKA a cave
-            if not (92.7 < cave_generate(noise_map_coords) < 100):
+            cave_noise_map_value = cave_generate(cave_noise_map_coords)
+            if not (92.7 < cave_noise_map_value < 100):
                 # Generate terrain
                 height = terrain_generate(target[0])
                 if target[1] == height:
@@ -803,10 +804,11 @@ def generate_chunk(x: int, y: int) -> dict:
                 elif target[1] >= height+4:
                     block_name = "stone"
                 if target[1] == height-1:
-                    if randint(0, 2) == 0:
-                        block_name = "grass"
-                    if randint(0, 21) == 0:
-                        block_name = choices(["poppy", "dandelion"], weights=[1, 2])[0]
+                    if not (92.7 < cave_generate([target[0]/70, (target[1]+1)/70]) < 100):
+                        if randint(0, 2) == 0:
+                            block_name = "grass"
+                        if randint(0, 21) == 0:
+                            block_name = choices(["poppy", "dandelion"], weights=[1, 2])[0]
                 if block_name != "":
                     chunk_data[target] = block_name
 
