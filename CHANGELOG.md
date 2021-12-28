@@ -1,10 +1,13 @@
 # Version 0.2.0
 
-## Additions:
+## Additions
+
 - Caves! Generated with Perlin Noise
 
-## Changes:
-- 
+## Changes
 
-## Bug fixes:
-- 
+- Crosshair now fades between colors instead of instantly changing
+
+## Bug fixes
+
+-
