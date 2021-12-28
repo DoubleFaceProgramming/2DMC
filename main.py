@@ -715,12 +715,7 @@ class Crosshair():
         self.changeover = changespeed
         
     def update(self, mpos):
-        try:
-            surf = screen.subsurface((mpos[0]-16, mpos[1]-16, 32, 32))
-            color = pygame.Color(pygame.transform.average_color(surf))
-        except:
-            color = screen.get_at(inttup(mpos))
-        
+        color = self.get_avg_color(mpos)
         if 127-30 < color.r < 127+30 and 127-30 < color.g < 127+30 and 127-30 < color.b < 127+30:
             color = pygame.Color(255, 255, 255)
         color = pygame.Color(255, 255, 255) - color
@@ -732,6 +727,15 @@ class Crosshair():
     def draw(self, screen, mpos) -> None:
         pygame.draw.rect(screen, self.color, (mpos[0]-2, mpos[1]-16, 4, 32))
         pygame.draw.rect(screen, self.color, (mpos[0]-16, mpos[1]-2, 32, 4))
+
+    def get_avg_color(self, mpos) -> None:
+        try:
+            surf = screen.subsurface((mpos[0]-16, mpos[1]-16, 32, 32))
+            color = pygame.Color(pygame.transform.average_color(surf))
+        except:
+            color = screen.get_at(inttup(mpos))
+
+        return color
 
 def get_structures(x: int, y: int, generator: StructureGenerator, chance: tuple) -> list:
     """Get structures inside the current chunk (x, y)
