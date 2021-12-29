@@ -713,7 +713,7 @@ class Crosshair():
         self.color = pygame.Color(0, 0, 0)
         self.changeover = changespeed
         
-    def update(self, mpos):
+    def update(self, mpos) -> None:
         color = self.get_avg_color(mpos)
         if 127-30 < color.r < 127+30 and 127-30 < color.g < 127+30 and 127-30 < color.b < 127+30:
             color = pygame.Color(255, 255, 255)
@@ -727,7 +727,7 @@ class Crosshair():
         pygame.draw.rect(screen, self.color, (mpos[0]-2, mpos[1]-16, 4, 32))
         pygame.draw.rect(screen, self.color, (mpos[0]-16, mpos[1]-2, 32, 4))
 
-    def get_avg_color(self, mpos) -> None:
+    def get_avg_color(self, mpos) -> pygame.Color:
         try:
             surf = screen.subsurface((mpos[0]-16, mpos[1]-16, 32, 32))
             color = pygame.Color(pygame.transform.average_color(surf))
