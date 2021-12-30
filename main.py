@@ -810,7 +810,7 @@ def generate_structures(x: int, y: int, chunk_data: dict, generator: StructureGe
 
 def terrain_generate(x: int) -> float:
     """Takes the x position of a block and returns the height it has to be at"""
-    return -int(noise.noise2d(x*0.1, 0)*5)+5
+    return -int(noise.noise2(x*0.1, 0)*5)+5
 
 def cave_generate(coords: list) -> float:
     """Takes the coordinates of a block and returns the noise map value for cave generation"""
