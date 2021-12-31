@@ -709,11 +709,25 @@ class Hotbar(object):
                 blit_text_box(screen, blitted_text, (WIDTH/2-blitted_text.get_width()/2-8, HEIGHT-92), opacity)
 
 class Crosshair():
-    def __init__(self, changespeed) -> None:
+    """The class responsible for the drawing and updating of the crosshair"""
+
+    def __init__(self, changespeed: int) -> None:
+        """Creates a crosshair object
+
+        Args:
+            changespeed (int): The speed at which the colour of the crosshair should change
+        """
+
         self.color = pygame.Color(0, 0, 0)
         self.changeover = changespeed
         
-    def update(self, mpos) -> None:
+    def update(self, mpos: pygame.math.Vector2) -> None:
+        """Update the crosshair.
+
+        Args:
+            mpos (pygame.math.Vector2): The position of the mouse
+        """
+
         color = self.get_avg_color(mpos)
         if 127-30 < color.r < 127+30 and 127-30 < color.g < 127+30 and 127-30 < color.b < 127+30:
             color = pygame.Color(255, 255, 255)
@@ -723,11 +737,27 @@ class Crosshair():
         # https://stackoverflow.com/a/51979708/17303382
         self.color = [x + (((y - x) / self.changeover) * 100 * dt) for x, y in zip(self.color, color)]
 
-    def draw(self, screen, mpos) -> None:
+    def draw(self, screen: pygame.surface.Surface, mpos: pygame.math.Vector2) -> None:
+        """Draw the crosshair to the screen
+
+        Args:
+            screen (pygame.surface.Surface): The surface to draw to
+            mpos (pygame.math.Vector2): The position of the mouse
+        """
+
         pygame.draw.rect(screen, self.color, (mpos[0]-2, mpos[1]-16, 4, 32))
         pygame.draw.rect(screen, self.color, (mpos[0]-16, mpos[1]-2, 32, 4))
 
-    def get_avg_color(self, mpos) -> pygame.Color:
+    def get_avg_color(self, mpos: pygame.math.Vector2) -> pygame.Color:
+        """Gets the average colour of the screen at the crosshair
+
+        Args:
+            mpos (pygame.math.Vector2): The position of the mouse 
+
+        Returns:
+            pygame.Color: The average colour at the position of the crosshair
+        """
+
         try:
             surf = screen.subsurface((mpos[0]-16, mpos[1]-16, 32, 32))
             color = pygame.Color(pygame.transform.average_color(surf))
