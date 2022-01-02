@@ -10,4 +10,4 @@
 
 ## Bug fixes
 
--
+- Fixed floating tall grass on chunk borders
