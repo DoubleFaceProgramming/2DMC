@@ -4,6 +4,7 @@ from perlin_noise import PerlinNoise
 import opensimplex
 import json
 import os
+import sys
 import time
 import pygame
 from pygame.locals import  (
@@ -606,4 +607,4 @@ while running:
     draw(screen)
 
 pygame.quit()
-quit()
+sys.exit()
