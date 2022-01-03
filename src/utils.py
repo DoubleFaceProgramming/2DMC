@@ -2,7 +2,14 @@ from pygame.draw import rect as drawrect
 from pygame.surface import Surface
 from pygame import Rect
 from pygame.locals import SRCALPHA
-from constants import *
+import os
+from src.constants import *
+
+def pathof(file):
+    abspath = os.path.abspath(os.path.join(BUNDLE_DIR, file))
+    if not os.path.exists(abspath):
+        abspath = file
+    return abspath
 
 def intv(vector):
     return VEC(int(vector.x), int(vector.y))

@@ -14,10 +14,10 @@ from pygame.locals import  (
     QUIT,
 )
 
-from constants import *
-from utils import *
-from images import *
-from player import Player
+from src.constants import *
+from src.utils import *
+from src.images import *
+from src.player import Player
 
 def loading():
     font = pygame.font.Font(REGULAR_FONT_LOC, 120)
@@ -37,14 +37,14 @@ pnoise = PerlinNoise(seed=SEED)
 seed(SEED)
 
 block_data = {}
-for j in os.listdir("data/blocks/"):
-    block_data[j[:-5]] = json.loads(open("data/blocks/"+j, "r").read())
+for j in os.listdir(pathof("data/blocks/")):
+    block_data[j[:-5]] = json.loads(open(os.path.join(pathof("data/blocks/"), j), "r").read())
 structures = {}
-for folder in os.listdir("data/structures/"):
+for folder in os.listdir(pathof("data/structures/")):
     structures[folder] = {}
-    for struct in os.listdir("data/structures/" + folder):
+    for struct in os.listdir(os.path.join(pathof("data/structures/"), folder)):
         if struct != "distribution.structure":
-            data = open(f"data/structures/{folder}/{struct}", "r").readlines()
+            data = open(pathof(f"data/structures/{folder}/{struct}"), "r").readlines()
             split = data.index("structure:\n")
             split2 = data.index("origin:\n")
             legends = {legend.split(":")[0]: legend.split(":")[1] for legend in [legend[:-1] for legend in data[:split]]}
@@ -58,7 +58,7 @@ for folder in os.listdir("data/structures/"):
                     else: blocks[(x-origin[0], y-origin[1])] = legends[structure[y][x]]
             structures[folder][struct[:-10]] = (origin, blocks)
         else:
-            distribution = open(f"data/structures/{folder}/distribution.structure", "r").readlines()
+            distribution = open(pathof(f"data/structures/{folder}/distribution.structure"), "r").readlines()
             weights = [int(d[:-2].split(" ")[1]) for d in distribution]
             files = [d[:-2].split(" ")[0] for d in distribution]
             structures[folder]["distribution"] = {"weights": weights, "files": files}

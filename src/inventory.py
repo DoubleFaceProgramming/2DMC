@@ -2,9 +2,9 @@ import pygame
 from pygame.constants import K_0, K_1, K_9
 import time
 
-from constants import *
-from utils import *
-from images import *
+from src.constants import *
+from src.utils import *
+from src.images import *
 
 class Item(object):
     def __init__(self, name):

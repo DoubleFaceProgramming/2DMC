@@ -2,10 +2,10 @@ import pygame
 from pygame.constants import K_a, K_d, K_w
 from math import ceil, cos, floor
 
-from constants import *
-from utils import *
-from images import *
-from inventory import Inventory
+from src.constants import *
+from src.utils import *
+from src.images import *
+from src.inventory import Inventory
 
 class Camera(pygame.sprite.Sprite):
     def __init__(self, player):
