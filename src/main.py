@@ -459,7 +459,7 @@ def draw(screen):
     player.draw(screen)
     
     # Debug stuff
-    if debug:
+    if debug:        
         for chunk in rendered_chunks:
             chunks[chunk].debug()
         pygame.draw.rect(screen, (255, 255, 255), player.rect, width=1)

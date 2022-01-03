@@ -7,14 +7,6 @@ from utils import *
 from images import *
 from inventory import Inventory
 
-def block_collide(ax, ay, width, height, b, camera, detecting):
-    a_rect = pygame.Rect(ax-camera.pos.x, ay-camera.pos.y, width, height)
-    b_rect = pygame.Rect(b.pos.x-camera.pos.x, b.pos.y-camera.pos.y, BLOCK_SIZE, BLOCK_SIZE)
-    detecting.append(b_rect)
-    if a_rect.colliderect(b_rect):
-        return True, detecting
-    return False, detecting
-
 class Camera(pygame.sprite.Sprite):
     def __init__(self, player):
         self.player = player
@@ -189,7 +181,7 @@ class Player(pygame.sprite.Sprite):
                                 colliding, detecting_rects = block_collide(
                                     floor(self.pos.x), floor(self.pos.y+self.vel.y/split), 
                                     self.width, self.height, 
-                                    block, self.camera, detecting_rects)
+                                    block, detecting_rects)
                                 if colliding:
                                     self.pos.y = floor(block.pos.y + BLOCK_SIZE)
                                     self.vel.y = 0
@@ -199,7 +191,7 @@ class Player(pygame.sprite.Sprite):
                                     colliding, detecting_rects = block_collide(
                                         floor(self.pos.x), ceil(self.pos.y+self.vel.y/split), 
                                         self.width, self.height, 
-                                        block, self.camera, detecting_rects)
+                                        block, detecting_rects)
                                     if colliding:
                                         self.pos.y = ceil(block.pos.y - self.height)
                                         self.vel.y = 0
@@ -208,7 +200,7 @@ class Player(pygame.sprite.Sprite):
                                     colliding, detecting_rects = block_collide(
                                         ceil(self.pos.x), ceil(self.pos.y+self.vel.y/split), 
                                         self.width, self.height, 
-                                        block, self.camera, detecting_rects)
+                                        block, detecting_rects)
                                     if colliding:
                                         self.pos.y = ceil(block.pos.y - self.height)
                                         self.vel.y = 0
@@ -227,7 +219,7 @@ class Player(pygame.sprite.Sprite):
                                 colliding, detecting_rects = block_collide(
                                     floor(self.pos.x+self.vel.x/split), floor(self.pos.y), 
                                     self.width, self.height, 
-                                    block, self.camera, detecting_rects)
+                                    block, detecting_rects)
                                 if colliding:
                                     self.pos.x = floor(block.pos.x + BLOCK_SIZE)
                                     self.vel.x = 0
@@ -236,7 +228,7 @@ class Player(pygame.sprite.Sprite):
                                 colliding, detecting_rects = block_collide(
                                     ceil(self.pos.x+self.vel.x/split), ceil(self.pos.y), 
                                     self.width, self.height, 
-                                    block, self.camera, detecting_rects)
+                                    block, detecting_rects)
                                 if colliding:
                                     self.pos.x = ceil(block.pos.x - self.width)
                                     self.vel.x = 0

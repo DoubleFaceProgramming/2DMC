@@ -1,5 +1,6 @@
 from pygame.draw import rect as drawrect
 from pygame.surface import Surface
+from pygame import Rect
 from pygame.locals import SRCALPHA
 from constants import *
 
@@ -28,3 +29,11 @@ def create_text_box(text, pos, opacity):
     drawrect(surface, (44, 8, 99), (12+text_rect.width, 2, 2, text_rect.height+4))
     surface.blit(text, (8, 4))
     return surface, blit_pos
+
+def block_collide(playerx, playery, width, height, block, detecting):
+    a_rect = Rect(playerx, playery, width, height)
+    block_rect = Rect(block.pos.x, block.pos.y, BLOCK_SIZE, BLOCK_SIZE)
+    detecting.append(block.rect)
+    if a_rect.colliderect(block_rect):
+        return True, detecting
+    return False, detecting
