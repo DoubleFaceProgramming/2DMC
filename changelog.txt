@@ -1,0 +1,12 @@
+Features: 
+- added debug feature that shows the blocks that are being tested for collision (red boxes)
+- Player now has a white outline when in debug mode
+
+Tweeks:
+- The player hitbox size has been reduced in width to 0.225 block size
+- Player movement speed has been tweeked
+
+Bug fixes: 
+- When player travels beyond 4000 blocks, the frame rate starts to drop below 60
+- Fixed some moving left and right inconsistencies (not being able to land on a block on the left but being able to land on the right... etc)
+- Optimized the performance further

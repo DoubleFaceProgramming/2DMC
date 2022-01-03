@@ -1,0 +1,9 @@
+{
+    "name": "grass", 
+    "collision_box": "none", 
+    "bounding_box": "full", 
+    "support": {
+        "down": "grass_block"
+    }, 
+    "replaceable": true
+}
