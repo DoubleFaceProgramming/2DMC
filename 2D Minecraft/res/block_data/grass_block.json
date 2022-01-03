@@ -1,0 +1,5 @@
+{
+    "name": "grass_block", 
+    "collision_box": "full", 
+    "bounding_box": "full"
+}
