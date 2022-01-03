@@ -1,0 +1,5 @@
+{
+    "name": "dirt", 
+    "collision_box": "full", 
+    "bounding_box": "full"
+}
