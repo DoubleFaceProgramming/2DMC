@@ -66,6 +66,8 @@ class Player(pygame.sprite.Sprite):
         self.inventory = Inventory(self)
 
     def update(self, blocks, m_state, dt):
+        self.camera.update(dt)
+        
         keys = pygame.key.get_pressed()
         if keys[K_a] and not self.inventory.visible:
             if self.vel.x > -self.max_speed:
@@ -115,7 +117,6 @@ class Player(pygame.sprite.Sprite):
         self.rect.topleft = self.pos - self.camera.pos
         self.animate(dt)
         
-        self.camera.update(dt)
         self.inventory.update(m_state)
 
     def draw(self, screen):
