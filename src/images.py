@@ -1,5 +1,5 @@
 import pygame
-from pygame.locals import SRCALPHA
+from pygame.locals import SRCALPHA, HWSURFACE, DOUBLEBUF
 import os
 
 from src.constants import *
@@ -7,7 +7,7 @@ from src.utils import pathof
 
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (50, 50)
 pygame.init()
-pygame.display.set_mode((0, 0))
+pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF)
 
 player_head_img = pygame.image.load(pathof("assets/textures/player/head.png")).convert()
 player_body_img = pygame.image.load(pathof("assets/textures/player/body.png")).convert()

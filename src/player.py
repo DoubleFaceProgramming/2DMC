@@ -65,6 +65,19 @@ class Player(pygame.sprite.Sprite):
         self.camera = Camera(self)
         self.inventory = Inventory(self)
         self.crosshair = Crosshair(1750)
+        
+        self.inventory.add_item("grass_block")
+        self.inventory.add_item("dirt")
+        self.inventory.add_item("stone")
+        self.inventory.add_item("grass")
+        self.inventory.add_item("oak_log")
+        self.inventory.add_item("oak_leaves")
+        self.inventory.add_item("oak_planks")
+        self.inventory.add_item("cobblestone")
+        self.inventory.add_item("glass")
+        self.inventory.add_item("poppy")
+        self.inventory.add_item("dandelion")
+        self.inventory.add_item("tall_grass")
 
     def update(self, blocks, m_state, dt):
         self.camera.update(dt)

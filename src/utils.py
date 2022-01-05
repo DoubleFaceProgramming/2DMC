@@ -3,6 +3,7 @@ from pygame.surface import Surface
 from pygame import Rect
 from pygame.locals import SRCALPHA
 import os
+
 from src.constants import *
 
 def pathof(file):
