@@ -64,6 +64,7 @@ class Player(pygame.sprite.Sprite):
         
         self.camera = Camera(self)
         self.inventory = Inventory(self)
+        self.crosshair = Crosshair(1750)
 
     def update(self, blocks, m_state, dt):
         self.camera.update(dt)
@@ -118,6 +119,7 @@ class Player(pygame.sprite.Sprite):
         self.animate(dt)
         
         self.inventory.update(m_state)
+        self.crosshair.update(dt)
 
     def draw(self, screen):
         self.leg2.rect = self.leg2.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
@@ -238,3 +240,49 @@ class Player(pygame.sprite.Sprite):
             if flag: break
             
         self.detecting_rects = detecting_rects
+        
+class Crosshair():
+    """The class responsible for the drawing and updating of the crosshair"""
+
+    def __init__(self, changespeed: int) -> None:
+        """Creates a crosshair object"""
+
+        self.old_color = pygame.Color(0, 0, 0)
+        self.new_color = pygame.Color(0, 0, 0)
+        self.changeover = changespeed
+        
+    def update(self, dt: float) -> None:
+        """Update the crosshair"""
+
+        if 127-30 < self.new_color.r < 127+30 and 127-30 < self.new_color.g < 127+30 and 127-30 < self.new_color.b < 127+30:
+            self.new_color = pygame.Color(255, 255, 255)
+        self.new_color = pygame.Color(255, 255, 255) - self.new_color
+
+        # Modified version of this SO answer, thank you!
+        # https://stackoverflow.com/a/51979708/17303382
+        self.old_color = [x + (((y - x) / self.changeover) * 100 * dt) for x, y in zip(self.old_color, self.new_color)]
+
+    def draw(self, screen: pygame.Surface, mpos: pygame.math.Vector2) -> None:
+        """Draw the crosshair to the screen"""
+
+        self.new_color = self.get_avg_color(screen, mpos) # I know this is cursed it's the easiest way ;-;
+        pygame.draw.rect(screen, self.old_color, (mpos[0]-2, mpos[1]-16, 4, 32))
+        pygame.draw.rect(screen, self.old_color, (mpos[0]-16, mpos[1]-2, 32, 4))
+
+    def get_avg_color(self, screen: pygame.Surface, mpos: pygame.math.Vector2) -> pygame.Color:
+        """Gets the average colour of the screen at the crosshair using the position of the mouse and the game screen.
+
+        Returns:
+            pygame.Color: The average colour at the position of the crosshair
+        """
+
+        try:
+            surf = screen.subsurface((mpos[0]-16, mpos[1]-16, 32, 32))
+            color = pygame.Color(pygame.transform.average_color(surf))
+        except:
+            try:
+                color = screen.get_at(inttup(mpos))
+            except:
+                color = pygame.Color(255, 255, 255)
+
+        return color

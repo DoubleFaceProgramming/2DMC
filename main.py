@@ -1,12 +1,12 @@
 from random import randint, seed, choices, randrange
-from math import ceil
 from perlin_noise import PerlinNoise
+from sys import exit as sysexit
+from math import ceil
 import opensimplex
+import pygame
 import json
 import os
-import sys
 import time
-import pygame
 from pygame.locals import  (
     HWSURFACE, SRCALPHA, DOUBLEBUF,
     K_w, K_e, K_a, K_d,
@@ -19,6 +19,9 @@ from src.constants import *
 from src.utils import *
 from src.images import *
 from src.player import Player
+from src.particle import Particle
+from src.block import *
+from src.chunk import Chunk
 
 def loading():
     font = pygame.font.Font(REGULAR_FONT_LOC, 120)
@@ -37,9 +40,6 @@ noise = opensimplex.OpenSimplex(seed=SEED)
 pnoise = PerlinNoise(seed=SEED)
 seed(SEED)
 
-block_data = {}
-for j in os.listdir(pathof("data/blocks/")):
-    block_data[j[:-5]] = json.loads(open(os.path.join(pathof("data/blocks/"), j), "r").read())
 structures = {}
 for folder in os.listdir(pathof("data/structures/")):
     structures[folder] = {}
@@ -63,171 +63,6 @@ for folder in os.listdir(pathof("data/structures/")):
             weights = [int(d[:-2].split(" ")[1]) for d in distribution]
             files = [d[:-2].split(" ")[0] for d in distribution]
             structures[folder]["distribution"] = {"weights": weights, "files": files}
-
-def remove_block(pos, data, neighbors):
-    pos = inttup(pos)
-    for _ in range(randint(18, 26)):
-        Particle("block", VEC(pos)*BLOCK_SIZE+VEC(randint(0, BLOCK_SIZE), randint(0, BLOCK_SIZE)), master=blocks[pos])
-    chunk = (pos[0] // CHUNK_SIZE, pos[1] // CHUNK_SIZE)
-    if "next_layer" in data:
-        blocks[pos] = Block(chunk, pos, data["next_layer"])
-        chunks[chunk].block_data[pos] = data["next_layer"]
-    else:
-        del blocks[pos]
-        del chunks[chunk].block_data[pos]
-    for neighbor in neighbors:
-        if neighbors[neighbor] in blocks:
-            blocks[neighbors[neighbor]].update()
-
-def set_block(pos, name, neighbors):
-    pos = inttup(pos)
-    chunk = (pos[0] // CHUNK_SIZE, pos[1] // CHUNK_SIZE)
-    try:
-        blocks[pos] = Block(chunks[chunk], pos, name)
-        chunks[chunk].block_data[pos] = name
-    except: pass
-    for neighbor in neighbors:
-        chunk = (neighbors[neighbor][0] // CHUNK_SIZE, neighbors[neighbor][1] // CHUNK_SIZE)
-        if neighbors[neighbor] in blocks:
-            blocks[neighbors[neighbor]].update()
-
-def is_occupied(pos):
-    pos = inttup(pos)
-    if not pygame.Rect(VEC(pos)*BLOCK_SIZE, (BLOCK_SIZE, BLOCK_SIZE)).colliderect(pygame.Rect(player.pos, player.size)):
-        if pos in blocks:
-            return not "replaceable" in blocks[pos].data
-        else:
-            return False
-    return True
-
-def is_supported(pos, data, neighbors, c=False):
-    if data["support"]:
-        supports = data["support"]
-        for support in supports:
-            if inttup(support.split(" ")) != inttup(VEC(c)-VEC(pos)):
-                if neighbors[support] in blocks:
-                    if blocks[neighbors[support]].name not in supports[support]:
-                        return False
-                else:
-                    return False
-            else:
-                return True
-    return True
-
-def is_placeable(pos, data, neighbors, c=False):
-    if not is_occupied(pos) and is_supported(pos, data, neighbors, c=c):
-        return True
-    return False
-
-class Particle(pygame.sprite.Sprite):
-    def __init__(self, type, pos, master=None):
-        pygame.sprite.Sprite.__init__(self)
-        particles.append(self)
-        self.type = type
-        self.pos = VEC(pos)
-        self.coords = self.pos // BLOCK_SIZE
-        
-        if self.type == "block":
-            self.size = randint(6, 8)
-            self.image = pygame.Surface((self.size, self.size))
-            self.vel = VEC(randint(-35, 35)/10, randint(-30, 5)/10)
-            if master:
-                self.master = master
-                color = self.master.image.get_at((randint(0, BLOCK_SIZE-1), randint(0, BLOCK_SIZE-1)))
-                self.image.fill(color)
-                if color == (255, 255, 255):
-                    particles.remove(self)
-                    self.kill()
-                    
-        self.timer = time.time()
-        self.survive_time = randint(4, 8) / 10
-
-    def update(self):
-        if time.time() - self.timer > self.survive_time:
-            particles.remove(self)
-            self.kill()
-            
-        if inttup(self.coords) in blocks:
-            if blocks[inttup(self.coords)].data["collision_box"] == "none":
-                self.vel.y += GRAVITY * dt
-        else:
-            self.vel.y += GRAVITY * dt
-        self.vel.x *= 0.93
-        
-        neighbors = [
-            inttup(self.coords),
-            inttup((self.coords.x-1, self.coords.y)),
-            inttup((self.coords.x+1, self.coords.y)),
-            inttup((self.coords.x, self.coords.y-1)),
-            inttup((self.coords.x, self.coords.y+1)),
-        ]
-        for pos in neighbors:
-            if pos in blocks:
-                block = blocks[pos]
-                if block.data["collision_box"] != "none":
-                    if pygame.Rect(block.pos.x, block.pos.y, BLOCK_SIZE, BLOCK_SIZE).collidepoint(self.pos.x+self.vel.x*dt, self.pos.y):
-                        self.vel.x = 0
-                        break
-                    if pygame.Rect(block.pos.x, block.pos.y, BLOCK_SIZE, BLOCK_SIZE).collidepoint(self.pos.x, self.pos.y+self.vel.y*dt):
-                        self.vel.y = 0
-                        break
-                    
-        self.pos += self.vel * dt
-        self.coords = self.pos // BLOCK_SIZE
-        
-        if inttup(self.coords // CHUNK_SIZE) not in rendered_chunks:
-            try: particles.remove(self)
-            except: pass
-            self.kill()
-
-    def draw(self, screen):
-        screen.blit(self.image, (self.pos-player.camera.pos-VEC(self.image.get_size())/2))
-        
-class Block(pygame.sprite.Sprite):
-    def __init__(self, chunk, pos, name):
-        pygame.sprite.Sprite.__init__(self)
-        blocks[tuple(pos)] = self
-        self.name = name
-        self.data = block_data[self.name]
-        self.chunk = chunk
-        self.coords = VEC(pos)
-        self.pos = self.coords * BLOCK_SIZE
-        self.neighbors = {
-            "0 -1": inttup((self.coords.x, self.coords.y-1)),
-            "0 1": inttup((self.coords.x, self.coords.y+1)),
-            "-1 0": inttup((self.coords.x-1, self.coords.y)),
-            "1 0": inttup((self.coords.x+1, self.coords.y))
-        }
-        self.image = block_textures[self.name]
-        
-        if self.data["collision_box"] == "full":
-            self.rect = pygame.Rect(self.pos, (BLOCK_SIZE, BLOCK_SIZE))
-        elif self.data["collision_box"] == "none":
-            self.rect = pygame.Rect(self.pos, (0, 0))
-
-    def update(self):
-        if not is_supported(self.pos, self.data, self.neighbors):
-            remove_blocks.append(self.coords)
-
-    def draw(self, screen):
-        self.rect.topleft = self.pos - player.camera.pos
-        screen.blit(self.image, self.rect.topleft)
-
-class Chunk(object):
-    def __init__(self, pos):
-        self.pos = pos
-        self.block_data = generate_chunk(pos[0], pos[1])
-        chunks[self.pos] = self
-
-    def render(self):
-        if self.pos in rendered_chunks:
-            for block in self.block_data:
-                if not block in blocks:
-                    blocks[block] = Block(self, block, self.block_data[block])
-                blocks[block].draw(screen)
-
-    def debug(self):
-        pygame.draw.rect(screen, (255, 255, 0), (self.pos[0]*CHUNK_SIZE*BLOCK_SIZE-player.camera.pos[0], self.pos[1]*CHUNK_SIZE*BLOCK_SIZE-player.camera.pos[1], CHUNK_SIZE*BLOCK_SIZE, CHUNK_SIZE*BLOCK_SIZE), width=1)
 
 class StructureGenerator(object):
     def __init__(self, folder, obstruction=False):
@@ -260,51 +95,6 @@ class StructureGenerator(object):
         }
         
         return block_data
-
-class Crosshair():
-    """The class responsible for the drawing and updating of the crosshair"""
-
-    def __init__(self, changespeed: int) -> None:
-        """Creates a crosshair object"""
-
-        self.color = pygame.Color(0, 0, 0)
-        self.changeover = changespeed
-        
-    def update(self, mpos: pygame.math.Vector2) -> None:
-        """Update the crosshair"""
-
-        color = self.get_avg_color(mpos)
-        if 127-30 < color.r < 127+30 and 127-30 < color.g < 127+30 and 127-30 < color.b < 127+30:
-            color = pygame.Color(255, 255, 255)
-        color = pygame.Color(255, 255, 255) - color
-
-        # Modified version of this SO answer, thank you!
-        # https://stackoverflow.com/a/51979708/17303382
-        self.color = [x + (((y - x) / self.changeover) * 100 * dt) for x, y in zip(self.color, color)]
-
-    def draw(self, screen: pygame.surface.Surface, mpos: pygame.math.Vector2) -> None:
-        """Draw the crosshair to the screen"""
-
-        pygame.draw.rect(screen, self.color, (mpos[0]-2, mpos[1]-16, 4, 32))
-        pygame.draw.rect(screen, self.color, (mpos[0]-16, mpos[1]-2, 32, 4))
-
-    def get_avg_color(self, mpos: pygame.math.Vector2) -> pygame.Color:
-        """Gets the average colour of the screen at the crosshair using the position of the mouse
-
-        Returns:
-            pygame.Color: The average colour at the position of the crosshair
-        """
-
-        try:
-            surf = screen.subsurface((mpos[0]-16, mpos[1]-16, 32, 32))
-            color = pygame.Color(pygame.transform.average_color(surf))
-        except:
-            try:
-                color = screen.get_at(inttup(mpos))
-            except:
-                color = pygame.Color(255, 255, 255)
-
-        return color
 
 def get_structures(x: int, y: int, generator: StructureGenerator, chance: tuple) -> list:
     """Get structures inside the current chunk (x, y)
@@ -431,8 +221,6 @@ def generate_chunk(x: int, y: int) -> dict:
 blocks = {}
 chunks = {}
 player = Player()
-crosshair = Crosshair(1750)
-particles = []
 player.inventory.add_item("grass_block")
 player.inventory.add_item("dirt")
 player.inventory.add_item("stone")
@@ -455,8 +243,8 @@ def draw(screen):
     block_pos = (player.pos+(mpos-player.rect.topleft))//BLOCK_SIZE
     for chunk in rendered_chunks:
         chunks[chunk].render()
-    for particle in particles:
-        particle.draw(screen)
+    for particle in Particle.instances:
+        particle.draw(player.camera, screen)
     player.draw(screen)
     
     # Debug stuff
@@ -479,7 +267,7 @@ def draw(screen):
     
     player.inventory.draw(screen)
     if not player.inventory.visible:
-        crosshair.draw(screen, mpos)
+        player.crosshair.draw(screen, mpos)
 
     pygame.display.flip()
 
@@ -600,11 +388,10 @@ while running:
     detecting_rects = []
 
     player.update(blocks, mouse_state, dt)
-    for particle in particles:
-        particle.update()
-    crosshair.update(mpos)
+    for particle in Particle.instances:
+        particle.update(blocks, dt)
     
     draw(screen)
 
 pygame.quit()
-sys.exit()
+sysexit()
