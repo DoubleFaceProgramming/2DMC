@@ -40,7 +40,6 @@ remove_blocks = []
 def draw(screen):
     screen.fill((135, 206, 250))
     mpos = VEC(pygame.mouse.get_pos())
-    block_pos = (player.pos+(mpos-player.rect.topleft))//BLOCK_SIZE
     for chunk in rendered_chunks:
         Chunk.instances[chunk].draw(player.camera, screen)
     for particle in Particle.instances:
@@ -66,7 +65,8 @@ def draw_debug(screen) -> None:
     # Display the blocks that the player is currently calculating collision with
     for rect in player.detecting_rects:
         pygame.draw.rect(screen, (255, 0, 0), rect, width=1)
-
+    
+    block_pos = (player.pos + (mpos - player.rect.topleft)) // BLOCK_SIZE
     debug_values = {
         "FPS": int(clock.get_fps()),
         "Seed": SEED, 
@@ -75,15 +75,16 @@ def draw_debug(screen) -> None:
         "Camera offset": inttup(player.pos-player.camera.pos-VEC(SCR_DIM)/2+player.size/2),
         "Chunk": inttup(player.coords//CHUNK_SIZE),
         "Chunks loaded": len(Chunk.instances),
-        "Rendered blocks": len(Block.instances)
+        "Rendered blocks": len(Block.instances),
+        "Block position": inttup(block_pos)
     }
     
     for line, name in enumerate(debug_values):
         screen.blit(text(f"{name}: {debug_values[name]}"), (6, SPACING * line))
         
     if not player.inventory.visible:
-            if inttup(block_pos) in Block.instances:
-                screen.blit(text(f"{Block.instances[inttup(block_pos)].name.replace('_', ' ')}", color=(255, 255, 255)), (mpos[0]+12, mpos[1]-36))
+        if inttup(block_pos) in Block.instances:
+            screen.blit(text(f"{Block.instances[inttup(block_pos)].name.replace('_', ' ')}", color=(255, 255, 255)), (mpos[0]+12, mpos[1]-36))
 
 running = True
 debug = False
@@ -146,7 +147,7 @@ while running:
                         else:
                             if is_placeable(player, block_pos, BLOCK_DATA[player.holding], neighbors):
                                 set_block(Chunk.instances, block_pos, player.holding, neighbors)
-                                
+    
         if event.type == KEYDOWN:
             if event.key == K_F5:
                 debug = not debug

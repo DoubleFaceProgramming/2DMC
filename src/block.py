@@ -2,10 +2,10 @@ import pygame
 import json
 import os
 
-from src.constants import *
-from src.utils import *
-from src.images import *
 from src.particle import Particle
+from src.constants import *
+from src.images import *
+from src.utils import *
 
 BLOCK_DATA = {}
 for j in os.listdir(pathof("data/blocks/")):
@@ -35,12 +35,9 @@ class Block(pygame.sprite.Sprite):
         elif self.data["collision_box"] == "none":
             self.rect = pygame.Rect(self.pos, (0, 0))
 
-    def update(self):
+    def update(self, chunks):
         if not is_supported(self.pos, self.data, self.neighbors):
-            # remove_blocks.append(self.coords)
-            # if inttup(self.pos) in self.__class__.instances:
-            del self.__class__.instances[inttup(self.pos)]
-            del self
+            remove_block(chunks, self.coords, self.data, self.neighbors)
 
     def draw(self, camera, screen):
         self.rect.topleft = self.pos - camera.pos
@@ -49,7 +46,7 @@ class Block(pygame.sprite.Sprite):
 def remove_block(chunks, pos, data, neighbors):
     pos = inttup(pos)
     for _ in range(randint(18, 26)):
-        Particle("block", VEC(pos)*BLOCK_SIZE+VEC(randint(0, BLOCK_SIZE), randint(0, BLOCK_SIZE)), master=Block.instances[pos])
+        Particle("block", VEC(pos) * BLOCK_SIZE + VEC(randint(0, BLOCK_SIZE), randint(0, BLOCK_SIZE)), master=Block.instances[pos])
     chunk = (pos[0] // CHUNK_SIZE, pos[1] // CHUNK_SIZE)
     if "next_layer" in data:
         Block.instances[pos] = Block(chunk, pos, data["next_layer"])
@@ -59,7 +56,7 @@ def remove_block(chunks, pos, data, neighbors):
         del chunks[chunk].block_data[pos]
     for neighbor in neighbors:
         if neighbors[neighbor] in Block.instances:
-            Block.instances[neighbors[neighbor]].update()
+            Block.instances[neighbors[neighbor]].update(chunks)
 
 def set_block(chunks, pos, name, neighbors):
     pos = inttup(pos)
@@ -71,7 +68,7 @@ def set_block(chunks, pos, name, neighbors):
     for neighbor in neighbors:
         chunk = (neighbors[neighbor][0] // CHUNK_SIZE, neighbors[neighbor][1] // CHUNK_SIZE)
         if neighbors[neighbor] in Block.instances:
-            Block.instances[neighbors[neighbor]].update()
+            Block.instances[neighbors[neighbor]].update(chunks)
 
 def is_occupied(player, pos):
     pos = inttup(pos)

@@ -194,9 +194,8 @@ def generate_structures(x: int, y: int, chunk_data: dict, generator: StructureGe
                             chunk_data[block] = block_name
     return chunk_data
 
-structures = {}
-def load_structures():
-    global structures
+def load_structures() -> dict:
+    structures = {}
     for folder in listdir(pathof("data/structures/")):
         structures[folder] = {}
         for struct in listdir(join(pathof("data/structures/"), folder)):
@@ -219,5 +218,6 @@ def load_structures():
                 weights = [int(d[:-2].split(" ")[1]) for d in distribution]
                 files = [d[:-2].split(" ")[0] for d in distribution]
                 structures[folder]["distribution"] = {"weights": weights, "files": files}
+    return structures
             
-load_structures()
+structures = load_structures()
