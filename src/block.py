@@ -38,6 +38,7 @@ class Block(pygame.sprite.Sprite):
     def update(self):
         if not is_supported(self.pos, self.data, self.neighbors):
             # remove_blocks.append(self.coords)
+            # if inttup(self.pos) in self.__class__.instances:
             del self.__class__.instances[inttup(self.pos)]
             del self
 

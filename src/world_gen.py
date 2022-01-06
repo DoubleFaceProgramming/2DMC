@@ -63,9 +63,9 @@ class Chunk(object):
     def draw(self, camera, screen) -> None:
         #if self.pos in rendered_chunks:
         for block in self.block_data:
-            if not block in blocks:
-                blocks[block] = Block(self, block, self.block_data[block])
-            blocks[block].draw(camera, screen)
+            if not block in Block.instances:
+                Block.instances[block] = Block(self, block, self.block_data[block]) # !
+            Block.instances[block].draw(camera, screen)
 
     def debug(self, screen) -> None:
         """Draws a debug rect around the chunk borders. Only called when global variable 'debug' is true."""
@@ -195,25 +195,29 @@ def generate_structures(x: int, y: int, chunk_data: dict, generator: StructureGe
     return chunk_data
 
 structures = {}
-for folder in listdir(pathof("data/structures/")):
-    structures[folder] = {}
-    for struct in listdir(join(pathof("data/structures/"), folder)):
-        if struct != "distribution.structure":
-            data = open(pathof(f"data/structures/{folder}/{struct}"), "r").readlines()
-            split = data.index("structure:\n")
-            split2 = data.index("origin:\n")
-            legends = {legend.split(":")[0]: legend.split(":")[1] for legend in [legend[:-1] for legend in data[:split]]}
-            structure = [line[:-1] for line in data[split+1:split2]]
-            origin = (int(data[-1].split(" ")[0]), int(data[-1].split(" ")[1]))
-            blocks = {}
-            for y in range(len(structure)):
-                for x in range(len(structure[y])):
-                    try: legends[structure[y][x]]
-                    except: pass
-                    else: blocks[(x-origin[0], y-origin[1])] = legends[structure[y][x]]
-            structures[folder][struct[:-10]] = (origin, blocks)
-        else:
-            distribution = open(pathof(f"data/structures/{folder}/distribution.structure"), "r").readlines()
-            weights = [int(d[:-2].split(" ")[1]) for d in distribution]
-            files = [d[:-2].split(" ")[0] for d in distribution]
-            structures[folder]["distribution"] = {"weights": weights, "files": files}
+def load_structures():
+    global structures
+    for folder in listdir(pathof("data/structures/")):
+        structures[folder] = {}
+        for struct in listdir(join(pathof("data/structures/"), folder)):
+            if struct != "distribution.structure":
+                data = open(pathof(f"data/structures/{folder}/{struct}"), "r").readlines()
+                split = data.index("structure:\n")
+                split2 = data.index("origin:\n")
+                legends = {legend.split(":")[0]: legend.split(":")[1] for legend in [legend[:-1] for legend in data[:split]]}
+                structure = [line[:-1] for line in data[split+1:split2]]
+                origin = (int(data[-1].split(" ")[0]), int(data[-1].split(" ")[1]))
+                blocks = {}
+                for y in range(len(structure)):
+                    for x in range(len(structure[y])):
+                        try: legends[structure[y][x]]
+                        except: pass
+                        else: blocks[(x-origin[0], y-origin[1])] = legends[structure[y][x]]
+                structures[folder][struct[:-10]] = (origin, blocks)
+            else:
+                distribution = open(pathof(f"data/structures/{folder}/distribution.structure"), "r").readlines()
+                weights = [int(d[:-2].split(" ")[1]) for d in distribution]
+                files = [d[:-2].split(" ")[0] for d in distribution]
+                structures[folder]["distribution"] = {"weights": weights, "files": files}
+            
+load_structures()
