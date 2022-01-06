@@ -32,8 +32,6 @@ clock = pygame.time.Clock()
 mixer = pygame.mixer.init()
 seed(SEED)
 
-blocks = {}
-chunks = {}
 player = Player()
 
 pygame.mouse.set_visible(False)
@@ -44,24 +42,14 @@ def draw(screen):
     mpos = VEC(pygame.mouse.get_pos())
     block_pos = (player.pos+(mpos-player.rect.topleft))//BLOCK_SIZE
     for chunk in rendered_chunks:
-        chunks[chunk].draw()
+        Chunk.instances[chunk].draw(player.camera, screen)
     for particle in Particle.instances:
         particle.draw(player.camera, screen)
     player.draw(screen)
     
     # Debug stuff
     if debug:
-        screen.blit(text(f"Seed: {SEED}"), (6, 0))
-        screen.blit(text(f"Velocity: {(round(player.vel.x, 3), round(player.vel.y, 3))}"), (6, 24))
-        screen.blit(text(f"Position: {inttup(player.coords)}"), (6, 48))
-        screen.blit(text(f"Camera offset: {inttup(player.pos-player.camera.pos-VEC(SCR_DIM)/2+player.size/2)}"), (6, 72))
-        screen.blit(text(f"Chunk: {inttup(player.coords//CHUNK_SIZE)}"), (6, 96))
-        screen.blit(text(f"Chunks loaded: {len(chunks)}"), (6, 120))
-        screen.blit(text(f"Rendered blocks: {len(blocks)}"), (6, 144))
-        screen.blit(text(f"FPS: {len(blocks)}"), (6, 144))
-        if not player.inventory.visible:
-            if inttup(block_pos) in blocks:
-                screen.blit(text(f"{blocks[inttup(block_pos)].name.replace('_', ' ')}", color=(255, 255, 255)), (mpos[0]+12, mpos[1]-36))
+        draw_debug(screen)
     
     player.inventory.draw(screen)
     if not player.inventory.visible:
@@ -69,10 +57,10 @@ def draw(screen):
 
     pygame.display.flip()
     
-def debug() -> None:
+def draw_debug(screen) -> None:
     # Draw chunk outline
     for chunk in rendered_chunks:
-        chunks[chunk].debug()
+        Chunk.instances[chunk].debug(screen)
     # Draw player rect
     pygame.draw.rect(screen, (255, 255, 255), player.rect, width=1)
     # Display the blocks that the player is currently calculating collision with
@@ -86,12 +74,16 @@ def debug() -> None:
         "Positon": inttup(player.coords),
         "Camera offset": inttup(player.pos-player.camera.pos-VEC(SCR_DIM)/2+player.size/2),
         "Chunk": inttup(player.coords//CHUNK_SIZE),
-        "Chunks loaded": len(chunks),
-        "Rendered blocks": len(blocks)
+        "Chunks loaded": len(Chunk.instances),
+        "Rendered blocks": len(Block.instances)
     }
     
     for line, name in enumerate(debug_values):
         screen.blit(text(f"{name}: {debug_values[name]}"), (6, SPACING * line))
+        
+    if not player.inventory.visible:
+            if inttup(block_pos) in Block.instances:
+                screen.blit(text(f"{Block.instances[inttup(block_pos)].name.replace('_', ' ')}", color=(255, 255, 255)), (mpos[0]+12, mpos[1]-36))
 
 running = True
 debug = False
@@ -119,8 +111,8 @@ while running:
                 }
                 
                 if event.button == 1:
-                    if block_pos in blocks:
-                        remove_block(block_pos, blocks[block_pos].data, neighbors)
+                    if block_pos in Block.instances:
+                        remove_block(Chunk.instances, block_pos, Block.instances[block_pos].data, neighbors)
                         
                 if event.button == 3:
                     if player.holding:
@@ -134,14 +126,14 @@ while running:
                                     "-1 0": inttup((c_pos.x-1, c_pos.y)),
                                     "1 0": inttup((c_pos.x+1, c_pos.y))
                                 }
-                                if not is_placeable(c_pos, BLOCK_DATA[counterparts[counterpart]], c_neighbors, c=block_pos):
+                                if not is_placeable(player, c_pos, BLOCK_DATA[counterparts[counterpart]], c_neighbors, c=block_pos):
                                     break
                             else:
                                 for counterpart in counterparts:
-                                    if not is_placeable(block_pos, BLOCK_DATA[player.holding], neighbors, c=c_pos):
+                                    if not is_placeable(player, block_pos, BLOCK_DATA[player.holding], neighbors, c=c_pos):
                                         break
                                 else:
-                                    set_block(block_pos, player.holding, neighbors)
+                                    set_block(Chunk.instances, block_pos, player.holding, neighbors)
                                     for counterpart in counterparts:
                                         c_pos = VEC(block_pos)+VEC(inttup(counterpart.split(" ")))
                                         c_neighbors = {
@@ -150,10 +142,10 @@ while running:
                                             "-1 0": inttup((c_pos.x-1, c_pos.y)),
                                             "1 0": inttup((c_pos.x+1, c_pos.y))
                                         }
-                                        set_block(VEC(block_pos)+VEC(inttup(counterpart.split(" "))), counterparts[counterpart], c_neighbors)
+                                        set_block(Chunk.instances, VEC(block_pos)+VEC(inttup(counterpart.split(" "))), counterparts[counterpart], c_neighbors)
                         else:
-                            if is_placeable(block_pos, BLOCK_DATA[player.holding], neighbors):
-                                set_block(block_pos, player.holding, neighbors)
+                            if is_placeable(player, block_pos, BLOCK_DATA[player.holding], neighbors):
+                                set_block(Chunk.instances, block_pos, player.holding, neighbors)
                                 
         if event.type == KEYDOWN:
             if event.key == K_F5:
@@ -176,8 +168,8 @@ while running:
                 y - 1 + int(round(player.camera.pos.y / (CHUNK_SIZE * BLOCK_SIZE)))
             )
             rendered_chunks.append(chunk)
-            if chunk not in chunks:
-                chunks[chunk] = Chunk(chunk)
+            if chunk not in Chunk.instances:
+                Chunk.instances[chunk] = Chunk(chunk)
                 
     unrendered_chunks = []
     for y in range(int(HEIGHT/(CHUNK_SIZE*BLOCK_SIZE)+4)):
@@ -186,15 +178,15 @@ while running:
                 x - 2 + int(round(player.camera.pos.x / (CHUNK_SIZE * BLOCK_SIZE))),
                 y - 2 + int(round(player.camera.pos.y / (CHUNK_SIZE * BLOCK_SIZE)))
             )
-            if chunk in chunks:
+            if chunk in Chunk.instances:
                 if chunk not in rendered_chunks:
                     unrendered_chunks.append(chunk)
                     
     for chunk in unrendered_chunks:
-        for block in chunks[chunk].block_data:
-            if block in blocks:
-                blocks[block].kill()
-                del blocks[block]
+        for block in Chunk.instances[chunk].block_data:
+            if block in Block.instances:
+                Block.instances[block].kill()
+                del Block.instances[block]
                 
     for block in remove_blocks:
         neighbors = {
@@ -203,16 +195,15 @@ while running:
             "-1 0": inttup((block[0]-1, block[1])),
             "1 0": inttup((block[0]+1, block[1]))
         }
-        remove_block(block, blocks[inttup(block)].data, neighbors)
+        remove_block(Chunk.instances, block, Block.instances[inttup(block)].data, neighbors)
         
     remove_blocks = []
     detecting_rects = []
 
-    player.update(blocks, mouse_state, dt)
+    player.update(Block.instances, mouse_state, dt)
     for particle in Particle.instances:
-        particle.update(blocks, dt)
+        particle.update(Block.instances, dt)
     
-    if debug: debug()
     draw(screen)
 
 pygame.quit()

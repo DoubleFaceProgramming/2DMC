@@ -12,7 +12,7 @@ for j in os.listdir(pathof("data/blocks/")):
     BLOCK_DATA[j[:-5]] = json.loads(open(os.path.join(pathof("data/blocks/"), j), "r").read())
 
 class Block(pygame.sprite.Sprite):
-    instances = []
+    instances = {}
     
     def __init__(self, chunk, pos, name):
         pygame.sprite.Sprite.__init__(self)
@@ -37,44 +37,46 @@ class Block(pygame.sprite.Sprite):
 
     def update(self):
         if not is_supported(self.pos, self.data, self.neighbors):
-            remove_blocks.append(self.coords) # !
+            # remove_blocks.append(self.coords)
+            del self.__class__.instances[inttup(self.pos)]
+            del self
 
     def draw(self, camera, screen):
         self.rect.topleft = self.pos - camera.pos
         screen.blit(self.image, self.rect.topleft)
 
-def remove_block(pos, data, neighbors):
+def remove_block(chunks, pos, data, neighbors):
     pos = inttup(pos)
     for _ in range(randint(18, 26)):
-        Particle("block", VEC(pos)*BLOCK_SIZE+VEC(randint(0, BLOCK_SIZE), randint(0, BLOCK_SIZE)), master=blocks[pos]) # !
+        Particle("block", VEC(pos)*BLOCK_SIZE+VEC(randint(0, BLOCK_SIZE), randint(0, BLOCK_SIZE)), master=Block.instances[pos])
     chunk = (pos[0] // CHUNK_SIZE, pos[1] // CHUNK_SIZE)
     if "next_layer" in data:
-        blocks[pos] = Block(chunk, pos, data["next_layer"]) # !
-        chunks[chunk].block_data[pos] = data["next_layer"] # !
+        Block.instances[pos] = Block(chunk, pos, data["next_layer"])
+        chunks[chunk].block_data[pos] = data["next_layer"]
     else:
-        del blocks[pos] # !
-        del chunks[chunk].block_data[pos] # !
+        del Block.instances[pos]
+        del chunks[chunk].block_data[pos]
     for neighbor in neighbors:
-        if neighbors[neighbor] in blocks: # !
-            blocks[neighbors[neighbor]].update() # !
+        if neighbors[neighbor] in Block.instances:
+            Block.instances[neighbors[neighbor]].update()
 
-def set_block(pos, name, neighbors):
+def set_block(chunks, pos, name, neighbors):
     pos = inttup(pos)
     chunk = (pos[0] // CHUNK_SIZE, pos[1] // CHUNK_SIZE)
     try:
-        blocks[pos] = Block(chunks[chunk], pos, name) # !
-        chunks[chunk].block_data[pos] = name # !
+        Block.instances[pos] = Block(chunks[chunk], pos, name)
+        chunks[chunk].block_data[pos] = name
     except: pass
     for neighbor in neighbors:
         chunk = (neighbors[neighbor][0] // CHUNK_SIZE, neighbors[neighbor][1] // CHUNK_SIZE)
-        if neighbors[neighbor] in blocks: # !
-            blocks[neighbors[neighbor]].update() # !
+        if neighbors[neighbor] in Block.instances:
+            Block.instances[neighbors[neighbor]].update()
 
-def is_occupied(pos):
+def is_occupied(player, pos):
     pos = inttup(pos)
-    if not pygame.Rect(VEC(pos) * BLOCK_SIZE, (BLOCK_SIZE, BLOCK_SIZE)).colliderect(pygame.Rect(player.pos, player.size)): # !
-        if pos in blocks:
-            return not "replaceable" in blocks[pos].data # !
+    if not pygame.Rect(VEC(pos) * BLOCK_SIZE, (BLOCK_SIZE, BLOCK_SIZE)).colliderect(pygame.Rect(player.pos, player.size)):
+        if pos in Block.instances:
+            return not "replaceable" in Block.instances[pos].data
         else:
             return False
     return True
@@ -84,8 +86,8 @@ def is_supported(pos, data, neighbors, c=False):
         supports = data["support"]
         for support in supports:
             if inttup(support.split(" ")) != inttup(VEC(c)-VEC(pos)):
-                if neighbors[support] in blocks: # !
-                    if blocks[neighbors[support]].name not in supports[support]: # !
+                if neighbors[support] in Block.instances:
+                    if Block.instances[neighbors[support]].name not in supports[support]:
                         return False
                 else:
                     return False
@@ -93,7 +95,7 @@ def is_supported(pos, data, neighbors, c=False):
                 return True
     return True
 
-def is_placeable(pos, data, neighbors, c=False):
-    if not is_occupied(pos) and is_supported(pos, data, neighbors, c=c):
+def is_placeable(player, pos, data, neighbors, c=False):
+    if not is_occupied(player, pos) and is_supported(pos, data, neighbors, c=c):
         return True
     return False

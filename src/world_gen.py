@@ -48,7 +48,7 @@ class StructureGenerator(object):
 
 class Chunk(object):
     """The class responsible for updating and drawing chunks."""
-    instances = []
+    instances = {}
     
     def __init__(self, pos):
         self.pos = pos
@@ -60,12 +60,12 @@ class Chunk(object):
         self.rect.topleft = (self.pos[0] * CHUNK_SIZE * BLOCK_SIZE - camera.pos[0], 
                              self.pos[1] * CHUNK_SIZE * BLOCK_SIZE - camera.pos[1])
 
-    def draw(self, screen) -> None:
+    def draw(self, camera, screen) -> None:
         #if self.pos in rendered_chunks:
         for block in self.block_data:
             if not block in blocks:
                 blocks[block] = Block(self, block, self.block_data[block])
-            blocks[block].draw(screen)
+            blocks[block].draw(camera, screen)
 
     def debug(self, screen) -> None:
         """Draws a debug rect around the chunk borders. Only called when global variable 'debug' is true."""
