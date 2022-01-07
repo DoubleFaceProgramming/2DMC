@@ -135,7 +135,11 @@ class Player(pygame.sprite.Sprite):
         self.inventory.update(m_state)
         self.crosshair.update(dt)
 
-    def draw(self, screen):
+    def draw(self, screen, mpos):
+        self.inventory.draw(screen)
+        if not self.inventory.visible:
+            self.crosshair.draw(screen, mpos)
+        
         self.leg2.rect = self.leg2.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
         screen.blit(self.leg2.image, self.leg2.rect.topleft)
         
@@ -153,6 +157,12 @@ class Player(pygame.sprite.Sprite):
         
         self.leg.rect = self.leg.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
         screen.blit(self.leg.image, self.leg.rect.topleft)
+        
+    def debug(self, screen, block_pos, mpos):
+        self.crosshair.debug(screen, block_pos, mpos, self)
+        pygame.draw.rect(screen, (255, 255, 255), self.rect, width=1)
+        for rect in self.detecting_rects:
+            pygame.draw.rect(screen, (255, 0, 0), rect, width=1)
 
     def animate(self, dt):
         m_pos = VEC(pygame.mouse.get_pos())
@@ -320,15 +330,11 @@ class Crosshair():
     """The class responsible for the drawing and updating of the crosshair"""
 
     def __init__(self, changespeed: int) -> None:
-        """Creates a crosshair object"""
-
         self.old_color = pygame.Color(0, 0, 0)
         self.new_color = pygame.Color(0, 0, 0)
         self.changeover = changespeed
         
     def update(self, dt: float) -> None:
-        """Update the crosshair"""
-
         if 127-30 < self.new_color.r < 127+30 and 127-30 < self.new_color.g < 127+30 and 127-30 < self.new_color.b < 127+30:
             self.new_color = pygame.Color(255, 255, 255)
         self.new_color = pygame.Color(255, 255, 255) - self.new_color
@@ -338,11 +344,15 @@ class Crosshair():
         self.old_color = [x + (((y - x) / self.changeover) * 100 * dt) for x, y in zip(self.old_color, self.new_color)]
 
     def draw(self, screen: pygame.Surface, mpos: pygame.math.Vector2) -> None:
-        """Draw the crosshair to the screen"""
-
         self.new_color = self.get_avg_color(screen, mpos) # I know this is cursed it's the easiest way ;-;
         pygame.draw.rect(screen, self.old_color, (mpos[0]-2, mpos[1]-16, 4, 32))
         pygame.draw.rect(screen, self.old_color, (mpos[0]-16, mpos[1]-2, 32, 4))
+        
+    def debug(self, screen, block_pos, mpos, player):
+        if not player.inventory.visible:
+            if block_pos in Block.instances:
+                screen.blit(text(str(Block.instances[inttup(block_pos)].name.replace('_', ' ')), color=(255, 255, 255)), (mpos[0]+12, mpos[1]-36))
+        
 
     def get_avg_color(self, screen: pygame.Surface, mpos: pygame.math.Vector2) -> pygame.Color:
         """Gets the average colour of the screen at the crosshair using the position of the mouse and the game screen.
