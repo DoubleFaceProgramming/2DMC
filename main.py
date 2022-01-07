@@ -204,6 +204,8 @@ while running:
     player.update(Block.instances, mouse_state, dt)
     for particle in Particle.instances:
         particle.update(Block.instances, dt)
+    for chunk in rendered_chunks:
+        Chunk.instances[chunk].update(player.camera)
     
     draw(screen)
 

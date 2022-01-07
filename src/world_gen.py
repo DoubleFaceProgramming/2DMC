@@ -54,14 +54,13 @@ class Chunk(object):
         self.pos = pos
         self.block_data = self.generate(pos[0], pos[1])
         self.__class__.instances[self.pos] = self
-        self.rect = Rect(0, 0, 0, 0)
+        self.rect = Rect(0, 0, CHUNK_SIZE * BLOCK_SIZE, CHUNK_SIZE * BLOCK_SIZE)
         
     def update(self, camera) -> None:
         self.rect.topleft = (self.pos[0] * CHUNK_SIZE * BLOCK_SIZE - camera.pos[0], 
                              self.pos[1] * CHUNK_SIZE * BLOCK_SIZE - camera.pos[1])
 
     def draw(self, camera, screen) -> None:
-        #if self.pos in rendered_chunks:
         for block in self.block_data:
             if not block in Block.instances:
                 Block.instances[block] = Block(self, block, self.block_data[block]) # !
