@@ -5,7 +5,7 @@ import os
 from pygame.locals import  (
     MOUSEBUTTONDOWN, KEYDOWN,
     HWSURFACE, DOUBLEBUF,
-    K_e, K_c, K_F5,
+    K_e, K_F5,
     QUIT,
 )
 from src.inventory import Item
@@ -48,6 +48,8 @@ class Game():
                 if not self.player.inventory.visible:
                     if event.button == 1:
                         self.player.break_block(Chunk.instances, mpos)
+                    elif event.button == 2:
+                        self.player.pick_block(mpos)
                     elif event.button == 3:
                         self.player.place_block(Chunk.instances, mpos)
         
@@ -57,8 +59,6 @@ class Game():
                     self.debug_bool = not self.debug_bool
                 if event.key == K_e:
                     self.player.toggle_inventory()
-                if event.key == K_c:
-                    self.player.pick_block(mpos)
 
         # Calling relevant update functions.
         self.rendered_chunks = load_chunks(self.player.camera)
