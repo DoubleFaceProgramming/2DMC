@@ -15,7 +15,7 @@ from src.images import *
 from src.player import Player
 from src.particle import Particle
 from src.block import *
-from src.world_gen import Chunk
+from src.world_gen import Chunk, load_chunks
 
 def loading():
     font = pygame.font.Font(REGULAR_FONT_LOC, 120)
@@ -103,91 +103,18 @@ while running:
         if event.type == MOUSEBUTTONDOWN:
             mouse_state = event.button
             if not player.inventory.visible:
-                block_pos = inttup((player.pos+(mpos-player.rect.topleft))//BLOCK_SIZE)
-                neighbors = {
-                    "0 -1": inttup((block_pos[0], block_pos[1]-1)),
-                    "0 1": inttup((block_pos[0], block_pos[1]+1)),
-                    "-1 0": inttup((block_pos[0]-1, block_pos[1])),
-                    "1 0": inttup((block_pos[0]+1, block_pos[1]))
-                }
-                
                 if event.button == 1:
-                    if block_pos in Block.instances:
-                        remove_block(Chunk.instances, block_pos, Block.instances[block_pos].data, neighbors)
-                        
-                if event.button == 3:
-                    if player.holding:
-                        if "counterparts" in BLOCK_DATA[player.holding]:
-                            counterparts = BLOCK_DATA[player.holding]["counterparts"]
-                            for counterpart in counterparts:
-                                c_pos = VEC(block_pos)+VEC(inttup(counterpart.split(" ")))
-                                c_neighbors = {
-                                    "0 -1": inttup((c_pos.x, c_pos.y-1)),
-                                    "0 1": inttup((c_pos.x, c_pos.y+1)),
-                                    "-1 0": inttup((c_pos.x-1, c_pos.y)),
-                                    "1 0": inttup((c_pos.x+1, c_pos.y))
-                                }
-                                if not is_placeable(player, c_pos, BLOCK_DATA[counterparts[counterpart]], c_neighbors, c=block_pos):
-                                    break
-                            else:
-                                for counterpart in counterparts:
-                                    if not is_placeable(player, block_pos, BLOCK_DATA[player.holding], neighbors, c=c_pos):
-                                        break
-                                else:
-                                    set_block(Chunk.instances, block_pos, player.holding, neighbors)
-                                    for counterpart in counterparts:
-                                        c_pos = VEC(block_pos)+VEC(inttup(counterpart.split(" ")))
-                                        c_neighbors = {
-                                            "0 -1": inttup((c_pos.x, c_pos.y-1)),
-                                            "0 1": inttup((c_pos.x, c_pos.y+1)),
-                                            "-1 0": inttup((c_pos.x-1, c_pos.y)),
-                                            "1 0": inttup((c_pos.x+1, c_pos.y))
-                                        }
-                                        set_block(Chunk.instances, VEC(block_pos)+VEC(inttup(counterpart.split(" "))), counterparts[counterpart], c_neighbors)
-                        else:
-                            if is_placeable(player, block_pos, BLOCK_DATA[player.holding], neighbors):
-                                set_block(Chunk.instances, block_pos, player.holding, neighbors)
+                    player.break_block(Chunk.instances, mpos)
+                elif event.button == 3:
+                    player.place_block(Chunk.instances, mpos)
     
         if event.type == KEYDOWN:
             if event.key == K_F5:
                 debug = not debug
             if event.key == K_e:
-                player.inventory.visible = not player.inventory.visible
-                if player.inventory.visible:
-                    pygame.mouse.set_visible(True)
-                else:
-                    pygame.mouse.set_visible(False)
-                    if player.inventory.selected:
-                        player.inventory.add_item(player.inventory.selected.name)
-                        player.inventory.selected = None
+                player.toggle_inventory()
 
-    rendered_chunks = []
-    for y in range(int(HEIGHT/(CHUNK_SIZE*BLOCK_SIZE)+2)):
-        for x in range(int(WIDTH/(CHUNK_SIZE*BLOCK_SIZE)+2)):
-            chunk = (
-                x - 1 + int(round(player.camera.pos.x / (CHUNK_SIZE * BLOCK_SIZE))),
-                y - 1 + int(round(player.camera.pos.y / (CHUNK_SIZE * BLOCK_SIZE)))
-            )
-            rendered_chunks.append(chunk)
-            if chunk not in Chunk.instances:
-                Chunk.instances[chunk] = Chunk(chunk)
-                
-    unrendered_chunks = []
-    for y in range(int(HEIGHT/(CHUNK_SIZE*BLOCK_SIZE)+4)):
-        for x in range(int(WIDTH/(CHUNK_SIZE*BLOCK_SIZE)+4)):
-            chunk = (
-                x - 2 + int(round(player.camera.pos.x / (CHUNK_SIZE * BLOCK_SIZE))),
-                y - 2 + int(round(player.camera.pos.y / (CHUNK_SIZE * BLOCK_SIZE)))
-            )
-            if chunk in Chunk.instances:
-                if chunk not in rendered_chunks:
-                    unrendered_chunks.append(chunk)
-                    
-    for chunk in unrendered_chunks:
-        for block in Chunk.instances[chunk].block_data:
-            if block in Block.instances:
-                Block.instances[block].kill()
-                del Block.instances[block]
+    rendered_chunks = load_chunks(player.camera)
                 
     for block in remove_blocks:
         neighbors = {

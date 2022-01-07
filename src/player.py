@@ -6,6 +6,7 @@ from src.constants import *
 from src.utils import *
 from src.images import *
 from src.inventory import Inventory
+from src.block import *
 
 class Camera(pygame.sprite.Sprite):
     def __init__(self, player):
@@ -253,6 +254,67 @@ class Player(pygame.sprite.Sprite):
             if flag: break
             
         self.detecting_rects = detecting_rects
+        
+    def break_block(self, chunks, mpos):
+        block_pos = inttup((self.pos + (mpos - self.rect.topleft)) // BLOCK_SIZE)
+        neighbors = {
+            "0 -1": inttup((block_pos[0], block_pos[1]-1)),
+            "0 1": inttup((block_pos[0], block_pos[1]+1)),
+            "-1 0": inttup((block_pos[0]-1, block_pos[1])),
+            "1 0": inttup((block_pos[0]+1, block_pos[1]))
+        }
+        if block_pos in Block.instances:
+            remove_block(chunks, block_pos, Block.instances[block_pos].data, neighbors)
+    
+    def place_block(self, chunks, mpos):
+        if self.holding:
+            block_pos = inttup((self.pos + (mpos - self.rect.topleft)) // BLOCK_SIZE)
+            neighbors = {
+                "0 -1": inttup((block_pos[0], block_pos[1]-1)),
+                "0 1": inttup((block_pos[0], block_pos[1]+1)),
+                "-1 0": inttup((block_pos[0]-1, block_pos[1])),
+                "1 0": inttup((block_pos[0]+1, block_pos[1]))
+            }
+            if "counterparts" in BLOCK_DATA[self.holding]:
+                counterparts = BLOCK_DATA[self.holding]["counterparts"]
+                for counterpart in counterparts:
+                    c_pos = VEC(block_pos)+VEC(inttup(counterpart.split(" ")))
+                    c_neighbors = {
+                        "0 -1": inttup((c_pos.x, c_pos.y-1)),
+                        "0 1": inttup((c_pos.x, c_pos.y+1)),
+                        "-1 0": inttup((c_pos.x-1, c_pos.y)),
+                        "1 0": inttup((c_pos.x+1, c_pos.y))
+                    }
+                    if not is_placeable(self, c_pos, BLOCK_DATA[counterparts[counterpart]], c_neighbors, c=block_pos):
+                        break
+                else:
+                    for counterpart in counterparts:
+                        if not is_placeable(self, block_pos, BLOCK_DATA[self.holding], neighbors, c=c_pos):
+                            break
+                    else:
+                        set_block(chunks, block_pos, self.holding, neighbors)
+                        for counterpart in counterparts:
+                            c_pos = VEC(block_pos)+VEC(inttup(counterpart.split(" ")))
+                            c_neighbors = {
+                                "0 -1": inttup((c_pos.x, c_pos.y-1)),
+                                "0 1": inttup((c_pos.x, c_pos.y+1)),
+                                "-1 0": inttup((c_pos.x-1, c_pos.y)),
+                                "1 0": inttup((c_pos.x+1, c_pos.y))
+                            }
+                            set_block(chunks, VEC(block_pos)+VEC(inttup(counterpart.split(" "))), counterparts[counterpart], c_neighbors)
+            else:
+                if is_placeable(self, block_pos, BLOCK_DATA[self.holding], neighbors):
+                    set_block(chunks, block_pos, self.holding, neighbors)
+                    
+    def toggle_inventory(self):
+        self.inventory.visible = not self.inventory.visible
+        if self.inventory.visible:
+            pygame.mouse.set_visible(True)
+        else:
+            pygame.mouse.set_visible(False)
+            if self.inventory.selected:
+                self.inventory.add_item(self.inventory.selected.name)
+                self.inventory.selected = None
         
 class Crosshair():
     """The class responsible for the drawing and updating of the crosshair"""

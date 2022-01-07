@@ -7,7 +7,7 @@ from math import ceil
 from os import listdir
 from os.path import join
 
-from src.constants import CHUNK_SIZE, BLOCK_SIZE, SEED
+from src.constants import CHUNK_SIZE, BLOCK_SIZE, SEED, WIDTH, HEIGHT
 from src.block import Block, BLOCK_DATA
 from src.utils import pathof
 
@@ -192,6 +192,37 @@ def generate_structures(x: int, y: int, chunk_data: dict, generator: StructureGe
                         else:
                             chunk_data[block] = block_name
     return chunk_data
+
+def load_chunks(camera) -> list:
+    rendered_chunks = []
+    for y in range(int(HEIGHT/(CHUNK_SIZE*BLOCK_SIZE)+2)):
+        for x in range(int(WIDTH/(CHUNK_SIZE*BLOCK_SIZE)+2)):
+            chunk = (
+                x - 1 + int(round(camera.pos.x / (CHUNK_SIZE * BLOCK_SIZE))),
+                y - 1 + int(round(camera.pos.y / (CHUNK_SIZE * BLOCK_SIZE)))
+            )
+            rendered_chunks.append(chunk)
+            if chunk not in Chunk.instances:
+                Chunk.instances[chunk] = Chunk(chunk)
+                
+    unrendered_chunks = []
+    for y in range(int(HEIGHT/(CHUNK_SIZE*BLOCK_SIZE)+4)):
+        for x in range(int(WIDTH/(CHUNK_SIZE*BLOCK_SIZE)+4)):
+            chunk = (
+                x - 2 + int(round(camera.pos.x / (CHUNK_SIZE * BLOCK_SIZE))),
+                y - 2 + int(round(camera.pos.y / (CHUNK_SIZE * BLOCK_SIZE)))
+            )
+            if chunk in Chunk.instances:
+                if chunk not in rendered_chunks:
+                    unrendered_chunks.append(chunk)
+                    
+    for chunk in unrendered_chunks:
+        for block in Chunk.instances[chunk].block_data:
+            if block in Block.instances:
+                Block.instances[block].kill()
+                del Block.instances[block]
+                
+    return rendered_chunks
 
 def load_structures() -> dict:
     structures = {}
