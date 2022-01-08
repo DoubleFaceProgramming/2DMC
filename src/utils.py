@@ -43,7 +43,7 @@ def create_text_box(text, pos, opacity):
     surface.blit(text, (8, 4))
     return surface, blit_pos
 
-def block_collide(playerx: int, playery: int, width: float, height: float, detecting: list, block) -> bool and list:
+def block_collide(playerx: int, playery: int, width: float, height: float, detecting: list, block) -> tuple[bool, str]:
     """Checks collision between the player and the given block object.
 
     Args:
@@ -58,6 +58,7 @@ def block_collide(playerx: int, playery: int, width: float, height: float, detec
         bool: True if the player is colliding with the block else False
         list: The detetcing_rects list with the new rect appended to it
     """
+
     player_rect = Rect(playerx, playery, width, height) # Rect that represents the player
     block_rect = Rect(block.pos.x, block.pos.y, BLOCK_SIZE, BLOCK_SIZE) # Rect that represents the block
     if not block.rect in detecting:

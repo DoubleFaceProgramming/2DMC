@@ -17,6 +17,8 @@ from src.block import *
 from src.world_gen import *
 
 class Game():
+    """Class that handles events and function calls to other classes to run the game"""
+
     def __init__(self) -> None:
         pygame.init()
 
@@ -43,7 +45,7 @@ class Game():
                 self.running = False
 
             if event.type == MOUSEBUTTONDOWN:
-                # Placing and breaking blocks
+                # Placing, breaking and pickblocking blocks
                 mouse_state = event.button
                 if not self.player.inventory.visible:
                     if event.button == 1:

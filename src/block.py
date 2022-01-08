@@ -12,6 +12,7 @@ for j in os.listdir(pathof("data/blocks/")):
     BLOCK_DATA[j[:-5]] = json.loads(open(os.path.join(pathof("data/blocks/"), j), "r").read())
 
 class Block(pygame.sprite.Sprite):
+    """Class that handles the managaing, updating and drawing of blocks."""
     instances = {}
 
     def __init__(self, chunk, pos, name):
@@ -30,12 +31,14 @@ class Block(pygame.sprite.Sprite):
         }
         self.image = block_textures[self.name]
 
+        # Different hitbox types (currently only two)
         if self.data["collision_box"] == "full":
             self.rect = pygame.Rect(self.pos, (BLOCK_SIZE, BLOCK_SIZE))
         elif self.data["collision_box"] == "none":
             self.rect = pygame.Rect(self.pos, (0, 0))
 
     def update(self, chunks):
+        # Check ifthe block is supported, if not then remove the block
         if not is_supported(self.pos, self.data, self.neighbors):
             remove_block(chunks, self.coords, self.data, self.neighbors)
 
@@ -79,11 +82,11 @@ def is_occupied(player, pos):
             return False
     return True
 
-def is_supported(pos, data, neighbors, c=False):
+def is_supported(pos, data, neighbors, second_block_pos=False):
     if data["support"]:
         supports = data["support"]
         for support in supports:
-            if inttup(support.split(" ")) != inttup(VEC(c)-VEC(pos)):
+            if inttup(support.split(" ")) != inttup(VEC(second_block_pos)-VEC(pos)):
                 if neighbors[support] in Block.instances:
                     if Block.instances[neighbors[support]].name not in supports[support]:
                         return False
@@ -93,7 +96,7 @@ def is_supported(pos, data, neighbors, c=False):
                 return True
     return True
 
-def is_placeable(player, pos, data, neighbors, c=False):
-    if not is_occupied(player, pos) and is_supported(pos, data, neighbors, c=c):
+def is_placeable(player, pos, data, neighbors, second_block_pos=False):
+    if not is_occupied(player, pos) and is_supported(pos, data, neighbors, second_block_pos=second_block_pos):
         return True
     return False

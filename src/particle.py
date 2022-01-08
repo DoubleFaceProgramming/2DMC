@@ -5,6 +5,7 @@ from src.constants import *
 from src.utils import *
 
 class Particle(pygame.sprite.Sprite):
+    """Class that handles the management, updation and drawing of particles."""
     instances = []
 
     def __init__(self, type, pos, master=None):

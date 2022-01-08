@@ -7,12 +7,16 @@ from src.utils import *
 from src.images import *
 
 class Item(object):
+    """Micro-class that stores metadata about items."""
+
     def __init__(self, name):
         self.name = name
         self.count = 1
         self.nbt = {}
 
 class Inventory(object):
+    """Class that updates and draws the inventory and manages its contents."""
+
     def __init__(self, player):
         self.player = player
         self.slot_start = VEC(400, 302)
@@ -107,6 +111,8 @@ class Inventory(object):
         return False
 
 class Hotbar(object):
+    """Class that draws, updates and provides functionality for the hotbar."""
+
     def __init__(self, inventory):
         self.slot_start = VEC(WIDTH/2-hotbar_img.get_width()/2, HEIGHT-hotbar_img.get_height())
         self.slot_size = (40, 40)
