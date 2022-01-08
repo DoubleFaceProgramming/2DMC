@@ -159,7 +159,7 @@ class Player(pygame.sprite.Sprite):
             self.crosshair.draw(screen, mpos)
         
     def debug(self, screen, mpos):
-        self.crosshair.debug(screen, mpos, self)
+        self.crosshair.debug(screen, mpos)
         pygame.draw.rect(screen, (255, 255, 255), self.rect, width=1)
         for rect in self.detecting_rects:
             pygame.draw.rect(screen, (255, 0, 0), rect, width=1)
