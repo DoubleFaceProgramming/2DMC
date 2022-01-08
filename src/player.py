@@ -5,7 +5,7 @@ from math import ceil, cos, floor
 from src.constants import *
 from src.utils import *
 from src.images import *
-from src.inventory import Inventory
+from src.inventory import Inventory, Item
 from src.block import *
 
 class Camera(pygame.sprite.Sprite):
@@ -65,7 +65,7 @@ class Player(pygame.sprite.Sprite):
         
         self.camera = Camera(self)
         self.inventory = Inventory(self)
-        self.crosshair = Crosshair(1750)
+        self.crosshair = Crosshair(self, 1750)
         
         self.inventory.add_item("grass_block")
         self.inventory.add_item("dirt")
@@ -136,10 +136,6 @@ class Player(pygame.sprite.Sprite):
         self.crosshair.update(dt)
 
     def draw(self, screen, mpos):
-        self.inventory.draw(screen)
-        if not self.inventory.visible:
-            self.crosshair.draw(screen, mpos)
-        
         self.leg2.rect = self.leg2.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
         screen.blit(self.leg2.image, self.leg2.rect.topleft)
         
@@ -157,6 +153,10 @@ class Player(pygame.sprite.Sprite):
         
         self.leg.rect = self.leg.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
         screen.blit(self.leg.image, self.leg.rect.topleft)
+        
+        self.inventory.draw(screen)
+        if not self.inventory.visible:
+            self.crosshair.draw(screen, mpos)
         
     def debug(self, screen, mpos):
         self.crosshair.debug(screen, mpos, self)
@@ -327,16 +327,23 @@ class Player(pygame.sprite.Sprite):
                 self.inventory.selected = None
                 
     def pick_block(self, mpos):
-        if block := self.crosshair.block_at_pos(mpos, self):
-            self.inventory.set_slot((self.inventory.hotbar.selected, 0), block)
+        if block_name := self.crosshair.block_at_pos(mpos):
+            if block_name in [item.name for item in self.inventory.items.values()]: # If the desired block is in the players's inventory.
+                if self.inventory.hotbar.selected in self.inventory.hotbar.items: # If player is holding an item
+                    old_slot = self.inventory.hotbar.items[self.inventory.hotbar.selected] # Saving the original hotbar item.
+                    inventory_pos = [pos for pos, item in self.inventory.items.items() if item.name == block_name][0] # Finding the inventory position of the desired item.
+                    self.inventory.set_slot(inventory_pos, old_slot.name) # Saving the old item to the old inventory position.         
+                            
+            self.inventory.set_slot((self.inventory.hotbar.selected, 0), block_name) # Setting the hotbar slot to the desired item.
         
 class Crosshair():
     """The class responsible for the drawing and updating of the crosshair"""
 
-    def __init__(self, changespeed: int) -> None:
+    def __init__(self, master: Player, changeover: int) -> None:
+        self.master = master
         self.old_color = pygame.Color(0, 0, 0)
         self.new_color = pygame.Color(0, 0, 0)
-        self.changeover = changespeed
+        self.changeover = changeover
         
     def update(self, dt: float) -> None:
         if 127-30 < self.new_color.r < 127+30 and 127-30 < self.new_color.g < 127+30 and 127-30 < self.new_color.b < 127+30:
@@ -352,11 +359,10 @@ class Crosshair():
         pygame.draw.rect(screen, self.old_color, (mpos[0]-2, mpos[1]-16, 4, 32))
         pygame.draw.rect(screen, self.old_color, (mpos[0]-16, mpos[1]-2, 32, 4))
         
-    def debug(self, screen: Surface, mpos, player):
-        if not player.inventory.visible:
-            if block := self.block_at_pos(mpos, player):
+    def debug(self, screen: Surface, mpos):
+        if not self.master.inventory.visible:
+            if block := self.block_at_pos(mpos):
                 screen.blit(text(block.replace('_', ' ').title(), color=(255, 255, 255)), (mpos[0]+12, mpos[1]-36))
-        
 
     def get_avg_color(self, screen: pygame.Surface, mpos: pygame.math.Vector2) -> pygame.Color:
         """Gets the average colour of the screen at the crosshair using the position of the mouse and the game screen.
@@ -376,7 +382,7 @@ class Crosshair():
 
         return color
     
-    def block_at_pos(self, pos: Vector2, player: Player) -> str or None:
+    def block_at_pos(self, pos: Vector2) -> str or None:
         """Returns a string of the block at the position given
 
         Args:
@@ -387,7 +393,7 @@ class Crosshair():
             str or None: Returns a string containing the name of the block at the position given,
                          or None if the block is not valid. ex. "grass_block"
         """
-        block_pos = inttup((player.pos + (pos - player.rect.topleft)) // BLOCK_SIZE)
+        block_pos = inttup((self.master.pos + (pos - self.master.rect.topleft)) // BLOCK_SIZE)
         if block_pos in Block.instances:
             return str(Block.instances[inttup(block_pos)].name)
         else: 
