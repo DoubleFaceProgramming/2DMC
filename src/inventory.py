@@ -22,6 +22,7 @@ class Inventory(object):
         self.visible = False
         self.selected = None
         self.hovering = None
+        self.max_items = 36
         self.transparent_background = pygame.Surface((WIDTH, HEIGHT)).convert_alpha()
         self.transparent_background.fill((0, 0, 0, 125))
 
