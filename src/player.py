@@ -125,8 +125,8 @@ class Player(pygame.sprite.Sprite):
             if self.bottom_bar.colliderect(block_rect):
                 self.on_ground = True
                 break
-            else: 
-                self.on_ground = False
+        else:
+            self.on_ground = False
 
         self.coords = self.pos // BLOCK_SIZE
         self.chunk = self.coords // CHUNK_SIZE
