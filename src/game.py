@@ -90,7 +90,8 @@ class Game():
             "Chunk": inttup(self.player.coords // CHUNK_SIZE),
             "Chunks loaded": len(Chunk.instances),
             "Rendered blocks": len(Block.instances),
-            "Block position": inttup((self.player.pos + (mpos - self.player.rect.topleft)) // BLOCK_SIZE)
+            "Block position": inttup((self.player.pos + (mpos - self.player.rect.topleft)) // BLOCK_SIZE),
+            "Detecting rects": len(self.player.detecting_rects),
         }
         
         # Calling the relevant debug functions.
@@ -103,7 +104,7 @@ class Game():
             screen.blit(text(f"{name}: {debug_values[name]}"), (6, SPACING * line))
         
     def run(self) -> None:
-        """Start the main loop of the game, whcih handles the calling of other functions."""
+        """Start the main loop of the game, which handles the calling of other functions."""
         while self.running:
             mpos = VEC(pygame.mouse.get_pos())
             
