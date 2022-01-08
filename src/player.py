@@ -120,13 +120,14 @@ class Player(pygame.sprite.Sprite):
                 
         self.move(blocks, dt)
         self.bottom_bar = pygame.Rect((self.rect.left+1, self.rect.bottom), (self.width-2, 1))
-        for block in blocks:
-            if self.bottom_bar.colliderect(blocks[block].rect):
+                
+        for block_rect in self.detecting_rects:
+            if self.bottom_bar.colliderect(block_rect):
                 self.on_ground = True
                 break
-        else:
-            self.on_ground = False
-            
+            else: 
+                self.on_ground = False
+
         self.coords = self.pos // BLOCK_SIZE
         self.chunk = self.coords // CHUNK_SIZE
         self.rect.topleft = self.pos - self.camera.pos
@@ -161,6 +162,7 @@ class Player(pygame.sprite.Sprite):
     def debug(self, screen, mpos):
         self.crosshair.debug(screen, mpos)
         pygame.draw.rect(screen, (255, 255, 255), self.rect, width=1)
+        pygame.draw.rect(screen, (255, 0, 0), self.bottom_bar, width=2)
         for rect in self.detecting_rects:
             pygame.draw.rect(screen, (255, 0, 0), rect, width=1)
 
@@ -196,7 +198,7 @@ class Player(pygame.sprite.Sprite):
     def move(self, blocks, dt):
         split = ceil(90 * dt / 62.5 * 1.5)
         flag = False
-        detecting_rects = []
+        detecting_rects = list()
         
         for _ in range(split):
             for y in range(4):
