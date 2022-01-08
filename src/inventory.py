@@ -14,6 +14,15 @@ class Item(object):
         self.count = 1
         self.nbt = {}
 
+class InventoryFullException(Exception):
+    def __init__(self, item: Item, message="The inventory was full when trying to add item: ") -> None:
+        self.message = message
+        self.item = item
+        super().__init__()
+
+    def __str__(self) -> str:
+        return (self.message + self.item.name)
+
 class Inventory(object):
     """Class that updates and draws the inventory and manages its contents."""
 
@@ -134,29 +143,20 @@ class Hotbar(object):
         self.items = hotbar_items
         if not self.inventory.visible:
             keys = pygame.key.get_pressed()
-            for i in range(K_1, K_9+1):
-                if keys[i]:
-                    self.selected = i-K_0-1
-                    self.fade_timer = time.time()
+            # Checking if the player has pressed a key within the range 1-9
+            # range() is not inclusive so we +1 to the max bounds
+            for num_key in range(K_1, K_9 + 1):
+                if keys[num_key]:
+                    self.change_selected(num_key - K_0 - 1) # Minusing the lowest bounds and 1 (because we +1-ed earlier)
+                    self.fade_timer = time.time() # Resetting the fade timer
 
-            if scroll == 4:
-                if self.selected == 0:
-                    self.selected = 8
-                else:
-                    self.selected -= 1
-            elif scroll == 5:
-                if self.selected == 8:
-                    self.selected = 0
-                else:
-                    self.selected += 1
+            match scroll:
+                case 4: self.scroll.increase()
+                case 5: self.scroll.decrease()
 
             if scroll:
                 self.fade_timer = time.time()
-
-        if self.selected in self.items:
-            self.inventory.player.holding = self.items[self.selected].name
-        else:
-            self.inventory.player.holding = None
+                self.scroll.update()
 
     def draw(self, screen):
         screen.blit(hotbar_img, self.slot_start)
@@ -171,3 +171,36 @@ class Hotbar(object):
                 blitted_text = smol_text(self.items[self.selected].name.replace("_", " ").capitalize())
                 surf, pos = create_text_box(blitted_text, (WIDTH/2-blitted_text.get_width()/2-8, HEIGHT-92), opacity)
                 screen.blit(surf, pos)
+
+    def change_selected(self, new: int) -> None:
+        """Change the selected slot
+
+        Args:
+            new (int): The new slot to select
+        """
+
+        self.scroll.current = new
+        self.selected = new
+
+    class HotbarScroll():
+        """Micro-class that provides a cleaner implementation for cyclical scrolling"""
+        def __init__(self, min_bounds: int, max_bounds: int, hotbar) -> None:
+            self.min = min_bounds
+            self.max = max_bounds
+            self.hotbar = hotbar
+            self.current = 0
+
+        def update(self) -> None:
+            self.hotbar.selected = self.current
+
+        def increase(self) -> None:
+            """Increase the current value by 1 and cycle if needed"""
+            self.current += 1
+            if self.current > self.max:
+                self.current = self.min
+
+        def decrease(self) -> None:
+            """Decrease the current value by 1 and cycle if needed"""
+            self.current -= 1
+            if self.current < self.min:
+                self.current = self.max
