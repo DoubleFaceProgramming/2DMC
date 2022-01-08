@@ -210,7 +210,7 @@ class Player(pygame.sprite.Sprite):
                                 colliding, detecting_rects = block_collide(
                                     floor(self.pos.x), floor(self.pos.y+self.vel.y/split), 
                                     self.width, self.height, 
-                                    block, detecting_rects)
+                                    detecting_rects, block)
                                 if colliding:
                                     self.pos.y = floor(block.pos.y + BLOCK_SIZE)
                                     self.vel.y = 0
@@ -220,7 +220,7 @@ class Player(pygame.sprite.Sprite):
                                     colliding, detecting_rects = block_collide(
                                         floor(self.pos.x), ceil(self.pos.y+self.vel.y/split), 
                                         self.width, self.height, 
-                                        block, detecting_rects)
+                                        detecting_rects, block)
                                     if colliding:
                                         self.pos.y = ceil(block.pos.y - self.height)
                                         self.vel.y = 0
@@ -229,7 +229,7 @@ class Player(pygame.sprite.Sprite):
                                     colliding, detecting_rects = block_collide(
                                         ceil(self.pos.x), ceil(self.pos.y+self.vel.y/split), 
                                         self.width, self.height, 
-                                        block, detecting_rects)
+                                        detecting_rects, block)
                                     if colliding:
                                         self.pos.y = ceil(block.pos.y - self.height)
                                         self.vel.y = 0
@@ -248,7 +248,7 @@ class Player(pygame.sprite.Sprite):
                                 colliding, detecting_rects = block_collide(
                                     floor(self.pos.x+self.vel.x/split), floor(self.pos.y), 
                                     self.width, self.height, 
-                                    block, detecting_rects)
+                                    detecting_rects, block)
                                 if colliding:
                                     self.pos.x = floor(block.pos.x + BLOCK_SIZE)
                                     self.vel.x = 0
@@ -257,7 +257,7 @@ class Player(pygame.sprite.Sprite):
                                 colliding, detecting_rects = block_collide(
                                     ceil(self.pos.x+self.vel.x/split), ceil(self.pos.y), 
                                     self.width, self.height, 
-                                    block, detecting_rects)
+                                    detecting_rects, block)
                                 if colliding:
                                     self.pos.x = ceil(block.pos.x - self.width)
                                     self.vel.x = 0
@@ -318,15 +318,16 @@ class Player(pygame.sprite.Sprite):
                 if is_placeable(self, block_pos, BLOCK_DATA[self.holding], neighbors):
                     set_block(chunks, block_pos, self.holding, neighbors)
                     
-    def toggle_inventory(self):
-        self.inventory.visible = not self.inventory.visible
-        if self.inventory.visible:
-            pygame.mouse.set_visible(True)
-        else:
-            pygame.mouse.set_visible(False)
-            if self.inventory.selected:
-                self.inventory.add_item(self.inventory.selected.name)
-                self.inventory.selected = None
+    def toggle_inventory(self) -> None:
+        """Toggle the players inventory."""
+        
+        # Toggle inventory and mouse visibility
+        self.inventory.visible = not self.inventory.visible 
+        pygame.mouse.set_visible(self.inventory.visible)
+        if not self.inventory.visible:
+            if self.inventory.selected: # If an item was being hovered when the inventory was closed:
+                self.inventory.add_item(self.inventory.selected.name) # Add the item
+                self.inventory.selected = None      
                 
     def pick_block(self, mpos: pygame.math.Vector2) -> None:
         """Pick the block at the mouse position, with all the functionality in 3D Minecraft.
@@ -334,6 +335,7 @@ class Player(pygame.sprite.Sprite):
         Args:
             mpos (pygame.math.Vector2): The position of the mouse cursor, used to find the block the player is hovering over.
         """
+        
         if block_name := self.crosshair.block_at_pos(mpos):
             # Saving the original hotbar item.
             old_slot = self.inventory.hotbar.items[self.inventory.hotbar.selected] 
