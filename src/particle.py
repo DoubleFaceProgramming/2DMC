@@ -6,14 +6,14 @@ from src.utils import *
 
 class Particle(pygame.sprite.Sprite):
     instances = []
-    
+
     def __init__(self, type, pos, master=None):
         pygame.sprite.Sprite.__init__(self)
         self.__class__.instances.append(self)
         self.type = type
         self.pos = VEC(pos)
         self.coords = self.pos // BLOCK_SIZE
-        
+
         if self.type == "block":
             self.size = randint(6, 8)
             self.image = pygame.Surface((self.size, self.size))
@@ -25,7 +25,7 @@ class Particle(pygame.sprite.Sprite):
                 if color == (255, 255, 255):
                     self.__class__.instances.remove(self)
                     self.kill()
-                    
+
         self.timer = time.time()
         self.survive_time = randint(4, 8) / 10
 
@@ -33,14 +33,14 @@ class Particle(pygame.sprite.Sprite):
         if time.time() - self.timer > self.survive_time:
             self.__class__.instances.remove(self)
             self.kill()
-            
+
         if inttup(self.coords) in blocks:
             if blocks[inttup(self.coords)].data["collision_box"] == "none":
                 self.vel.y += GRAVITY * dt
         else:
             self.vel.y += GRAVITY * dt
         self.vel.x *= 0.93
-        
+
         neighbors = [
             inttup(self.coords),
             inttup((self.coords.x-1, self.coords.y)),
@@ -58,7 +58,7 @@ class Particle(pygame.sprite.Sprite):
                     if pygame.Rect(block.pos.x, block.pos.y, BLOCK_SIZE, BLOCK_SIZE).collidepoint(self.pos.x, self.pos.y+self.vel.y*dt):
                         self.vel.y = 0
                         break
-                    
+
         self.pos += self.vel * dt
         self.coords = self.pos // BLOCK_SIZE
 

@@ -13,7 +13,7 @@ for j in os.listdir(pathof("data/blocks/")):
 
 class Block(pygame.sprite.Sprite):
     instances = {}
-    
+
     def __init__(self, chunk, pos, name):
         pygame.sprite.Sprite.__init__(self)
         self.__class__.instances[tuple(pos)] = self
@@ -29,7 +29,7 @@ class Block(pygame.sprite.Sprite):
             "1 0": inttup((self.coords.x+1, self.coords.y))
         }
         self.image = block_textures[self.name]
-        
+
         if self.data["collision_box"] == "full":
             self.rect = pygame.Rect(self.pos, (BLOCK_SIZE, BLOCK_SIZE))
         elif self.data["collision_box"] == "none":

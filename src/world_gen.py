@@ -21,7 +21,7 @@ class StructureGenerator(object):
         self.files = structures[folder]
         self.distribution = structures[folder]["distribution"]
         self.BLOCK_DATA = {}
-        
+
         max_sizes = []
         for file in self.files:
             if file != "distribution":
@@ -29,35 +29,35 @@ class StructureGenerator(object):
                 max_sizes.append((max(x for x, y in self.BLOCK_DATA[file][1]) - min(x for x, y in self.BLOCK_DATA[file][1]) + 1,
                             max(y for x, y in self.BLOCK_DATA[file][1]) - min(y for x, y in self.BLOCK_DATA[file][1]) + 1))
         self.max_size = max(max_sizes)
-        
+
         self.chunks_to_check = int(ceil(self.max_size[0] / CHUNK_SIZE)), int(ceil(self.max_size[1] / CHUNK_SIZE))
 
     def generate(self, origin):
         seed(SEED + origin[0] * CHUNK_SIZE + origin[1] * CHUNK_SIZE)
         file = choices(self.distribution["files"], weights=self.distribution["weights"])[0]
         mirror = randint(0, 1)
-        
+
         block_data = {
             (origin[0] + offset[0] if mirror else origin[0] - offset[0], origin[1] + offset[1]):
             (block if "," not in block else (choices([i.split("=")[0] for i in block.split(",")],
             weights=[int(i.split("=")[1]) for i in block.split(",")])[0]))
             for offset, block in self.BLOCK_DATA[file][1].items()
         }
-        
+
         return block_data
 
 class Chunk(object):
     """The class responsible for updating and drawing chunks."""
     instances = {}
-    
+
     def __init__(self, pos):
         self.pos = pos
         self.block_data = self.generate(pos[0], pos[1])
         self.__class__.instances[self.pos] = self
         self.rect = Rect(0, 0, CHUNK_SIZE * BLOCK_SIZE, CHUNK_SIZE * BLOCK_SIZE)
-        
+
     def update(self, camera) -> None:
-        self.rect.topleft = (self.pos[0] * CHUNK_SIZE * BLOCK_SIZE - camera.pos[0], 
+        self.rect.topleft = (self.pos[0] * CHUNK_SIZE * BLOCK_SIZE - camera.pos[0],
                              self.pos[1] * CHUNK_SIZE * BLOCK_SIZE - camera.pos[1])
 
     def draw(self, camera, screen) -> None:
@@ -69,22 +69,22 @@ class Chunk(object):
     def debug(self, screen) -> None:
         """Draws a debug rect around the chunk borders. Only called when global variable 'debug' is true."""
         drawrect(screen, (255, 255, 0), self.rect, width=1)
-    
+
     def generate(self, x: int, y: int) -> dict:
         """Takes the chunk coordinates and returns a dictionary containing the block data inside the chunk"""
-        
+
         seed(x*CHUNK_SIZE+y*CHUNK_SIZE)
         chunk_data = {}
         for y_pos in range(CHUNK_SIZE):
             for x_pos in range(CHUNK_SIZE):
                 target = (x * CHUNK_SIZE + x_pos, y * CHUNK_SIZE + y_pos)
                 block_name = ""
-                
+
                 # Cave noise map
                 cave_noise_map_coords = [target[0]/70, target[1]/70]
                 # Don't generate blocks if it satifies a certain range of values in the cave noise map, AKA a cave
                 cave_noise_map_value = cave_generate(cave_noise_map_coords)
-                
+
                 if not (92.7 < cave_noise_map_value < 100):
                     # Generate terrain
                     height = terrain_generate(target[0])
@@ -140,14 +140,14 @@ def get_structures(x: int, y: int, generator: StructureGenerator, chance: tuple)
             block_x = x * CHUNK_SIZE + randrange(0, CHUNK_SIZE)
             # Generate on the surface of the world
             grass_y = terrain_generate(block_x)-1
-            
+
             # If it is cut off by a cave, don't generate
             if (92.7 < cave_generate([block_x/70, grass_y/70]) < 100) or (92.7 < cave_generate([block_x/70, (grass_y+1)/70]) < 100):
                 return out
             # Structures that are not in this chunk
             if not 0 <= grass_y - y * CHUNK_SIZE < CHUNK_SIZE:
                 return out
-            
+
             out.append(generator.generate((block_x, grass_y)))
     return out
 
@@ -204,7 +204,7 @@ def load_chunks(camera) -> list:
             rendered_chunks.append(chunk)
             if chunk not in Chunk.instances:
                 Chunk.instances[chunk] = Chunk(chunk)
-                
+
     unrendered_chunks = []
     for y in range(int(HEIGHT/(CHUNK_SIZE*BLOCK_SIZE)+4)):
         for x in range(int(WIDTH/(CHUNK_SIZE*BLOCK_SIZE)+4)):
@@ -215,13 +215,13 @@ def load_chunks(camera) -> list:
             if chunk in Chunk.instances:
                 if chunk not in rendered_chunks:
                     unrendered_chunks.append(chunk)
-                    
+
     for chunk in unrendered_chunks:
         for block in Chunk.instances[chunk].block_data:
             if block in Block.instances:
                 Block.instances[block].kill()
                 del Block.instances[block]
-                
+
     return rendered_chunks
 
 def load_structures() -> dict:
@@ -249,5 +249,5 @@ def load_structures() -> dict:
                 files = [d[:-2].split(" ")[0] for d in distribution]
                 structures[folder]["distribution"] = {"weights": weights, "files": files}
     return structures
-            
+
 structures = load_structures()

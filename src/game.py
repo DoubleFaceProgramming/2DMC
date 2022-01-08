@@ -23,7 +23,7 @@ class Game():
         os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (50, 50)
         pygame.display.set_caption("2D Minecraft")
         pygame.mouse.set_visible(False)
-        
+
         seed(SEED)
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), HWSURFACE | DOUBLEBUF)
@@ -36,12 +36,12 @@ class Game():
     def update(self, mpos) -> None:
         dt = self.clock.tick_busy_loop(FPS) / 16
         if dt > 12: dt = 12
-        
+
         mouse_state = 0
         for event in pygame.event.get():
             if event.type == QUIT:
                 self.running = False
-                
+
             if event.type == MOUSEBUTTONDOWN:
                 # Placing and breaking blocks
                 mouse_state = event.button
@@ -52,7 +52,7 @@ class Game():
                         self.player.pick_block(mpos)
                     elif event.button == 3:
                         self.player.place_block(Chunk.instances, mpos)
-        
+
             if event.type == KEYDOWN:
                 # Toggling debug mode and the player inventory
                 if event.key == K_F5:
@@ -67,23 +67,23 @@ class Game():
             particle.update(Block.instances, dt)
         for chunk in self.rendered_chunks:
             Chunk.instances[chunk].update(self.player.camera)
-        
+
     def draw(self, screen, mpos) -> None:
         screen.fill((135, 206, 250))
-        
+
         # Calling relevant draw functions.
         for chunk in self.rendered_chunks:
             Chunk.instances[chunk].draw(self.player.camera, screen)
         for particle in Particle.instances:
             particle.draw(self.player.camera, screen)
-            
+
         self.player.draw(screen, mpos)
-        
+
     def debug(self, screen, mpos) -> None:
         # Generating some debug values and storing in a dict for easy access.
         debug_values = {
             "FPS": int(self.clock.get_fps()),
-            "Seed": SEED, 
+            "Seed": SEED,
             "Velocity": (round(self.player.vel.x, 3), round(self.player.vel.y, 3)),
             "Positon": inttup(self.player.coords),
             "Camera offset": inttup(self.player.pos - self.player.camera.pos - VEC(SCR_DIM) / 2 + self.player.size / 2),
@@ -93,30 +93,30 @@ class Game():
             "Block position": inttup((self.player.pos + (mpos - self.player.rect.topleft)) // BLOCK_SIZE),
             "Detecting rects": len(self.player.detecting_rects),
         }
-        
+
         # Calling the relevant debug functions.
         self.player.debug(screen, mpos)
         for chunk in self.rendered_chunks:
-            Chunk.instances[chunk].debug(screen)  
-            
+            Chunk.instances[chunk].debug(screen)
+
         # Displaying the debug values.
         for line, name in enumerate(debug_values):
             screen.blit(text(f"{name}: {debug_values[name]}"), (6, SPACING * line))
-        
+
     def run(self) -> None:
         """Start the main loop of the game, which handles the calling of other functions."""
         while self.running:
             mpos = VEC(pygame.mouse.get_pos())
-            
+
             self.update(mpos)
             self.draw(self.screen, mpos)
             if self.debug_bool:
                 self.debug(self.screen, mpos)
-                
+
             pygame.display.flip()
-                
+
         self.quit()
-                        
+
     def quit(self) -> None:
         """Call quit functions & cleanup."""
         pygame.quit()

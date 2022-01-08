@@ -32,7 +32,7 @@ class Inventory(object):
             y_test = self.slot_start.y < mpos.y < self.slot_start.y+(self.slot_size[1]+5)*3
             x_test = self.slot_start.x < mpos.x < self.slot_start.x+(self.slot_size[0]+5)*9
             hotbar_y_test = 446 < mpos.y < 446+(self.slot_size[1]+5)
-            
+
             if y_test:
                 self.hovering = inttup(((mpos.x-self.slot_start.x)//(self.slot_size[0]+5), (mpos.y-self.slot_start.y)//(self.slot_size[1]+5)+1))
             elif hotbar_y_test:
@@ -52,7 +52,7 @@ class Inventory(object):
                     if self.selected:
                         self.set_slot(self.hovering, self.selected.name)
                         self.selected = None
-                        
+
         if m_state == 4 or m_state == 5:
             self.hotbar.update(m_state)
         else:
@@ -63,7 +63,7 @@ class Inventory(object):
         if self.visible:
             screen.blit(self.transparent_background, (0, 0))
             screen.blit(inventory_img, (VEC(SCR_DIM)/2-VEC(inventory_img.get_width()/2, inventory_img.get_height()/2)))
-            
+
             for slot in self.items:
                 item_img = pygame.transform.scale(block_textures[self.items[slot].name], self.slot_size)
                 if slot[1] != 0:
@@ -78,7 +78,7 @@ class Inventory(object):
                 if self.selected == None:
                     surf, pos = create_text_box(smol_text(name), (mpos[0]+12, mpos[1]-24), 255)
                     screen.blit(surf, pos)
-                    
+
             self.player.leg2.rect = self.player.leg2.image.get_rect(center=(593+self.player.width/2, 140+72))
             screen.blit(self.player.leg2.image, self.player.leg2.rect.topleft)
             self.player.arm2.rect = self.player.arm2.image.get_rect(center=(593+self.player.width/2, 140+35))
@@ -132,7 +132,7 @@ class Hotbar(object):
                 if keys[i]:
                     self.selected = i-K_0-1
                     self.fade_timer = time.time()
-                    
+
             if scroll == 4:
                 if self.selected == 0:
                     self.selected = 8
@@ -143,10 +143,10 @@ class Hotbar(object):
                     self.selected = 0
                 else:
                     self.selected += 1
-                    
+
             if scroll:
                 self.fade_timer = time.time()
-                
+
         if self.selected in self.items:
             self.inventory.player.holding = self.items[self.selected].name
         else:
@@ -158,7 +158,7 @@ class Hotbar(object):
         for slot in self.items:
             item_img = pygame.transform.scale(block_textures[self.items[slot].name], self.slot_size)
             screen.blit(item_img, self.slot_start+VEC(8, 0)+VEC(slot*(self.slot_size[0]+10), 8))
-            
+
         if (time_elapsed := time.time() - self.fade_timer) < 3:
             if self.selected in self.items:
                 opacity = 255 * (3-time_elapsed) if time_elapsed > 2 else 255
