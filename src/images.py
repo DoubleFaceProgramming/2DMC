@@ -9,6 +9,7 @@ os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (50, 50)
 pygame.init()
 pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF)
 
+# Load player body parts
 player_head_img = pygame.image.load(pathof("assets/textures/player/head.png")).convert()
 player_body_img = pygame.image.load(pathof("assets/textures/player/body.png")).convert()
 player_arm_img = pygame.image.load(pathof("assets/textures/player/arm.png")).convert()
@@ -34,6 +35,7 @@ invert_player_body = pygame.transform.flip(player_body, True, False)
 invert_player_arm = pygame.transform.flip(player_arm, True, False)
 invert_player_leg = pygame.transform.flip(player_leg, True, False)
 
+# Load gui images
 inventory_img = pygame.image.load(pathof("assets/textures/gui/inventory.png")).convert_alpha()
 inventory_img = pygame.transform.scale(inventory_img, (int(inventory_img.get_width()*2.5), int(inventory_img.get_height()*2.5)))
 hotbar_img = pygame.image.load(pathof("assets/textures/gui/hotbar.png")).convert_alpha()
@@ -41,6 +43,7 @@ hotbar_img = pygame.transform.scale(hotbar_img, (int(hotbar_img.get_width()*2.5)
 hotbar_selection_img = pygame.image.load(pathof("assets/textures/gui/hotbar_selection.png")).convert_alpha()
 hotbar_selection_img = pygame.transform.scale(hotbar_selection_img, (int(hotbar_selection_img.get_width()*2.5), int(hotbar_selection_img.get_height()*2.5)))
 
+# Load block textures
 block_textures = {}
 for img in os.listdir(pathof("assets/textures/blocks/")):
     block_textures[img[:-4]] = pygame.image.load(os.path.join(pathof("assets/textures/blocks/"), img)).convert()

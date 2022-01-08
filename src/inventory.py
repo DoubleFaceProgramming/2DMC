@@ -1,4 +1,5 @@
 import pygame
+from pygame import Surface
 from pygame.constants import K_0, K_1, K_9
 import time
 
@@ -26,7 +27,7 @@ class InventoryFullException(Exception):
 class Inventory(object):
     """Class that updates and draws the inventory and manages its contents."""
 
-    def __init__(self, player):
+    def __init__(self, player) -> None:
         self.player = player
         self.slot_start = VEC(400, 302)
         self.slot_size = (40, 40)
@@ -39,52 +40,61 @@ class Inventory(object):
         self.transparent_background = pygame.Surface((WIDTH, HEIGHT)).convert_alpha()
         self.transparent_background.fill((0, 0, 0, 125))
 
-    def update(self, m_state):
+    def update(self, m_state: int) -> None:
         if self.visible:
             mpos = VEC(pygame.mouse.get_pos())
+            # Check if the mouse is within the inventory slots area
             y_test = self.slot_start.y < mpos.y < self.slot_start.y+(self.slot_size[1]+5)*3
             x_test = self.slot_start.x < mpos.x < self.slot_start.x+(self.slot_size[0]+5)*9
+            # Check if the mouse is within the inventory hotbar slots area
             hotbar_y_test = 446 < mpos.y < 446+(self.slot_size[1]+5)
 
+            # Save the item that the mouse is currently hovering over
             if y_test:
                 self.hovering = inttup(((mpos.x-self.slot_start.x)//(self.slot_size[0]+5), (mpos.y-self.slot_start.y)//(self.slot_size[1]+5)+1))
             elif hotbar_y_test:
                 self.hovering = inttup(((mpos.x-400)//(self.slot_size[0]+5), 0))
             else:
                 self.hovering = None
+            # If the mouse left button is pressed when it is hovering over a valid slot
             if m_state == 1 and (y_test or hotbar_y_test) and x_test:
-                if self.hovering in self.items:
-                    if not self.selected:
-                        self.selected = self.items[self.hovering]
-                        self.clear_slot(self.hovering)
-                    else:
-                        tmp = self.selected
-                        self.selected = self.items[self.hovering]
-                        self.set_slot(self.hovering, tmp.name)
-                else:
-                    if self.selected:
-                        self.set_slot(self.hovering, self.selected.name)
-                        self.selected = None
+                if self.hovering in self.items:                   # If the hovering slot has an item
+                    if not self.selected:                         # If nothing is currently picked up
+                        self.selected = self.items[self.hovering] # Pick up the item that is being hovered over
+                        self.clear_slot(self.hovering)            # Remove the item in the slot
+                    else:                                         # If something is already picked up
+                        tmp = self.selected                       # Save the name of the item that is picked up
+                        self.selected = self.items[self.hovering] # Set the picked up item to the one hovered over
+                        self.set_slot(self.hovering, tmp.name)    # Set the hovered slot to the item that was saved
+                else:                                                    # If the hovered slot is empty
+                    if self.selected:                                    # If there is something that is picked up
+                        self.set_slot(self.hovering, self.selected.name) # Set the hovered slot to be that item
+                        self.selected = None                             # Empty whatever was picked up
 
+        # If the scroll wheel is scrolled, pass that into the hotbar update, if not, pass in 0
         if m_state == 4 or m_state == 5:
             self.hotbar.update(m_state)
         else:
             self.hotbar.update(0)
 
-    def draw(self, screen):
+    def draw(self, screen: Surface) -> None:
         self.hotbar.draw(screen)
         if self.visible:
+            # Draw the dimming layer of background when the inventory opens up
             screen.blit(self.transparent_background, (0, 0))
             screen.blit(inventory_img, (VEC(SCR_DIM)/2-VEC(inventory_img.get_width()/2, inventory_img.get_height()/2)))
 
+            # Display the item images in the correct slots
             for slot in self.items:
                 item_img = pygame.transform.scale(block_textures[self.items[slot].name], self.slot_size)
                 if slot[1] != 0:
                     screen.blit(item_img, self.slot_start+VEC(slot[0]*(self.slot_size[0]+5), (slot[1]-1)*(self.slot_size[1]+5)))
                 else:
                     screen.blit(item_img, self.slot_start+VEC(0, 190)+VEC(slot[0]*(self.slot_size[0]+5), (slot[1]-1)*(self.slot_size[1]+5)))
+            # Display the item that is picked up but slightly smaller by a factor of 0.9
             if self.selected:
                 screen.blit(pygame.transform.scale(block_textures[self.selected.name], inttup(VEC(self.slot_size)*0.9)), VEC(pygame.mouse.get_pos())-VEC(self.slot_size)*0.45)
+            # Draw the textbox of the item that is being hovered over
             if self.hovering in self.items:
                 name = self.items[self.hovering].name.replace("_", " ").capitalize()
                 mpos = pygame.mouse.get_pos()
@@ -92,6 +102,7 @@ class Inventory(object):
                     surf, pos = create_text_box(smol_text(name), (mpos[0]+12, mpos[1]-24), 255)
                     screen.blit(surf, pos)
 
+            # Draw the player paper doll in the inventory
             self.player.leg2.rect = self.player.leg2.image.get_rect(center=(593+self.player.width/2, 140+72))
             screen.blit(self.player.leg2.image, self.player.leg2.rect.topleft)
             self.player.arm2.rect = self.player.arm2.image.get_rect(center=(593+self.player.width/2, 140+35))
@@ -105,25 +116,49 @@ class Inventory(object):
             self.player.leg.rect = self.player.leg.image.get_rect(center=(593+self.player.width/2, 140+72))
             screen.blit(self.player.leg.image, self.player.leg.rect.topleft)
 
-    def set_slot(self, slot, item):
+    def set_slot(self, slot: int, item: str) -> None:
+        """Set the given slot in the inventory to the given item
+
+        Args:
+            slot (int): The slot to set
+            item (str): A string that contains the item name
+        """
+
         self.items[slot] = Item(item)
 
-    def clear_slot(self, slot):
+    def clear_slot(self, slot: int) -> None:
+        """Clear a slot in the inventory
+
+        Args:
+            slot (int): The slot to clear
+        """
+
         del self.items[slot]
 
-    def add_item(self, item):
+    def add_item(self, item: str) -> None:
+        """Append the item to the first empty slot
+
+        Args:
+            item (str): The name of the item to add
+
+        Raises:
+            InventoryFullException: Raised if there is no room in the inventory.
+        """
+
+        item_obj = Item(item)
         for y in range(4):
             for x in range(9):
                 if not (x, y) in self.items:
-                    self.items[(x, y)] = Item(item)
-                    return True
-        return False
+                    self.items[(x, y)] = item_obj
+                    return
+
+        raise InventoryFullException(item_obj)
 
 class Hotbar(object):
     """Class that draws, updates and provides functionality for the hotbar."""
 
-    def __init__(self, inventory):
-        self.slot_start = VEC(WIDTH/2-hotbar_img.get_width()/2, HEIGHT-hotbar_img.get_height())
+    def __init__(self, inventory: Inventory) -> None:
+        self.slot_start = VEC(WIDTH / 2 - hotbar_img.get_width() / 2, HEIGHT - hotbar_img.get_height())
         self.slot_size = (40, 40)
         self.inventory = inventory
         items = {}
@@ -133,8 +168,10 @@ class Hotbar(object):
         self.items = items
         self.selected = 0
         self.fade_timer = 0
+        self.scroll = self.HotbarScroll(0, 8, self)
 
-    def update(self, scroll):
+    def update(self, scroll: int) -> None:
+        # Updating the hotbar with items from the inventory
         hotbar_items = {}
         for slot in self.inventory.items:
             if slot[1] == 0:
@@ -143,6 +180,7 @@ class Hotbar(object):
         self.items = hotbar_items
         if not self.inventory.visible:
             keys = pygame.key.get_pressed()
+
             # Checking if the player has pressed a key within the range 1-9
             # range() is not inclusive so we +1 to the max bounds
             for num_key in range(K_1, K_9 + 1):
@@ -150,26 +188,33 @@ class Hotbar(object):
                     self.change_selected(num_key - K_0 - 1) # Minusing the lowest bounds and 1 (because we +1-ed earlier)
                     self.fade_timer = time.time() # Resetting the fade timer
 
+            # Increasing or decreasing scroll object (using a kinda unecessary but cool new feature :D)
             match scroll:
                 case 4: self.scroll.increase()
                 case 5: self.scroll.decrease()
 
+            # If the user has scrolled, reset the fade time and update the scroll obj
             if scroll:
                 self.fade_timer = time.time()
                 self.scroll.update()
 
-    def draw(self, screen):
+    def draw(self, screen: pygame.Surface) -> None:
+        # Drawing the hotbar and selected "icon"
         screen.blit(hotbar_img, self.slot_start)
-        screen.blit(hotbar_selection_img, (self.slot_start-VEC(2, 2)+VEC(self.slot_size[0]+10, 0)*self.selected))
+        screen.blit(hotbar_selection_img, (self.slot_start - VEC(2, 2) + VEC(self.slot_size[0] + 10, 0) * self.selected))
+
+        # Drawing the item texture onto the hotbar slot
         for slot in self.items:
             item_img = pygame.transform.scale(block_textures[self.items[slot].name], self.slot_size)
-            screen.blit(item_img, self.slot_start+VEC(8, 0)+VEC(slot*(self.slot_size[0]+10), 8))
+            screen.blit(item_img, self.slot_start + VEC(8, 0) + VEC(slot * (self.slot_size[0] + 10), 8))
 
+        # If it has been 3 seconds since self.fade_timer has been reset:
         if (time_elapsed := time.time() - self.fade_timer) < 3:
-            if self.selected in self.items:
-                opacity = 255 * (3-time_elapsed) if time_elapsed > 2 else 255
+            if self.selected in self.items: # If you are holding an item
+                opacity = 255 * (3-time_elapsed) if time_elapsed > 2 else 255 # Dims the opacity if it has been longer than 2 seconds
+                # Generating text and a text box
                 blitted_text = smol_text(self.items[self.selected].name.replace("_", " ").capitalize())
-                surf, pos = create_text_box(blitted_text, (WIDTH/2-blitted_text.get_width()/2-8, HEIGHT-92), opacity)
+                surf, pos = create_text_box(blitted_text, (WIDTH / 2-blitted_text.get_width() / 2 - 8, HEIGHT - 92), opacity)
                 screen.blit(surf, pos)
 
     def change_selected(self, new: int) -> None:

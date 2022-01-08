@@ -138,16 +138,16 @@ class Player(pygame.sprite.Sprite):
         else:
             self.on_ground = False
 
+        # Update the inventory and the crosshair and animate self
+        self.inventory.update(m_state)
+        self.crosshair.update(dt)
+        self.animate(dt)
+
         # Update some position values
         self.coords = self.pos // BLOCK_SIZE
         self.chunk = self.coords // CHUNK_SIZE
         self.rect.topleft = self.pos - self.camera.pos
-
-        self.animate(dt)
-
-        # Update the inventory and the crosshair
-        self.inventory.update(m_state)
-        self.crosshair.update(dt)
+        self.holding = self.inventory.hotbar.items[self.inventory.hotbar.selected].name        
 
     def draw(self, screen: Surface, mpos: pygame.math.Vector2) -> None:
         self.leg2.rect = self.leg2.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
