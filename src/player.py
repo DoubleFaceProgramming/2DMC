@@ -329,12 +329,14 @@ class Player(pygame.sprite.Sprite):
     def pick_block(self, mpos):
         if block_name := self.crosshair.block_at_pos(mpos):
             if block_name in [item.name for item in self.inventory.items.values()]: # If the desired block is in the players's inventory.
+                inventory_pos = [pos for pos, item in self.inventory.items.items() if item.name == block_name][0] # Finding the inventory position of the desired item.
                 if self.inventory.hotbar.selected in self.inventory.hotbar.items: # If player is holding an item
                     old_slot = self.inventory.hotbar.items[self.inventory.hotbar.selected] # Saving the original hotbar item.
-                    inventory_pos = [pos for pos, item in self.inventory.items.items() if item.name == block_name][0] # Finding the inventory position of the desired item.
-                    self.inventory.set_slot(inventory_pos, old_slot.name) # Saving the old item to the old inventory position.         
-                            
-            self.inventory.set_slot((self.inventory.hotbar.selected, 0), block_name) # Setting the hotbar slot to the desired item.
+                    self.inventory.set_slot(inventory_pos, old_slot.name) # Saving the original hotbar item to the old inventory position.
+                    self.inventory.set_slot((self.inventory.hotbar.selected, 0), block_name) # Setting the hotbar slot to the desired item.
+                else: # If the player is NOT holding an item
+                    self.inventory.set_slot((self.inventory.hotbar.selected, 0), block_name) # Setting the hotbar slot to the desired item.
+                    self.inventory.clear_slot(inventory_pos) # Removing the item from the inventory position
         
 class Crosshair():
     """The class responsible for the drawing and updating of the crosshair"""
