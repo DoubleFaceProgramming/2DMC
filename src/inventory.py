@@ -190,8 +190,8 @@ class Hotbar(object):
 
             # Increasing or decreasing scroll object (using a kinda unecessary but cool new feature :D)
             match scroll:
-                case 4: self.scroll.increase()
-                case 5: self.scroll.decrease()
+                case 4: self.scroll.decrease()
+                case 5: self.scroll.increase()
 
             # If the user has scrolled, reset the fade time and update the scroll obj
             if scroll:
