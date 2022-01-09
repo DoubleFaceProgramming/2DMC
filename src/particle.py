@@ -39,24 +39,24 @@ class Particle(pygame.sprite.Sprite):
             self.__class__.instances.remove(self)
             self.kill()
 
-        # Gravity
         if inttup(self.coords) in blocks:
+            # If the coordinates it is at has a block without a collision box
             if blocks[inttup(self.coords)].data["collision_box"] == "none":
-                self.vel.y += GRAVITY * dt
-        else:
-            self.vel.y += GRAVITY * dt
+                self.vel.y += GRAVITY * dt # Fall
+        else:                              # If the current space is empty
+            self.vel.y += GRAVITY * dt     # Fall
 
+        # X-velocity gets decreased over time
         self.vel.x *= 0.93
 
         neighbors = [
-            inttup(self.coords),
             inttup((self.coords.x-1, self.coords.y)),
             inttup((self.coords.x+1, self.coords.y)),
             inttup((self.coords.x, self.coords.y-1)),
             inttup((self.coords.x, self.coords.y+1)),
         ]
 
-        # Collision
+        # Collision with the blocks above, below, to the left and the right
         for pos in neighbors:
             if pos in blocks:
                 block = blocks[pos]
