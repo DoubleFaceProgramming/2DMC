@@ -16,7 +16,7 @@ def pathof(file: str) -> str:
     Returns:
         str: The bundled - exe compatible file path
     """
-    
+
     abspath = os.path.abspath(os.path.join(BUNDLE_DIR, file))
     if not os.path.exists(abspath):
         abspath = file

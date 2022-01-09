@@ -106,9 +106,6 @@ class Game():
         for line, name in enumerate(debug_values):
             screen.blit(text(f"{name}: {debug_values[name]}"), (6, SPACING * line))
 
-    def settings(self):
-        pass
-
     def run(self) -> None:
         """Start the main loop of the game, which handles the calling of other functions."""
         while self.running:

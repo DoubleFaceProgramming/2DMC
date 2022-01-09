@@ -1,5 +1,9 @@
 {
     "jump": "w",
     "left": "a",
-    "right": "d"
+    "right": "d",
+    "attack": "left",
+    "interact": "right",
+    "pickblock": "middle",
+    "inventory": "e"
 }
