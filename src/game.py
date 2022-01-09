@@ -94,6 +94,7 @@ class Game():
             "Rendered blocks": len(Block.instances),
             "Block position": inttup((self.player.pos + (mpos - self.player.rect.topleft)) // BLOCK_SIZE),
             "Detecting rects": len(self.player.detecting_rects),
+            "Particles": len(Particle.instances),
         }
 
         # Calling the relevant debug functions.
