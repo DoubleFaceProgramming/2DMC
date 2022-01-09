@@ -2,8 +2,8 @@
     "jump": "w",
     "left": "a",
     "right": "d",
-    "attack": "left",
-    "interact": "right",
-    "pickblock": "middle",
+    "attack": "left_mouse_button",
+    "interact": "right_mouse_button",
+    "pickblock": "middle_mouse_button",
     "inventory": "e"
 }

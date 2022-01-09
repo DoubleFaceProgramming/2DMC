@@ -8,6 +8,7 @@ from pygame.locals import  (
     K_e, K_F5,
     QUIT,
 )
+from src.settings import Settings
 from src.inventory import Item
 from src.player import *
 from src.particle import *
@@ -30,6 +31,7 @@ class Game():
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), HWSURFACE | DOUBLEBUF)
         self.clock = pygame.time.Clock()
+        self.settings = Settings()
         self.rendered_chunks = []
         self.debug_bool = False
         self.player = Player()
