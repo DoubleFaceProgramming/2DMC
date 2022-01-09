@@ -12,6 +12,7 @@ from src.block import Block, BLOCK_DATA
 from src.player import Camera
 from src.utils import pathof
 
+seed(SEED)
 snoise = OpenSimplex(seed=SEED)
 pnoise = PerlinNoise(seed=SEED)
 
