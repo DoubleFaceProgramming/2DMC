@@ -4,7 +4,6 @@ import time
 
 from src.constants import *
 from src.utils import *
-from src.player import Camera
 
 class Particle(pygame.sprite.Sprite):
     """Class that handles the management, updation and drawing of particles."""
@@ -40,11 +39,13 @@ class Particle(pygame.sprite.Sprite):
             self.__class__.instances.remove(self)
             self.kill()
 
+        # Gravity
         if inttup(self.coords) in blocks:
             if blocks[inttup(self.coords)].data["collision_box"] == "none":
                 self.vel.y += GRAVITY * dt
         else:
             self.vel.y += GRAVITY * dt
+
         self.vel.x *= 0.93
 
         neighbors = [
@@ -54,19 +55,21 @@ class Particle(pygame.sprite.Sprite):
             inttup((self.coords.x, self.coords.y-1)),
             inttup((self.coords.x, self.coords.y+1)),
         ]
+
+        # Collision
         for pos in neighbors:
             if pos in blocks:
                 block = blocks[pos]
                 if block.data["collision_box"] != "none":
-                    if pygame.Rect(block.pos.x, block.pos.y, BLOCK_SIZE, BLOCK_SIZE).collidepoint(self.pos.x+self.vel.x*dt, self.pos.y):
+                    if pygame.Rect(block.pos.x, block.pos.y, BLOCK_SIZE, BLOCK_SIZE).collidepoint(self.pos.x + self.vel.x * dt, self.pos.y):
                         self.vel.x = 0
                         break
-                    if pygame.Rect(block.pos.x, block.pos.y, BLOCK_SIZE, BLOCK_SIZE).collidepoint(self.pos.x, self.pos.y+self.vel.y*dt):
+                    if pygame.Rect(block.pos.x, block.pos.y, BLOCK_SIZE, BLOCK_SIZE).collidepoint(self.pos.x, self.pos.y + self.vel.y * dt):
                         self.vel.y = 0
                         break
 
         self.pos += self.vel * dt
         self.coords = self.pos // BLOCK_SIZE
 
-    def draw(self, camera: Camera, screen: Surface):
+    def draw(self, camera, screen: Surface):
         screen.blit(self.image, (self.pos-camera.pos-VEC(self.image.get_size())/2))
