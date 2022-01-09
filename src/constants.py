@@ -20,6 +20,7 @@ SEED = randint(-2147483648, 2147483647)
 FPS = getattr(EnumDisplaySettings(EnumDisplayDevices().DeviceName, -1), "DisplayFrequency")
 VEC = Vector2
 
+CONF_DIR = "conf/"
 BUNDLE_DIR = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
 REGULAR_FONT_LOC = os.path.abspath(os.path.join(BUNDLE_DIR, "assets/fonts/regular.ttf"))
 if not os.path.exists(REGULAR_FONT_LOC):

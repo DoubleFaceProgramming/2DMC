@@ -34,6 +34,9 @@ from src.game import Game
 # if the module is executed in the top-level code environment, its __name__ is set to the string '__main__'.
 
 if __name__ == "__main__":
+    from src.settings import Settings
+    Settings()
+    quit()
     # This is a function. Functions "Encapsulate" a task (they combine many instructions into a single line of code).
     # Most programming languages provide many built in functions that would otherwise require many steps to accomplish,
     # for example computing the square root of a number. In general, we don't care how a function does what it does, only
