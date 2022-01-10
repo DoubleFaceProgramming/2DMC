@@ -1,4 +1,7 @@
 {
-    "enabled": true,
-    "reversed" : false
+    "reversed": true,
+
+    "default": {
+        "reversed": false
+    }
 }

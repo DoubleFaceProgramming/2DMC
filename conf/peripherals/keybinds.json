@@ -1,0 +1,29 @@
+{
+    "jump": "w",
+    "left": "a",
+    "right": "d",
+    "sneak": null,
+    "sprint": null,
+    "attack/destroy": "mouse_right",
+    "use/place": "mouse_left",
+    "pickblock": "c",
+    "inventory": "e",
+    "drop": null,
+    "debug": "f1",
+    "screenshot": null,
+
+    "default": {
+        "jump": "w",
+        "left": "a",
+        "right": "d",
+        "sneak": null,
+        "sprint": null,
+        "attack/destroy": "mouse_left",
+        "use/place": "mouse_right",
+        "pickblock": "mouse_middle",
+        "inventory": "e",
+        "drop": null,
+        "debug": "f1",
+        "screenshot": null
+    }
+}
