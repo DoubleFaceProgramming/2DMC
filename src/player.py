@@ -82,6 +82,14 @@ class Player(pygame.sprite.Sprite):
         self.inventory.add_item("poppy")
         self.inventory.add_item("dandelion")
         self.inventory.add_item("tall_grass")
+        self.inventory.add_item("coal_ore")
+        self.inventory.add_item("copper_ore")
+        self.inventory.add_item("iron_ore")
+        self.inventory.add_item("gold_ore")
+        self.inventory.add_item("lapis_lazuli_ore")
+        self.inventory.add_item("redstone_ore")
+        self.inventory.add_item("diamond_ore")
+        self.inventory.add_item("emerald_ore")
 
     def update(self, blocks: dict, m_state: int, dt: float) -> None:
         self.camera.update(dt)
