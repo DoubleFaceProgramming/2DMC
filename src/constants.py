@@ -27,3 +27,6 @@ if not os.path.exists(REGULAR_FONT_LOC):
     REGULAR_FONT_LOC = os.path.abspath(os.path.join(BUNDLE_DIR, "../assets/fonts/regular.ttf"))
 FONT24 = Font(REGULAR_FONT_LOC, 24)
 FONT20 = Font(REGULAR_FONT_LOC, 20)
+
+from src.settings import Settings
+SETTINGS = Settings(CONF_DIR)

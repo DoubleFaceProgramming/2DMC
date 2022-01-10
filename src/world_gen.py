@@ -9,7 +9,6 @@ from math import ceil
 
 from src.constants import CHUNK_SIZE, BLOCK_SIZE, SEED, WIDTH, HEIGHT
 from src.block import Block, BLOCK_DATA
-from src.player import Camera
 from src.utils import pathof
 
 seed(SEED)
@@ -100,11 +99,11 @@ class Chunk(object):
         self.block_data = self.generate(pos[0], pos[1])
         self.rect = Rect(0, 0, CHUNK_SIZE * BLOCK_SIZE, CHUNK_SIZE * BLOCK_SIZE)
 
-    def update(self, camera: Camera) -> None:
+    def update(self, camera) -> None:
         self.rect.topleft = (self.pos[0] * CHUNK_SIZE * BLOCK_SIZE - camera.pos[0],
                              self.pos[1] * CHUNK_SIZE * BLOCK_SIZE - camera.pos[1])
 
-    def draw(self, camera: Camera, screen: Surface) -> None:
+    def draw(self, camera, screen: Surface) -> None:
         # Calls the draw function for each of the blocks inside
         for block in self.block_data:
             if not block in Block.instances:
@@ -237,7 +236,7 @@ def generate_structures(x: int, y: int, chunk_data: dict, generator: StructureGe
                             chunk_data[block] = block_name
     return chunk_data
 
-def load_chunks(camera: Camera) -> list:
+def load_chunks(camera) -> list:
     """Generate, unload and delete chunks.
 
     Args:

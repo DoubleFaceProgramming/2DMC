@@ -190,8 +190,8 @@ class Hotbar(object):
 
             # Increasing or decreasing scroll object (using a kinda unecessary but cool new feature :D)
             match scroll:
-                case 4: self.scroll.decrease()
-                case 5: self.scroll.increase()
+                case 4: self.scroll.scrolldown()
+                case 5: self.scroll.scrollup()
 
             # If the user has scrolled, reset the fade time and update the scroll obj
             if scroll:
@@ -230,6 +230,8 @@ class Hotbar(object):
     class HotbarScroll():
         """Micro-class that provides a cleaner implementation for cyclical scrolling"""
         def __init__(self, min_bounds: int, max_bounds: int, hotbar) -> None:
+            self.scrollup = self.increase
+            self.scrolldown = self.decrease
             self.min = min_bounds
             self.max = max_bounds
             self.hotbar = hotbar
@@ -237,6 +239,8 @@ class Hotbar(object):
 
         def update(self) -> None:
             self.hotbar.selected = self.current
+            self.scrollup = self.increase if not SETTINGS.config["scroll"]["reversed"] else self.decrease
+            self.scrolldown = self.decrease if not SETTINGS.config["scroll"]["reversed"] else self.increase
 
         def increase(self) -> None:
             """Increase the current value by 1 and cycle if needed"""

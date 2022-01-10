@@ -8,11 +8,10 @@ from pygame.locals import  (
     K_e, K_F5,
     QUIT,
 )
-from src.settings import Settings
-from src.inventory import Item
+
+from src.constants import *
 from src.player import *
 from src.particle import *
-from src.constants import *
 from src.utils import *
 from src.block import *
 from src.world_gen import *
@@ -31,7 +30,6 @@ class Game():
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), HWSURFACE | DOUBLEBUF)
         self.clock = pygame.time.Clock()
-        self.settings = Settings()
         self.rendered_chunks = []
         self.debug_bool = False
         self.player = Player()
@@ -46,23 +44,22 @@ class Game():
             if event.type == QUIT:
                 self.running = False
 
-            if event.type == MOUSEBUTTONDOWN:
-                # Placing, breaking and pickblocking blocks
-                mouse_state = event.button
-                if not self.player.inventory.visible:
-                    if event.button == 1:
-                        self.player.break_block(Chunk.instances, mpos)
-                    elif event.button == 2:
-                        self.player.pick_block(mpos)
-                    elif event.button == 3:
-                        self.player.place_block(Chunk.instances, mpos)
-
-            if event.type == KEYDOWN:
-                # Toggling debug mode and the player inventory
-                if event.key == K_F5:
-                    self.debug_bool = not self.debug_bool
-                if event.key == K_e:
+            # Short key presses (keypresses that you press not hold)
+            # ex. inventory, which is toggle-able
+            # but not say walking, which can be held
+            if event.type == KEYDOWN or event.type == MOUSEBUTTONDOWN:
+                keyorbutton = event.key if hasattr(event, "key") else event.button
+                mouse_state = event.button if hasattr(event, "button") else 0
+                if SETTINGS.get_pressed_short("attack/destroy", keyorbutton):
+                    self.player.break_block(Chunk.instances, mpos)
+                if SETTINGS.get_pressed_short("use/place", keyorbutton):
+                    self.player.place_block(Chunk.instances, mpos)
+                if SETTINGS.get_pressed_short("pickblock", keyorbutton):
+                    self.player.pick_block(mpos)
+                if SETTINGS.get_pressed_short("inventory", keyorbutton):
                     self.player.toggle_inventory()
+                if SETTINGS.get_pressed_short("debug", keyorbutton):
+                    self.debug_bool = not self.debug_bool
 
         # Calling relevant update functions.
         self.rendered_chunks = load_chunks(self.player.camera)

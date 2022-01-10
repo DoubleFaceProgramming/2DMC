@@ -8,6 +8,7 @@ from src.constants import *
 from src.utils import *
 from src.images import *
 from src.block import *
+from src.world_gen import Chunk
 
 class Camera(pygame.sprite.Sprite):
     """Class that represents the camera"""
@@ -87,21 +88,22 @@ class Player(pygame.sprite.Sprite):
         self.camera.update(dt)
 
         keys = pygame.key.get_pressed()
+        mouse = pygame.mouse.get_pressed()
         # Calculate player's velocity with a little bit of slipperiness
-        if keys[K_a] and not self.inventory.visible:
+        if SETTINGS.get_pressed("left", keys, mouse) and not self.inventory.visible:
             if self.vel.x > -self.max_speed:
                 # Slow the player down
                 self.vel.x -= SLIDE * dt
         elif self.vel.x < 0:
             self.vel.x += SLIDE * dt
-        if keys[K_d] and not self.inventory.visible:
+        if SETTINGS.get_pressed("right", keys, mouse) and not self.inventory.visible:
             if self.vel.x < self.max_speed:
                 # Slow the player down but in the other direction
                 self.vel.x += SLIDE * dt
         elif self.vel.x > 0:
             self.vel.x -= SLIDE * dt
         # If the player is on the ground and not in the inventory, jump
-        if keys[K_w] and self.on_ground and not self.inventory.visible:
+        if SETTINGS.get_pressed("jump", keys, mouse) and self.on_ground and not self.inventory.visible:
             self.vel.y = -9.2
             # When the player jumps, its x-speed also increases slightly (aka sprint jumping in minecraft)
             self.vel.x *= 1.133
@@ -147,7 +149,7 @@ class Player(pygame.sprite.Sprite):
         self.coords = self.pos // BLOCK_SIZE
         self.chunk = self.coords // CHUNK_SIZE
         self.rect.topleft = self.pos - self.camera.pos
-        self.holding = self.inventory.hotbar.items[self.inventory.hotbar.selected].name        
+        self.holding = self.inventory.hotbar.items[self.inventory.hotbar.selected].name
 
     def draw(self, screen: Surface, mpos: pygame.math.Vector2) -> None:
         self.leg2.rect = self.leg2.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
