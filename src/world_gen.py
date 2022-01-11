@@ -18,18 +18,21 @@ pnoise = PerlinNoise(seed=SEED)
 
 class StructureGenerator(object):
     """Class that handles the generation of structures"""
-    def __init__(self, folder, obstruction=False):
-        self.folder = folder
+    def __init__(self, name, obstruction=False):
+        self.name = name
         self.obstruction = obstruction
-        self.files = structures[folder]
-        self.distribution = structures[folder]["distribution"]
+        self.files = structures[name]
+        self.distribution = structures[name]["distribution"]
         self.BLOCK_DATA = {}
-
-        # Get the maximum dimensions of all the possible variations of this structure
+        
+        self.get_max_size()
+        
+    def get_max_size(self) -> None:
+        """Get the maximum dimensions of all the possible variations of this structure"""
         max_sizes = []
         for file in self.files:
             if file != "distribution":
-                self.BLOCK_DATA[file] = structures[folder][file]
+                self.BLOCK_DATA[file] = structures[self.name][file]
                 # Append the max size of all the different possible variations
                 max_sizes.append((max(x for x, y in self.BLOCK_DATA[file][1]) - min(x for x, y in self.BLOCK_DATA[file][1]) + 1,
                             max(y for x, y in self.BLOCK_DATA[file][1]) - min(y for x, y in self.BLOCK_DATA[file][1]) + 1))
@@ -90,6 +93,11 @@ class StructureGenerator(object):
 
         return block_data
 
+class BlobGenerator(StructureGenerator):
+    def __init__(self, name, size, obstruction=False):
+        # Will be filled in
+        pass
+
 class Chunk(object):
     """The class responsible for updating and drawing chunks."""
     instances = {}
@@ -148,10 +156,8 @@ class Chunk(object):
                         chunk_data[target] = block_name
 
         # Generate structures
-        generator = StructureGenerator("oak_tree", obstruction=False)
-        chunk_data = generate_structures(x, y, chunk_data, generator, (1, 2))
-        generator = StructureGenerator("tall_grass", obstruction=True)
-        chunk_data = generate_structures(x, y, chunk_data, generator, (4, 3))
+        chunk_data = generate_structures(x, y, chunk_data, oak_tree_gen, (1, 2))
+        chunk_data = generate_structures(x, y, chunk_data, tall_grass_gen, (4, 3))
         return chunk_data
 
 def terrain_generate(x: int) -> float:
@@ -418,3 +424,14 @@ def load_structures() -> dict:
     return structures
 
 structures = load_structures()
+
+oak_tree_gen = StructureGenerator("oak_tree")
+tall_grass_gen = StructureGenerator("tall_grass", obstruction=True)
+coal_ore_gen = BlobGenerator("coal_ore", "blob")
+copper_ore_gen = BlobGenerator("copper_ore", "blob")
+iron_ore_gen = BlobGenerator("iron_ore", "blob")
+lapis_ore_gen = BlobGenerator("lapis_ore", "blob")
+gold_ore_gen = BlobGenerator("gold_ore", "blob")
+redstone_ore_gen = BlobGenerator("redstone_ore", "blob")
+diamond_ore_gen = BlobGenerator("diamond_ore", "blob")
+emerald_ore_gen = BlobGenerator("emerald_ore", "blob")
