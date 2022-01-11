@@ -1,6 +1,3 @@
-from numpy import e, true_divide
-import pygame
-from pygame.mouse import get_pressed
 from pygame.key import key_code
 from src.utils import pathof
 from pathlib import Path
@@ -12,9 +9,9 @@ class Settings():
     def __init__(self, confdir) -> None:
         self.confdir = pathof(confdir)
         self.config = dict()
-        self.load()
+        self.init_config()
 
-    def load(self, default: bool = False):
+    def load(self):
         """Loading / reloading the configs from the .json files and parsing them"""
 
         conf_files = list()
@@ -25,12 +22,31 @@ class Settings():
 
         for index, file in enumerate(conf_files):
             self.config[conf_files_stems[index]] = json.loads(open(file, 'r').read())
-            if not default:
-                del self.config[conf_files_stems[index]]["default"]
 
-        if default:
-            for category in self.config:
-                self.config[category] = self.config[category]["default"]
+    def init_config(self):
+        """Creating default control settings"""
+        
+        for dirpath, _, files in os.walk(os.path.join(self.confdir, "default")):
+            for file in files:
+                # Getting the parts of the file, ex. ['conf', 'default', 'peripherals', 'keybinds.json']
+                parts = list(Path(os.path.join(dirpath, file)).parts)
+                # Removing the default so that the final directory is, ex, conf/peripherals/keybinds.json
+                # not conf/default/peripherals/keybinds.json
+                parts.remove("default") # Putting this on one line throws an error fsr xD
+                # Joining the file back into 1 filepath
+                new_file = '/'.join(parts)
+
+                # Creating the parent directories for the new file
+                new_file_dirpath = Path(Path(new_file).parent)
+                if not new_file_dirpath.exists():
+                    new_file_dirpath.mkdir()
+
+                # Writing the content of the default file into the new one
+                if not Path(new_file).exists():
+                    open(new_file, 'w').write(open(os.path.join(dirpath, file), 'r').read())
+
+        # Generating the config attribute
+        self.load()
 
     def get_pressed(self, action: str, keys: dict, mouse: dict) -> bool:
         if self.config["keybinds"][action].startswith("mouse"):

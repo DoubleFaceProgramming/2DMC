@@ -6,7 +6,7 @@
     "sprint": null,
     "attack/destroy": "mouse_left",
     "use/place": "mouse_right",
-    "pickblock": "c",
+    "pickblock": "mouse_middle",
     "inventory": "e",
     "drop": null,
     "debug": "f1",
