@@ -34,18 +34,18 @@ class Settings():
 
     def get_pressed(self, action: str, keys: dict, mouse: dict) -> bool:
         if self.config["keybinds"][action].startswith("mouse"):
-            if (self.config["keybinds"][action] == "mouse_left" and mouse[0]) or \
+            if (self.config["keybinds"][action] == "mouse_left"   and mouse[0]) or \
                (self.config["keybinds"][action] == "mouse_middle" and mouse[1]) or \
-               (self.config["keybinds"][action] == "mouse_right" and mouse[2]):
+               (self.config["keybinds"][action] == "mouse_right"  and mouse[2]):
                 return True
         else:
             return keys[key_code(self.config["keybinds"][action])]
 
     def get_pressed_short(self, action, eventkey: int):
         if self.config["keybinds"][action].startswith("mouse"):
-            if (self.config["keybinds"][action] == "mouse_left" and eventkey == 1) or \
+            if (self.config["keybinds"][action] == "mouse_left"   and eventkey == 1) or \
                (self.config["keybinds"][action] == "mouse_middle" and eventkey == 2) or \
-               (self.config["keybinds"][action] == "mouse_right" and eventkey == 3):
+               (self.config["keybinds"][action] == "mouse_right"  and eventkey == 3):
                 return True
         elif eventkey == self.get_code(action):
             return True

@@ -180,13 +180,13 @@ class Hotbar(object):
         self.items = hotbar_items
         if not self.inventory.visible:
             keys = pygame.key.get_pressed()
-
-            # Checking if the player has pressed a key within the range 1-9
-            # range() is not inclusive so we +1 to the max bounds
-            for num_key in range(K_1, K_9 + 1):
-                if keys[num_key]:
-                    self.change_selected(num_key - K_0 - 1) # Minusing the lowest bounds and 1 (because we +1-ed earlier)
-                    self.fade_timer = time.time() # Resetting the fade timer
+            # Looping through the hotbar numbers (ie. "1", "2", "3" ect)
+            for hotbarkey in SETTINGS.config["keybinds"]["hotbar"]:
+                # Gets the key bound to the hotbar number and tests if it is being pressed
+                if keys[pygame.key.key_code(str(SETTINGS.config["keybinds"]["hotbar"][hotbarkey]))]:
+                    # Subtracting 1 because json isnt 0 indexed for clarity
+                    self.change_selected(int(hotbarkey) - 1)
+                    break
 
             # Increasing or decreasing scroll object (using a kinda unecessary but cool new feature :D)
             match scroll:
@@ -224,6 +224,7 @@ class Hotbar(object):
             new (int): The new slot to select
         """
 
+        self.fade_timer = time.time()
         self.scroll.current = new
         self.selected = new
 
@@ -238,9 +239,9 @@ class Hotbar(object):
             self.current = 0
 
         def update(self) -> None:
-            self.hotbar.selected = self.current
             self.scrollup = self.increase if not SETTINGS.config["scroll"]["reversed"] else self.decrease
             self.scrolldown = self.decrease if not SETTINGS.config["scroll"]["reversed"] else self.increase
+            self.hotbar.selected = self.current
 
         def increase(self) -> None:
             """Increase the current value by 1 and cycle if needed"""
