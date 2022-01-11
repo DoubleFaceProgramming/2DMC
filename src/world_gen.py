@@ -1,4 +1,4 @@
-from random import randint, seed, choices, randrange
+from random import randint, seed, choices, choice, randrange
 from pygame.draw import rect as drawrect
 from perlin_noise import PerlinNoise
 from opensimplex import OpenSimplex
@@ -24,9 +24,10 @@ class StructureGenerator(object):
         self.files = structures[name]
         self.distribution = structures[name]["distribution"]
         self.BLOCK_DATA = {}
-        
+
         self.get_max_size()
-        
+        self.get_max_chunks()
+
     def get_max_size(self) -> None:
         """Get the maximum dimensions of all the possible variations of this structure"""
         max_sizes = []
@@ -39,7 +40,8 @@ class StructureGenerator(object):
         # Get the biggest one
         self.max_size = max(max_sizes)
 
-        # Get the maximum number of chunks the structure could span from the "max_size"
+    def get_max_chunks(self) -> None:
+        """Get the maximum number of chunks the structure could span from the max_size"""
         self.chunks_to_check = int(ceil(self.max_size[0] / CHUNK_SIZE)), int(ceil(self.max_size[1] / CHUNK_SIZE))
 
     def generate(self, origin: tuple) -> dict:
@@ -94,9 +96,74 @@ class StructureGenerator(object):
         return block_data
 
 class BlobGenerator(StructureGenerator):
-    def __init__(self, name, size, obstruction=False):
-        # Will be filled in
-        pass
+    def __init__(self, name, max_x, max_y):
+        self.name = name
+        self.obstruction = False
+        self.max_size = (max_x, max_y)
+        self.get_max_chunks()
+
+    def elliptical_blob(self, x_rad: float, y_rad: float) -> dict:
+        grid_width, grid_height = round(x_rad * 2 + 1), round(y_rad * 2 + 1)
+        center_x, center_y = grid_width // 2, grid_height // 2
+        blob = {}
+
+        for y in range(grid_height):
+            for x in range(grid_width):
+                if ((x-center_x)/x_rad)**2 + ((y-center_y)/y_rad)**2 < 1:
+                    blob[(x, y)] = self.name
+
+        return blob
+
+    def CA_blob(self, size: int, cycles: int) -> dict:
+        blob = []
+        for y in range(size):
+            blob.append([])
+            for x in range(size):
+                if randint(0, 10) < 4:
+                    blob[y].append(" ")
+                else:
+                    blob[y].append(self.name)
+
+        for _ in range(cycles):
+            for y, line in enumerate(blob):
+                for x, tile in enumerate(line):
+                    neighbors = 0
+                    for n in [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]:
+                        try:
+                            if blob[x+n[0]][y+n[1]] == self.name:
+                                neighbors += 1
+                        except:
+                            pass
+                    if neighbors <= 3:
+                        blob[x][y] = " "
+                    elif neighbors > choice([6, 7, 7]):
+                        blob[x][y] = self.name
+                        
+        blob_dict = {}
+        for y, line in enumerate(blob):
+            for x, block in enumerate(line):
+                if block != " ":
+                    blob_dict[(x, y)] = block
+
+        return blob_dict
+
+    def generate(self, origin):
+        seed(SEED + origin[0] * CHUNK_SIZE + origin[1] * CHUNK_SIZE)
+        
+        if randint(1, 7) <= 5:
+            blob = self.CA_blob(self.max_size[0]-1, 4)
+        else:
+            blob = self.elliptical_blob(randint(self.max_size[0] // 2 - 2, self.max_size[0] // 2),
+                                        randint(self.max_size[1] // 2 - 2, self.max_size[1] // 2))
+
+        block_data = {
+            (origin[0] + offset[0], origin[1] + offset[1]):
+            (block if "," not in block else (choices([i.split("=")[0] for i in block.split(",")],
+            weights=[int(i.split("=")[1]) for i in block.split(",")])[0]))
+            for offset, block in blob.items()
+        }
+
+        return block_data
 
 class Chunk(object):
     """The class responsible for updating and drawing chunks."""
@@ -158,6 +225,9 @@ class Chunk(object):
         # Generate structures
         chunk_data = generate_structures(x, y, chunk_data, oak_tree_gen, (1, 2))
         chunk_data = generate_structures(x, y, chunk_data, tall_grass_gen, (4, 3))
+        chunk_data = generate_structures(x, y, chunk_data, granite_gen, (2, 3))
+        chunk_data = generate_structures(x, y, chunk_data, diorite_gen, (2, 3))
+        chunk_data = generate_structures(x, y, chunk_data, andesite_gen, (2, 3))
         return chunk_data
 
 def terrain_generate(x: int) -> float:
@@ -293,7 +363,7 @@ def load_structures() -> dict:
     Returns:
         dict: A dictionar containing structure information
     """
-    
+
     # 103 lines of comments... maybe I went overboard xD
     # I hope I explained the file format well :)
 
@@ -427,11 +497,14 @@ structures = load_structures()
 
 oak_tree_gen = StructureGenerator("oak_tree")
 tall_grass_gen = StructureGenerator("tall_grass", obstruction=True)
-coal_ore_gen = BlobGenerator("coal_ore", "blob")
-copper_ore_gen = BlobGenerator("copper_ore", "blob")
-iron_ore_gen = BlobGenerator("iron_ore", "blob")
-lapis_ore_gen = BlobGenerator("lapis_ore", "blob")
-gold_ore_gen = BlobGenerator("gold_ore", "blob")
-redstone_ore_gen = BlobGenerator("redstone_ore", "blob")
-diamond_ore_gen = BlobGenerator("diamond_ore", "blob")
-emerald_ore_gen = BlobGenerator("emerald_ore", "blob")
+# coal_ore_gen = BlobGenerator("coal_ore")
+# copper_ore_gen = BlobGenerator("copper_ore")
+# iron_ore_gen = BlobGenerator("iron_ore")
+# lapis_ore_gen = BlobGenerator("lapis_ore")
+# gold_ore_gen = BlobGenerator("gold_ore")
+# redstone_ore_gen = BlobGenerator("redstone_ore")
+# diamond_ore_gen = BlobGenerator("diamond_ore")
+# emerald_ore_gen = BlobGenerator("emerald_ore")
+granite_gen = BlobGenerator("granite", 11, 11)
+diorite_gen = BlobGenerator("diorite", 11, 11)
+andesite_gen = BlobGenerator("andesite", 11, 11)
