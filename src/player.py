@@ -176,10 +176,6 @@ class Player(pygame.sprite.Sprite):
         self.leg.rect = self.leg.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
         screen.blit(self.leg.image, self.leg.rect.topleft)
 
-        self.inventory.draw(screen)
-        if not self.inventory.visible:
-            self.crosshair.draw(screen, mpos)
-
     def debug(self, screen: Surface, mpos: pygame.math.Vector2) -> None:
         self.crosshair.debug(screen, mpos)
         pygame.draw.rect(screen, (255, 255, 255), self.rect, width=1)
