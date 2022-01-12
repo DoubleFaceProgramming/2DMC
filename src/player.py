@@ -147,7 +147,7 @@ class Player(pygame.sprite.Sprite):
         self.coords = self.pos // BLOCK_SIZE
         self.chunk = self.coords // CHUNK_SIZE
         self.rect.topleft = self.pos - self.camera.pos
-        self.holding = self.inventory.hotbar.items[self.inventory.hotbar.selected].name        
+        self.holding = self.inventory.hotbar.items[self.inventory.hotbar.selected].name
 
     def draw(self, screen: Surface, mpos: pygame.math.Vector2) -> None:
         self.leg2.rect = self.leg2.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
@@ -388,7 +388,7 @@ class Player(pygame.sprite.Sprite):
             mpos (pygame.math.Vector2): The position of the mouse cursor, used to find the block the player is hovering over.
         """
 
-        if block_name := self.crosshair.block_at_pos(mpos):
+        if block_name := self.crosshair.block_at_pos(mpos).name:
             old_slot = self.inventory.hotbar.items[self.inventory.hotbar.selected]  # Saving the original hotbar item
             if block_name in [item.name for item in self.inventory.items.values()]: # Checking if the desired item is in the inventory
                 # Finding the inventory position of the desired item
@@ -424,12 +424,18 @@ class Crosshair():
 
     def draw(self, screen: pygame.Surface, mpos: pygame.math.Vector2) -> None:
         self.new_color = self.get_avg_color(screen, mpos) # I know this is cursed it's the easiest way ;-;
+
+        # Drawing a selection box around the block beneath the mouse (but 2px larger than the block)
+        if block := self.block_at_pos(mpos):
+            pygame.draw.rect(screen, (0, 0, 0), Rect((block.rect.left - 2, block.rect.top - 2, block.rect.width + 2, block.rect.height + 2)), 3)
+
+        # The 2 boxes that make up the crosshair
         pygame.draw.rect(screen, self.old_color, (mpos[0]-2, mpos[1]-16, 4, 32))
         pygame.draw.rect(screen, self.old_color, (mpos[0]-16, mpos[1]-2, 32, 4))
 
     def debug(self, screen: Surface, mpos: pygame.math.Vector2) -> None:
         if not self.master.inventory.visible:
-            if block := self.block_at_pos(mpos):
+            if block := self.block_at_pos(mpos).name:
                 # Displays the name of the block below the mouse cursor next to the mouse
                 screen.blit(text(block.replace('_', ' ').title(), color=(255, 255, 255)), (mpos[0]+12, mpos[1]-36))
 
@@ -451,15 +457,15 @@ class Crosshair():
 
         return color
 
-    def block_at_pos(self, pos: Vector2) -> str | None:
+    def block_at_pos(self, pos: Vector2) -> Block | None:
         """Gets the block at the position given using the pos given (should be in screen space)
 
         Returns:
-            str | None: Returns a string containing the name of the block at the position given,
-                                or None if the block is not valid. ex. "grass_block"
+            Block | None: Returns the block object of the block at the position given,
+                                or None if the block is not valid.
         """
         block_pos = inttup((self.master.pos + (pos - self.master.rect.topleft)) // BLOCK_SIZE)
         if block_pos in Block.instances:
-            return str(Block.instances[inttup(block_pos)].name)
+            return Block.instances[inttup(block_pos)]
         else:
             return None
