@@ -96,30 +96,19 @@ class StructureGenerator(object):
         return block_data
 
 class BlobGenerator(StructureGenerator):
-    def __init__(self, name, max_x, max_y):
+    def __init__(self, name, max_size):
         self.name = name
         self.obstruction = False
-        self.max_size = (max_x, max_y)
+        self.max_size = (max_size, max_size)
         self.get_max_chunks()
 
-    def elliptical_blob(self, x_rad: float, y_rad: float) -> dict:
-        grid_width, grid_height = round(x_rad * 2 + 1), round(y_rad * 2 + 1)
-        center_x, center_y = grid_width // 2, grid_height // 2
-        blob = {}
-
-        for y in range(grid_height):
-            for x in range(grid_width):
-                if ((x-center_x)/x_rad)**2 + ((y-center_y)/y_rad)**2 < 1:
-                    blob[(x, y)] = self.name
-
-        return blob
-
-    def CA_blob(self, size: int, cycles: int) -> dict:
+    def CA(self, struct_seed: int, size: int, cycles: int) -> dict:
+        seed(struct_seed)
         blob = []
         for y in range(size):
             blob.append([])
             for x in range(size):
-                if randint(0, 10) < 4:
+                if randint(0, 10) < 5:
                     blob[y].append(" ")
                 else:
                     blob[y].append(self.name)
@@ -136,7 +125,7 @@ class BlobGenerator(StructureGenerator):
                             pass
                     if neighbors <= 3:
                         blob[x][y] = " "
-                    elif neighbors > choice([6, 7, 7]):
+                    elif neighbors > 5:
                         blob[x][y] = self.name
                         
         blob_dict = {}
@@ -147,21 +136,11 @@ class BlobGenerator(StructureGenerator):
 
         return blob_dict
 
-    def generate(self, origin):
-        seed(SEED + origin[0] * CHUNK_SIZE + origin[1] * CHUNK_SIZE)
-        
-        if randint(1, 7) <= 5:
-            blob = self.CA_blob(self.max_size[0]-1, 4)
-        else:
-            blob = self.elliptical_blob(randint(self.max_size[0] // 2 - 2, self.max_size[0] // 2),
-                                        randint(self.max_size[1] // 2 - 2, self.max_size[1] // 2))
+    def generate(self, origin: tuple) -> dict:
+        struct_seed = SEED + origin[0] * CHUNK_SIZE + origin[1] * CHUNK_SIZE
+        blob = self.CA(struct_seed, self.max_size[0], 3)
 
-        block_data = {
-            (origin[0] + offset[0], origin[1] + offset[1]):
-            (block if "," not in block else (choices([i.split("=")[0] for i in block.split(",")],
-            weights=[int(i.split("=")[1]) for i in block.split(",")])[0]))
-            for offset, block in blob.items()
-        }
+        block_data = {(origin[0] + offset[0], origin[1] + offset[1]): block for offset, block in blob.items()}
 
         return block_data
 
@@ -505,6 +484,6 @@ tall_grass_gen = StructureGenerator("tall_grass", obstruction=True)
 # redstone_ore_gen = BlobGenerator("redstone_ore")
 # diamond_ore_gen = BlobGenerator("diamond_ore")
 # emerald_ore_gen = BlobGenerator("emerald_ore")
-granite_gen = BlobGenerator("granite", 11, 11)
-diorite_gen = BlobGenerator("diorite", 11, 11)
-andesite_gen = BlobGenerator("andesite", 11, 11)
+granite_gen = BlobGenerator("granite", 10)
+diorite_gen = BlobGenerator("diorite", 10)
+andesite_gen = BlobGenerator("andesite", 10)
