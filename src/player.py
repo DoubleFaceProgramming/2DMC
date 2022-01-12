@@ -440,9 +440,11 @@ class Crosshair():
 
     def debug(self, screen: Surface, mpos: pygame.math.Vector2) -> None:
         if not self.master.inventory.visible:
-            if block := self.block_at_pos(mpos).name:
-                # Displays the name of the block below the mouse cursor next to the mouse
-                screen.blit(text(block.replace('_', ' ').title(), color=(255, 255, 255)), (mpos[0]+12, mpos[1]-36))
+            block = self.block_at_pos(mpos)
+            if block:
+                if block_name := self.block_at_pos(mpos).name:
+                    # Displays the name of the block below the mouse cursor next to the mouse
+                    screen.blit(text(block_name.replace('_', ' ').title(), color=(255, 255, 255)), (mpos[0]+12, mpos[1]-36))
 
     def get_avg_color(self, screen: Surface, mpos: pygame.math.Vector2) -> pygame.Color:
         """Gets the average colour of the screen at the crosshair using the position of the mouse and the game screen.
