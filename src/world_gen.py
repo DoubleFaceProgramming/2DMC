@@ -20,6 +20,7 @@ class StructureGenerator(object):
     """Class that handles the generation of structures"""
     def __init__(self, name, obstruction=False):
         self.name = name
+        self.on_surface = True
         self.obstruction = obstruction
         self.files = structures[name]
         self.distribution = structures[name]["distribution"]
@@ -98,6 +99,7 @@ class StructureGenerator(object):
 class BlobGenerator(StructureGenerator):
     def __init__(self, name, max_size):
         self.name = name
+        self.on_surface = False
         self.obstruction = False
         self.max_size = (max_size, max_size)
         self.get_max_chunks()
@@ -204,9 +206,10 @@ class Chunk(object):
         # Generate structures
         chunk_data = generate_structures(x, y, chunk_data, oak_tree_gen, (1, 2))
         chunk_data = generate_structures(x, y, chunk_data, tall_grass_gen, (4, 3))
-        chunk_data = generate_structures(x, y, chunk_data, granite_gen, (1, 3))
-        chunk_data = generate_structures(x, y, chunk_data, diorite_gen, (1, 3))
-        chunk_data = generate_structures(x, y, chunk_data, andesite_gen, (1, 3))
+        if y > 1:
+            chunk_data = generate_structures(x, y, chunk_data, granite_gen, (1, 9))
+            chunk_data = generate_structures(x, y, chunk_data, diorite_gen, (1, 9))
+            chunk_data = generate_structures(x, y, chunk_data, andesite_gen, (1, 9))
         return chunk_data
 
 def terrain_generate(x: int) -> float:
@@ -233,21 +236,24 @@ def get_structures(x: int, y: int, generator: StructureGenerator, chance: tuple)
         list: a list containing the block data of the structures in the chunk
     """
     out = []
-    seed(SEED + x * CHUNK_SIZE + y * CHUNK_SIZE)
+    seed(SEED + x * CHUNK_SIZE + y * CHUNK_SIZE + sum([ord(letter) for letter in generator.name]))
     for _ in range(chance[0]):
         if randint(0, chance[1]) == 0:
-            block_x = x * CHUNK_SIZE + randrange(0, CHUNK_SIZE)
-            # Generate on the surface of the world
-            grass_y = terrain_generate(block_x)-1
+            start_x = x * CHUNK_SIZE + randrange(0, CHUNK_SIZE)
+            if generator.on_surface:
+                # Generate on the surface of the world
+                start_y = terrain_generate(start_x)-1
+                # If it is cut off by a cave, don't generate
+                if (92.7 < cave_generate([start_x/70, start_y/70]) < 100) or (92.7 < cave_generate([start_x/70, (start_y+1)/70]) < 100):
+                    return out
+            else:
+                start_y = y * CHUNK_SIZE + randrange(0, CHUNK_SIZE)
 
-            # If it is cut off by a cave, don't generate
-            if (92.7 < cave_generate([block_x/70, grass_y/70]) < 100) or (92.7 < cave_generate([block_x/70, (grass_y+1)/70]) < 100):
-                return out
             # Structures that are not in this chunk
-            if not 0 <= grass_y - y * CHUNK_SIZE < CHUNK_SIZE:
+            if not 0 <= start_y - y * CHUNK_SIZE < CHUNK_SIZE:
                 return out
 
-            out.append(generator.generate((block_x, grass_y)))
+            out.append(generator.generate((start_x, start_y)))
     return out
 
 def generate_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerator, chance: tuple) -> dict:
@@ -284,12 +290,18 @@ def generate_structures(x: int, y: int, chunk_data: dict, generator: StructureGe
                                     if generator.obstruction:
                                         return chunk_data_orig
                             else:
-                                if not generator.obstruction:
-                                    chunk_data[block] = block_name
-                                else:
+                                if generator.obstruction:
                                     return chunk_data_orig
+                                else:
+                                    chunk_data[block] = block_name
+                            # If a block "can_only_overwrite" certain blocks, it will not overwrite anything else, including air
+                            if "can_only_overwrite" in BLOCK_DATA[block_name]:
+                                if chunk_data[block] in BLOCK_DATA[block_name]["can_only_overwrite"]:
+                                    chunk_data[block] = block_name
                         else:
-                            chunk_data[block] = block_name
+                            # Don't overwrite air
+                            if "can_only_overwrite" not in BLOCK_DATA[block_name]:
+                                chunk_data[block] = block_name
     return chunk_data
 
 def load_chunks(camera: Camera) -> list:

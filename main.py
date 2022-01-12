@@ -14,7 +14,7 @@
 # organizational unit of Python code. Modules have a namespace containing arbitrary Python objects.
 # Modules are loaded into Python by the process of importing. This makes the Game class accessable to our
 # namespace. A namespace is a place where a variable is stored. Namespaces are implemented as dictionaries.
-# There are the local, global and built-in namespaces as well as nested namespaces in objects (in methods).
+# There are the local, global and built-in namespac es as well as nested namespaces in objects (in methods).
 # Namespaces support modularity by preventing naming conflicts. For instance, the functions builtins.open
 # and os.open() are distinguished by their namespaces. Namespaces also aid readability and maintainability
 # by making it clear which module implements a function. For instance, writing random.seed() or
