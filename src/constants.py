@@ -21,6 +21,7 @@ FPS = getattr(EnumDisplaySettings(EnumDisplayDevices().DeviceName, -1), "Display
 VEC = Vector2
 
 CONF_DIR = "conf/"
+CONF_DIR_DEF = "default/"
 BUNDLE_DIR = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
 REGULAR_FONT_LOC = os.path.abspath(os.path.join(BUNDLE_DIR, "assets/fonts/regular.ttf"))
 if not os.path.exists(REGULAR_FONT_LOC):
@@ -29,4 +30,4 @@ FONT24 = Font(REGULAR_FONT_LOC, 24)
 FONT20 = Font(REGULAR_FONT_LOC, 20)
 
 from src.settings import Settings
-SETTINGS = Settings(CONF_DIR)
+SETTINGS = Settings(CONF_DIR, CONF_DIR_DEF)

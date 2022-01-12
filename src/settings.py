@@ -6,48 +6,41 @@ import os
 
 class Settings():
     """Class that holds functions and dictionaries containing game settings / controls"""
-    def __init__(self, confdir) -> None:
+    def __init__(self, confdir: str, confdirdefstem: str) -> None:
+        self.confdir_def_stem = confdirdefstem # def -> default not definition
         self.confdir = pathof(confdir)
+        self.confdir_def = os.path.join(self.confdir, self.confdir_def_stem)
         self.config = dict()
         self.init_config()
 
-    def load(self):
+    def load(self) -> None:
         """Loading / reloading the configs from the .json files and parsing them"""
 
-        conf_files = list()
-        conf_files_stems = list()
         # Getting all bottom level files and dirpath
         for dirpath, _, files in os.walk(self.confdir):
-            # Making a list of all the absolute paths to these files
-            conf_files.extend([os.path.abspath(os.path.join(dirpath, file)) for file in files])
-            # Making a list of all the names of these files (ex. keybinds not keybinds.json or conf\peripherals\keybinds.json)
-            conf_files_stems.extend([Path(file).stem for file in files])
+            if self.confdir_def_stem in dirpath:
+                continue
 
-        # Looping through these files and setting the corresponding entry in the class dictionary to the file's data
-        for index, file in enumerate(conf_files):
-            self.config[conf_files_stems[index]] = json.loads(open(file, 'r').read())
+            # Loops through all bottom level files, sets the key to the stem of the file (ex. keybinds not keybinds.json)
+            # and the value to the parsed json content of the file
+            # ex output. {'keybinds': {'jump': 'w', 'left': 'a', 'right': 'd' [...] }, 'scroll': {'reversed': False}}
+            self.config.update({(filepath := Path(os.path.join(dirpath, file))).stem: json.loads(open(filepath, 'r').read()) for file in files})
 
     def init_config(self):
         """Creating default control settings"""
 
-        for dirpath, _, files in os.walk(os.path.join(self.confdir, "default")):
+        for dirpath, _, files in os.walk(self.confdir_def):
             for file in files:
-                # Getting the parts of the file, ex. ['conf', 'default', 'peripherals', 'keybinds.json']
-                parts = list(Path(os.path.join(dirpath, file)).parts)
-                # Removing the default so that the final directory is, ex, conf/peripherals/keybinds.json
-                # not conf/default/peripherals/keybinds.json
-                parts.remove("default") # Putting this on one line throws an error fsr xD
-                # Joining the file back into 1 filepath
-                new_file = '/'.join(parts)
+                # Making a path object for every new file and removing "default" from every path
+                new_file = Path(os.path.join(dirpath, file).replace(self.confdir_def_stem, ''))
+                if not new_file.exists():
+                    # Creating the parent directories for the new file
+                    if not (new_file_dirpath := new_file.parent).exists():
+                        new_file_dirpath.mkdir()
 
-                # Creating the parent directories for the new file
-                new_file_dirpath = Path(Path(new_file).parent)
-                if not new_file_dirpath.exists():
-                    new_file_dirpath.mkdir()
-
-                # Writing the content of the default file into the new one
-                if not Path(new_file).exists():
-                    open(new_file, 'w').write(open(os.path.join(dirpath, file), 'r').read())
+                    # Writing the content of the default file into the new one
+                    if not new_file.exists():
+                        open(new_file, 'w').write(open(os.path.join(dirpath, file), 'r').read())
 
         # Generating the config attribute
         self.load()
