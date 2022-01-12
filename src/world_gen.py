@@ -97,19 +97,22 @@ class StructureGenerator(object):
         return block_data
 
 class BlobGenerator(StructureGenerator):
-    def __init__(self, name, max_size):
+    def __init__(self, name, max_size, density, cycles):
         self.name = name
         self.on_surface = False
         self.obstruction = False
-        self.max_size = (max_size, max_size)
+        self.max_size = max_size
+        self.density = density
+        self.cycles = cycles
         self.get_max_chunks()
 
-    def CA(self, struct_seed: int, size: int, cycles: int) -> dict:
+    def CA(self, struct_seed: int, size: tuple, density: int, cycles: int) -> dict:
         """Function for generating a blob with the Cellular Automata algorithm
 
         Args:
             struct_seed (int): the unique seed for this blob, this chunk, this seed
             size (int): size of the grid in which to generate the blob
+            density (int): how dense is the starting grid in the CA (Cellular Automata) algorithm
             cycles (int): how many CA (Cellular Automata) iterations to go through
 
         Returns:
@@ -117,12 +120,12 @@ class BlobGenerator(StructureGenerator):
         """
         seed(struct_seed)
 
-        # Create a 2D list with 5/11 filled with the block type (self.name)
+        # Create a 2D list with density/11 filled with the block type (self.name)
         blob = []
-        for y in range(size):
+        for y in range(size[1]):
             blob.append([])
-            for x in range(size):
-                if randint(0, 10) < 5:
+            for x in range(size[0]):
+                if randint(0, 10) < density:
                     blob[y].append(" ")
                 else:
                     blob[y].append(self.name)
@@ -135,13 +138,13 @@ class BlobGenerator(StructureGenerator):
                     neighbors = 0
                     for n in neighbors_offset:                    # Check every neighbor around the current block
                         try:                                      # Try and except for blocks around the edge of the list which lacks neighbors
-                            if blob[x+n[0]][y+n[1]] == self.name: # If the neighboring block exists (== self.name)
+                            if blob[y+n[0]][x+n[1]] == self.name: # If the neighboring block exists (== self.name)
                                 neighbors += 1                    # Increment the neighbor counter
                         except: pass
                     if neighbors <= 3:                            # If there are less than or equal to 3 neighboring blocks
-                        blob[x][y] = " "                          # That block disappears
+                        blob[y][x] = " "                          # That block disappears
                     elif neighbors > 5:                           # If there are more than 5 neighboring blocks
-                        blob[x][y] = self.name                    # That block appears
+                        blob[y][x] = self.name                    # That block appears
 
         # Turn the list into a dictionary for structure generation
         blob_dict = {}
@@ -155,7 +158,7 @@ class BlobGenerator(StructureGenerator):
     def generate(self, origin: tuple) -> dict:
         struct_seed = SEED + canter_pairing(origin) + ascii_str_sum(self.name)
         # Create a dictionary of the block data of the blob with Cellular Automata
-        blob = self.CA(struct_seed, self.max_size[0], 3)
+        blob = self.CA(struct_seed, self.max_size, self.density, self.cycles)
 
         # Convert the positions to real world position by adding the origin to the block position (offset)
         block_data = {(origin[0] + offset[0], origin[1] + offset[1]): block for offset, block in blob.items()}
@@ -226,6 +229,7 @@ class Chunk(object):
             chunk_data = generate_structures(x, y, chunk_data, granite_gen, (1, 9))
             chunk_data = generate_structures(x, y, chunk_data, diorite_gen, (1, 9))
             chunk_data = generate_structures(x, y, chunk_data, andesite_gen, (1, 9))
+            chunk_data = generate_structures(x, y, chunk_data, coal_ore_gen, (1, 12))
 
         return chunk_data
 
@@ -513,6 +517,7 @@ tall_grass_gen = StructureGenerator("tall_grass", obstruction=True)
 # redstone_ore_gen = BlobGenerator("redstone_ore")
 # diamond_ore_gen = BlobGenerator("diamond_ore")
 # emerald_ore_gen = BlobGenerator("emerald_ore")
-granite_gen = BlobGenerator("granite", 10)
-diorite_gen = BlobGenerator("diorite", 10)
-andesite_gen = BlobGenerator("andesite", 10)
+granite_gen = BlobGenerator("granite", (10, 10), 5, 3)
+diorite_gen = BlobGenerator("diorite", (10, 10), 5, 3)
+andesite_gen = BlobGenerator("andesite", (10, 10), 5, 3)
+coal_ore_gen = BlobGenerator("coal_ore", (8, 4), 4, 2)
