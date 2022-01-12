@@ -105,7 +105,19 @@ class BlobGenerator(StructureGenerator):
         self.get_max_chunks()
 
     def CA(self, struct_seed: int, size: int, cycles: int) -> dict:
+        """Function for generating a blob with the Cellular Automata algorithm
+
+        Args:
+            struct_seed (int): the unique seed for this blob, this chunk, this seed
+            size (int): size of the grid in which to generate the blob
+            cycles (int): how many CA (Cellular Automata) iterations to go through
+
+        Returns:
+            dict: A dict containing the block information of the blob
+        """
         seed(struct_seed)
+
+        # Create a 2D list with 5/11 filled with the block type (self.name)
         blob = []
         for y in range(size):
             blob.append([])
@@ -115,21 +127,23 @@ class BlobGenerator(StructureGenerator):
                 else:
                     blob[y].append(self.name)
 
-        for _ in range(cycles):
-            for y, line in enumerate(blob):
-                for x, tile in enumerate(line):
+        neighbors_offset = [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
+
+        for _ in range(cycles):                                   # Number of Cellular Automata iterations
+            for y, line in enumerate(blob):                       # Go through each line
+                for x, block in enumerate(line):                  # Go through each block
                     neighbors = 0
-                    for n in [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]:
-                        try:
-                            if blob[x+n[0]][y+n[1]] == self.name:
-                                neighbors += 1
-                        except:
-                            pass
-                    if neighbors <= 3:
-                        blob[x][y] = " "
-                    elif neighbors > 5:
-                        blob[x][y] = self.name
-                        
+                    for n in neighbors_offset:                    # Check every neighbor around the current block
+                        try:                                      # Try and except for blocks around the edge of the list which lacks neighbors
+                            if blob[x+n[0]][y+n[1]] == self.name: # If the neighboring block exists (== self.name)
+                                neighbors += 1                    # Increment the neighbor counter
+                        except: pass
+                    if neighbors <= 3:                            # If there are less than or equal to 3 neighboring blocks
+                        blob[x][y] = " "                          # That block disappears
+                    elif neighbors > 5:                           # If there are more than 5 neighboring blocks
+                        blob[x][y] = self.name                    # That block appears
+
+        # Turn the list into a dictionary for structure generation
         blob_dict = {}
         for y, line in enumerate(blob):
             for x, block in enumerate(line):
@@ -140,8 +154,10 @@ class BlobGenerator(StructureGenerator):
 
     def generate(self, origin: tuple) -> dict:
         struct_seed = SEED + origin[0] * CHUNK_SIZE + origin[1] * CHUNK_SIZE + sum([ord(letter) for letter in self.name])
+        # Create a dictionary of the block data of the blob with Cellular Automata
         blob = self.CA(struct_seed, self.max_size[0], 3)
 
+        # Convert the positions to real world position by adding the origin to the block position (offset)
         block_data = {(origin[0] + offset[0], origin[1] + offset[1]): block for offset, block in blob.items()}
 
         return block_data
@@ -210,6 +226,7 @@ class Chunk(object):
             chunk_data = generate_structures(x, y, chunk_data, granite_gen, (1, 9))
             chunk_data = generate_structures(x, y, chunk_data, diorite_gen, (1, 9))
             chunk_data = generate_structures(x, y, chunk_data, andesite_gen, (1, 9))
+
         return chunk_data
 
 def terrain_generate(x: int) -> float:
