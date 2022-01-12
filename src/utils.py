@@ -90,3 +90,14 @@ def block_collide(playerx: int, playery: int, width: float, height: float, detec
     if player_rect.colliderect(block_rect): # Checking if the player is colliding with the block
         return True, detecting
     return False, detecting
+
+def canter_pairing(tup: tuple) -> int:
+    """Uses the Canter Pairing function to get a unique integer from a unique interger pair"""
+    # Deal with negative numbers by turning positives into positive evens and negatives into positive odds
+    a = 2 * tup[0] if tup[0] >= 0 else -2 * tup[0] - 1
+    b = 2 * tup[1] if tup[1] >= 0 else -2 * tup[1] - 1
+    return (a + b) * (a + b + 1) + b
+
+def ascii_str_sum(string: str) -> int:
+    """Gets the sum of the ASCII values of all the letters in a string"""
+    return sum([ord(letter) for letter in string])

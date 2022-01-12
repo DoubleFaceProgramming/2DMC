@@ -10,7 +10,7 @@ from math import ceil
 from src.constants import CHUNK_SIZE, BLOCK_SIZE, SEED, WIDTH, HEIGHT
 from src.block import Block, BLOCK_DATA
 from src.player import Camera
-from src.utils import pathof
+from src.utils import ascii_str_sum, canter_pairing, pathof
 
 seed(SEED)
 snoise = OpenSimplex(seed=SEED)
@@ -51,7 +51,7 @@ class StructureGenerator(object):
         Returns:
             dict: A dictionary containing the block data of the structure.
         """
-        seed(SEED + origin[0] * CHUNK_SIZE + origin[1] * CHUNK_SIZE) # Seeding random-ness
+        seed(SEED + canter_pairing(origin) + ascii_str_sum(self.name)) # Seeding random-ness
         file = choices(self.distribution["files"], weights=self.distribution["weights"])[0] # Picking a random file using the files and weights generated in load_structures()
         mirror = bool(randint(0, 1)) # Bool whether the structure should be flipped or not.
 
@@ -153,7 +153,7 @@ class BlobGenerator(StructureGenerator):
         return blob_dict
 
     def generate(self, origin: tuple) -> dict:
-        struct_seed = SEED + origin[0] * CHUNK_SIZE + origin[1] * CHUNK_SIZE + sum([ord(letter) for letter in self.name])
+        struct_seed = SEED + canter_pairing(origin) + ascii_str_sum(self.name)
         # Create a dictionary of the block data of the blob with Cellular Automata
         blob = self.CA(struct_seed, self.max_size[0], 3)
 
@@ -189,7 +189,7 @@ class Chunk(object):
     def generate(self, x: int, y: int) -> dict:
         """Takes the chunk coordinates and returns a dictionary containing the block data inside the chunk"""
 
-        seed(x*CHUNK_SIZE+y*CHUNK_SIZE)
+        seed(SEED + canter_pairing((x, y)))
         chunk_data = {}
         for y_pos in range(CHUNK_SIZE):
             for x_pos in range(CHUNK_SIZE):
@@ -253,7 +253,7 @@ def get_structures(x: int, y: int, generator: StructureGenerator, chance: tuple)
         list: a list containing the block data of the structures in the chunk
     """
     out = []
-    seed(SEED + x * CHUNK_SIZE + y * CHUNK_SIZE + sum([ord(letter) for letter in generator.name]))
+    seed(SEED + canter_pairing((x, y)) + ascii_str_sum(generator.name))
     for _ in range(chance[0]):
         if randint(0, chance[1]) == 0:
             start_x = x * CHUNK_SIZE + randrange(0, CHUNK_SIZE)
