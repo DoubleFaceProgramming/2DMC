@@ -137,7 +137,7 @@ class BlobGenerator(StructureGenerator):
         return blob_dict
 
     def generate(self, origin: tuple) -> dict:
-        struct_seed = SEED + origin[0] * CHUNK_SIZE + origin[1] * CHUNK_SIZE
+        struct_seed = SEED + origin[0] * CHUNK_SIZE + origin[1] * CHUNK_SIZE + sum([ord(letter) for letter in self.name])
         blob = self.CA(struct_seed, self.max_size[0], 3)
 
         block_data = {(origin[0] + offset[0], origin[1] + offset[1]): block for offset, block in blob.items()}
@@ -204,9 +204,9 @@ class Chunk(object):
         # Generate structures
         chunk_data = generate_structures(x, y, chunk_data, oak_tree_gen, (1, 2))
         chunk_data = generate_structures(x, y, chunk_data, tall_grass_gen, (4, 3))
-        chunk_data = generate_structures(x, y, chunk_data, granite_gen, (2, 3))
-        chunk_data = generate_structures(x, y, chunk_data, diorite_gen, (2, 3))
-        chunk_data = generate_structures(x, y, chunk_data, andesite_gen, (2, 3))
+        chunk_data = generate_structures(x, y, chunk_data, granite_gen, (1, 3))
+        chunk_data = generate_structures(x, y, chunk_data, diorite_gen, (1, 3))
+        chunk_data = generate_structures(x, y, chunk_data, andesite_gen, (1, 3))
         return chunk_data
 
 def terrain_generate(x: int) -> float:
