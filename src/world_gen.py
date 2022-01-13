@@ -223,13 +223,14 @@ class Chunk(object):
                         chunk_data[target] = block_name
 
         # Generate structures
-        chunk_data = generate_structures(x, y, chunk_data, oak_tree_gen, (1, 2))
-        chunk_data = generate_structures(x, y, chunk_data, tall_grass_gen, (4, 3))
-        if y > 1:
+        if -1 <= y <= 1:
+            chunk_data = generate_structures(x, y, chunk_data, oak_tree_gen, (1, 2))
+            chunk_data = generate_structures(x, y, chunk_data, tall_grass_gen, (4, 3))
+        if y >= 0:
             chunk_data = generate_structures(x, y, chunk_data, granite_gen, (1, 9))
             chunk_data = generate_structures(x, y, chunk_data, diorite_gen, (1, 9))
             chunk_data = generate_structures(x, y, chunk_data, andesite_gen, (1, 9))
-            chunk_data = generate_structures(x, y, chunk_data, coal_ore_gen, (1, 12))
+            chunk_data = generate_structures(x, y, chunk_data, coal_ore_gen, (1, 13))
 
         return chunk_data
 
@@ -311,14 +312,15 @@ def generate_structures(x: int, y: int, chunk_data: dict, generator: StructureGe
                                     if generator.obstruction:
                                         return chunk_data_orig
                             else:
-                                if generator.obstruction:
-                                    return chunk_data_orig
+                                # If a block "can_only_overwrite" certain blocks, it will not overwrite anything else, including air
+                                if "can_only_overwrite" in BLOCK_DATA[block_name]:
+                                    if chunk_data[block] in BLOCK_DATA[block_name]["can_only_overwrite"]:
+                                        chunk_data[block] = block_name
                                 else:
-                                    chunk_data[block] = block_name
-                            # If a block "can_only_overwrite" certain blocks, it will not overwrite anything else, including air
-                            if "can_only_overwrite" in BLOCK_DATA[block_name]:
-                                if chunk_data[block] in BLOCK_DATA[block_name]["can_only_overwrite"]:
-                                    chunk_data[block] = block_name
+                                    if generator.obstruction:
+                                        return chunk_data_orig
+                                    else:
+                                        chunk_data[block] = block_name
                         else:
                             # Don't overwrite air
                             if "can_only_overwrite" not in BLOCK_DATA[block_name]:
@@ -520,4 +522,4 @@ tall_grass_gen = StructureGenerator("tall_grass", obstruction=True)
 granite_gen = BlobGenerator("granite", (10, 10), 5, 3)
 diorite_gen = BlobGenerator("diorite", (10, 10), 5, 3)
 andesite_gen = BlobGenerator("andesite", (10, 10), 5, 3)
-coal_ore_gen = BlobGenerator("coal_ore", (8, 4), 4, 2)
+coal_ore_gen = BlobGenerator("coal_ore", (10, 5), 4, 2)
