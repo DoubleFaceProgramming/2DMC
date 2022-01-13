@@ -239,10 +239,11 @@ class Chunk(object):
         if y >= 5: # Lower than y-40
             chunk_data = generate_structures(x, y, chunk_data, gold_ore_gen, (1, 16))
         if y >= 7: # Lower than y-56
-            chunk_data = generate_structures(x, y, chunk_data, lapis_lazuli_ore_gen, (1, 28))
-            chunk_data = generate_structures(x, y, chunk_data, lapis_lazuli_ore_gen, (1, 28))
+            chunk_data = generate_structures(x, y, chunk_data, lapis_lazuli_ore_gen, (1, 22))
         if y >= 10: # Lower than y-80
             chunk_data = generate_structures(x, y, chunk_data, redstone_ore_gen, (2, 14))
+        if y >= 16: # Lower than y-128
+            chunk_data = generate_structures(x, y, chunk_data, diamond_ore_gen, (1, 28))
 
         return chunk_data
 
@@ -531,3 +532,4 @@ iron_ore_gen = BlobGenerator("iron_ore", (3, 4), 4, 1)
 gold_ore_gen = BlobGenerator("gold_ore", (3, 3), 4, 1)
 lapis_lazuli_ore_gen = BlobGenerator("lapis_lazuli_ore", (3, 3), 4, 1)
 redstone_ore_gen = BlobGenerator("redstone_ore", (3, 3), 4, 1)
+diamond_ore_gen = BlobGenerator("diamond_ore", (3, 3), 4, 1)
