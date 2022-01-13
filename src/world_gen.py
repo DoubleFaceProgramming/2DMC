@@ -238,6 +238,8 @@ class Chunk(object):
             chunk_data = generate_structures(x, y, chunk_data, iron_ore_gen, (2, 18))
         if y >= 5: # Lower than y-40
             chunk_data = generate_structures(x, y, chunk_data, gold_ore_gen, (1, 16))
+        if y >= 7: # Lower than y-56
+            chunk_data = generate_structures(x, y, chunk_data, lapis_lazuli_ore_gen, (1, 28))
 
         return chunk_data
 
@@ -524,3 +526,4 @@ andesite_gen = BlobGenerator("andesite", (10, 10), 5, 3)
 coal_ore_gen = BlobGenerator("coal_ore", (8, 4), 4, 2)
 iron_ore_gen = BlobGenerator("iron_ore", (3, 4), 4, 1)
 gold_ore_gen = BlobGenerator("gold_ore", (3, 3), 4, 1)
+lapis_lazuli_ore_gen = BlobGenerator("lapis_lazuli_ore", (3, 3), 4, 1)
