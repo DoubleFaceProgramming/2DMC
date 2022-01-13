@@ -234,7 +234,8 @@ class Chunk(object):
             chunk_data = generate_structures(x, y, chunk_data, granite_gen, (1, 10))
             chunk_data = generate_structures(x, y, chunk_data, diorite_gen, (1, 10))
             chunk_data = generate_structures(x, y, chunk_data, andesite_gen, (1, 10))
-            chunk_data = generate_structures(x, y, chunk_data, coal_ore_gen, (1, 10))
+            chunk_data = generate_structures(x, y, chunk_data, coal_ore_gen, (2, 15))
+            chunk_data = generate_structures(x, y, chunk_data, iron_ore_gen, (2, 18))
 
         return chunk_data
 
@@ -515,15 +516,8 @@ structures = load_structures()
 
 oak_tree_gen = StructureGenerator("oak_tree")
 tall_grass_gen = StructureGenerator("tall_grass", obstruction=True)
-# coal_ore_gen = BlobGenerator("coal_ore")
-# copper_ore_gen = BlobGenerator("copper_ore")
-# iron_ore_gen = BlobGenerator("iron_ore")
-# lapis_ore_gen = BlobGenerator("lapis_ore")
-# gold_ore_gen = BlobGenerator("gold_ore")
-# redstone_ore_gen = BlobGenerator("redstone_ore")
-# diamond_ore_gen = BlobGenerator("diamond_ore")
-# emerald_ore_gen = BlobGenerator("emerald_ore")
 granite_gen = BlobGenerator("granite", (10, 10), 5, 3)
 diorite_gen = BlobGenerator("diorite", (10, 10), 5, 3)
 andesite_gen = BlobGenerator("andesite", (10, 10), 5, 3)
 coal_ore_gen = BlobGenerator("coal_ore", (8, 4), 4, 2)
+iron_ore_gen = BlobGenerator("iron_ore", (3, 3), 4, 1)
