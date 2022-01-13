@@ -120,38 +120,42 @@ class BlobGenerator(StructureGenerator):
         """
         seed(struct_seed)
 
-        # Create a 2D list with density/11 filled with the block type (self.name)
-        blob = []
-        for y in range(size[1]):
-            blob.append([])
-            for x in range(size[0]):
-                if randint(0, 10) < density:
-                    blob[y].append(" ")
-                else:
-                    blob[y].append(self.name)
+        is_empty = True
+        while is_empty:
+            blob = []
 
-        neighbors_offset = [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
+            # Create a 2D list with density/11 filled with the block type (self.name)
+            for y in range(size[1]):
+                blob.append([])
+                for x in range(size[0]):
+                    if randint(0, 10) < density:
+                        blob[y].append(" ")
+                    else:
+                        blob[y].append(self.name)
 
-        for _ in range(cycles):                                   # Number of Cellular Automata iterations
-            for y, line in enumerate(blob):                       # Go through each line
-                for x, block in enumerate(line):                  # Go through each block
-                    neighbors = 0
-                    for n in neighbors_offset:                    # Check every neighbor around the current block
-                        try:                                      # Try and except for blocks around the edge of the list which lacks neighbors
-                            if blob[y+n[0]][x+n[1]] == self.name: # If the neighboring block exists (== self.name)
-                                neighbors += 1                    # Increment the neighbor counter
-                        except: pass
-                    if neighbors <= 3:                            # If there are less than or equal to 3 neighboring blocks
-                        blob[y][x] = " "                          # That block disappears
-                    elif neighbors > 5:                           # If there are more than 5 neighboring blocks
-                        blob[y][x] = self.name                    # That block appears
+            neighbors_offset = [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
 
-        # Turn the list into a dictionary for structure generation
-        blob_dict = {}
-        for y, line in enumerate(blob):
-            for x, block in enumerate(line):
-                if block != " ":
-                    blob_dict[(x, y)] = block
+            for _ in range(cycles):                                   # Number of Cellular Automata iterations
+                for y, line in enumerate(blob):                       # Go through each line
+                    for x, block in enumerate(line):                  # Go through each block
+                        neighbors = 0
+                        for n in neighbors_offset:                    # Check every neighbor around the current block
+                            try:                                      # Try and except for blocks around the edge of the list which lacks neighbors
+                                if blob[y+n[0]][x+n[1]] == self.name: # If the neighboring block exists (== self.name)
+                                    neighbors += 1                    # Increment the neighbor counter
+                            except: pass
+                        if neighbors <= 3:                            # If there are less than or equal to 3 neighboring blocks
+                            blob[y][x] = " "                          # That block disappears
+                        elif neighbors > 5:                           # If there are more than 5 neighboring blocks
+                            blob[y][x] = self.name                    # That block appears
+
+            # Turn the list into a dictionary for structure generation
+            blob_dict = {}
+            for y, line in enumerate(blob):
+                for x, block in enumerate(line):
+                    if block != " ":
+                        is_empty = False
+                        blob_dict[(x, y)] = block
 
         return blob_dict
 
@@ -227,10 +231,10 @@ class Chunk(object):
             chunk_data = generate_structures(x, y, chunk_data, oak_tree_gen, (1, 2))
             chunk_data = generate_structures(x, y, chunk_data, tall_grass_gen, (4, 3))
         if y >= 0:
-            chunk_data = generate_structures(x, y, chunk_data, granite_gen, (1, 9))
-            chunk_data = generate_structures(x, y, chunk_data, diorite_gen, (1, 9))
-            chunk_data = generate_structures(x, y, chunk_data, andesite_gen, (1, 9))
-            chunk_data = generate_structures(x, y, chunk_data, coal_ore_gen, (1, 13))
+            chunk_data = generate_structures(x, y, chunk_data, granite_gen, (1, 10))
+            chunk_data = generate_structures(x, y, chunk_data, diorite_gen, (1, 10))
+            chunk_data = generate_structures(x, y, chunk_data, andesite_gen, (1, 10))
+            chunk_data = generate_structures(x, y, chunk_data, coal_ore_gen, (1, 10))
 
         return chunk_data
 
@@ -522,4 +526,4 @@ tall_grass_gen = StructureGenerator("tall_grass", obstruction=True)
 granite_gen = BlobGenerator("granite", (10, 10), 5, 3)
 diorite_gen = BlobGenerator("diorite", (10, 10), 5, 3)
 andesite_gen = BlobGenerator("andesite", (10, 10), 5, 3)
-coal_ore_gen = BlobGenerator("coal_ore", (10, 5), 4, 2)
+coal_ore_gen = BlobGenerator("coal_ore", (8, 4), 4, 2)
