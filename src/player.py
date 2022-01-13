@@ -86,7 +86,6 @@ class Player(pygame.sprite.Sprite):
         self.inventory.add_item("diorite")
         self.inventory.add_item("andesite")
         self.inventory.add_item("coal_ore")
-        self.inventory.add_item("copper_ore")
         self.inventory.add_item("iron_ore")
         self.inventory.add_item("gold_ore")
         self.inventory.add_item("lapis_lazuli_ore")
