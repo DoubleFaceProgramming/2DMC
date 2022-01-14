@@ -4,6 +4,7 @@ from perlin_noise import PerlinNoise
 from opensimplex import OpenSimplex
 from pygame import Rect, Surface
 from os.path import join
+from pathlib import Path
 from os import listdir
 from math import ceil
 
@@ -97,10 +98,10 @@ class StructureGenerator(object):
         return block_data
 
 class BlobGenerator(StructureGenerator):
-    def __init__(self, name, max_size, density, cycles):
+    def __init__(self, name, max_size, density, cycles, obstruction=False):
         self.name = name
         self.on_surface = False
-        self.obstruction = False
+        self.obstruction = obstruction
         self.max_size = max_size
         self.density = density
         self.cycles = cycles
@@ -231,9 +232,6 @@ class Chunk(object):
             chunk_data = generate_structures(x, y, chunk_data, oak_tree_gen, (1, 2))
             chunk_data = generate_structures(x, y, chunk_data, tall_grass_gen, (4, 3))
         if y >= 0: # Everywhere underground
-            chunk_data = generate_structures(x, y, chunk_data, granite_gen, (1, 10))
-            chunk_data = generate_structures(x, y, chunk_data, diorite_gen, (1, 10))
-            chunk_data = generate_structures(x, y, chunk_data, andesite_gen, (1, 10))
             chunk_data = generate_structures(x, y, chunk_data, coal_ore_gen, (2, 15))
             chunk_data = generate_structures(x, y, chunk_data, iron_ore_gen, (2, 18))
         if y >= 5: # Lower than y-40
@@ -246,6 +244,10 @@ class Chunk(object):
             chunk_data = generate_structures(x, y, chunk_data, diamond_ore_gen, (1, 32))
         if y >= 20: # Lower than y-160
             chunk_data = generate_structures(x, y, chunk_data, emerald_ore_gen, (1, 32))
+        if y >= 0: # Everywhere underground
+            chunk_data = generate_structures(x, y, chunk_data, granite_gen, (2, 14))
+            chunk_data = generate_structures(x, y, chunk_data, diorite_gen, (2, 14))
+            chunk_data = generate_structures(x, y, chunk_data, andesite_gen, (2, 14))
 
         return chunk_data
 
@@ -322,24 +324,22 @@ def generate_structures(x: int, y: int, chunk_data: dict, generator: StructureGe
                             if "overwriteable" in BLOCK_DATA[block_name]:
                                 if chunk_data[block] in BLOCK_DATA[block_name]["overwriteable"]:
                                     chunk_data[block] = block_name
-                                else:
+                                elif generator.obstruction:
                                     # Obstruction determines whether the struture can generate when there are non-overwriteable blocks in its way
-                                    if generator.obstruction:
-                                        return chunk_data_orig
-                            else:
+                                    return chunk_data_orig
+                            elif "can_only_overwrite" in BLOCK_DATA[block_name]:
                                 # If a block "can_only_overwrite" certain blocks, it will not overwrite anything else, including air
-                                if "can_only_overwrite" in BLOCK_DATA[block_name]:
-                                    if chunk_data[block] in BLOCK_DATA[block_name]["can_only_overwrite"]:
-                                        chunk_data[block] = block_name
-                                else:
-                                    if generator.obstruction:
-                                        return chunk_data_orig
-                                    else:
-                                        chunk_data[block] = block_name
-                        else:
-                            # Don't overwrite air
-                            if "can_only_overwrite" not in BLOCK_DATA[block_name]:
+                                if chunk_data[block] in BLOCK_DATA[block_name]["can_only_overwrite"]:
+                                    chunk_data[block] = block_name
+                                elif generator.obstruction:
+                                    return chunk_data_orig
+                            elif generator.obstruction:
+                                return chunk_data_orig
+                            else:
                                 chunk_data[block] = block_name
+                        elif "can_only_overwrite" not in BLOCK_DATA[block_name]:
+                            # Don't overwrite air
+                            chunk_data[block] = block_name
     return chunk_data
 
 def load_chunks(camera: Camera) -> list:
@@ -393,7 +393,7 @@ def load_structures() -> dict:
         dict: A dictionar containing structure information
     """
 
-    # 103 lines of comments... maybe I went overboard xD
+    # 104 lines of comments... maybe I went overboard xD
     # I hope I explained the file format well :)
 
     # reference structure file (short_oak_tree.structure)
@@ -475,12 +475,13 @@ def load_structures() -> dict:
                             # blocks[(0, -4)] = "oak_leaves"
                             blocks[(x - origin[0], y - origin[1])] = legends[structure[y][x]]
 
+                # Path(struct).stem gets the stem of the file (short_oak_tree.structure -> shoroak_tree)
                 # This might be:
                 # structures["oak_tree"][short_oak_tree] = ((2, 4), {
                 #     (0, 4): "oak_leaves",
                 #     ect.
                 # })
-                structures[folder][struct[:-10]] = (origin, blocks)
+                structures[folder][Path(struct).stem] = (origin, blocks)
 
             else: # This block of code handles distribution.structure specifically
                 # Example distribution.structure
@@ -526,9 +527,9 @@ structures = load_structures()
 
 oak_tree_gen = StructureGenerator("oak_tree")
 tall_grass_gen = StructureGenerator("tall_grass", obstruction=True)
-granite_gen = BlobGenerator("granite", (10, 10), 5, 3)
-diorite_gen = BlobGenerator("diorite", (10, 10), 5, 3)
-andesite_gen = BlobGenerator("andesite", (10, 10), 5, 3)
+granite_gen = BlobGenerator("granite", (10, 10), 5, 3, obstruction=True)
+diorite_gen = BlobGenerator("diorite", (10, 10), 5, 3, obstruction=True)
+andesite_gen = BlobGenerator("andesite", (10, 10), 5, 3, obstruction=True)
 coal_ore_gen = BlobGenerator("coal_ore", (8, 4), 4, 2)
 iron_ore_gen = BlobGenerator("iron_ore", (3, 4), 4, 1)
 gold_ore_gen = BlobGenerator("gold_ore", (3, 3), 4, 1)

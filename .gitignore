@@ -1,3 +1,4 @@
 src/__pycache__
 /.vscode
-src/test.py
+src/CAtest.py
+src/image_processing_test.py
