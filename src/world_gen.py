@@ -201,31 +201,12 @@ class Chunk(object):
         chunk_data = {}
         for y_pos in range(CHUNK_SIZE):
             for x_pos in range(CHUNK_SIZE):
-                target = (x * CHUNK_SIZE + x_pos, y * CHUNK_SIZE + y_pos)
-                block_name = ""
+                block_pos = (x * CHUNK_SIZE + x_pos, y * CHUNK_SIZE + y_pos)
+                # Generate each block
+                block_name = generate_block(block_pos[0], block_pos[1])
 
-                # Cave noise map
-                cave_noise_map_coords = [target[0]/70, target[1]/70]
-                # Don't generate blocks if it satifies a certain range of values in the cave noise map, AKA a cave
-                cave_noise_map_value = cave_generate(cave_noise_map_coords)
-
-                if not (92.7 < cave_noise_map_value < 100):
-                    # Generate terrain
-                    height = terrain_generate(target[0])
-                    if target[1] == height:
-                        block_name = "grass_block"
-                    elif height+1 <= target[1] < height+4:
-                        block_name = "dirt"
-                    elif target[1] >= height+4:
-                        block_name = "stone"
-                    if target[1] == height-1:
-                        if not (92.7 < cave_generate([target[0]/70, (target[1]+1)/70]) < 100):
-                            if randint(0, 2) == 0:
-                                block_name = "grass"
-                            if randint(0, 21) == 0:
-                                block_name = choices(["poppy", "dandelion"], weights=[1, 2])[0]
-                    if block_name != "":
-                        chunk_data[target] = block_name
+                if block_name != "":
+                    chunk_data[block_pos] = block_name
 
         # Generate structures
         if -1 <= y <= 1: # Surface generations
@@ -262,6 +243,31 @@ def cave_generate(coords: list) -> float:
     noise_height = int(pow(noise_height * 255, 0.9))
     return noise_height
 
+def generate_block(x, y):
+    # Cave noise map
+    cave_noise_map_coords = [x/70, y/70]
+    # Don't generate blocks if it satifies a certain range of values in the cave noise map, AKA a cave
+    cave_noise_map_value = cave_generate(cave_noise_map_coords)
+
+    block_name = ""
+    if not (92.7 < cave_noise_map_value < 100):
+        # Generate terrain
+        height = terrain_generate(x)
+        if y == height:
+            block_name = "grass_block"
+        elif height+1 <= y < height+4:
+            block_name = "dirt"
+        elif y >= height+4:
+            block_name = "stone"
+        if y == height-1:
+            if not (92.7 < cave_generate([x/70, (y+1)/70]) < 100):
+                if randint(0, 2) == 0:
+                    block_name = "grass"
+                if randint(0, 21) == 0:
+                    block_name = choices(["poppy", "dandelion"], weights=[1, 2])[0]
+        
+    return block_name
+
 def get_structures(x: int, y: int, generator: StructureGenerator, chance: tuple) -> list:
     """Get structures inside the current chunk (x, y)
 
@@ -291,8 +297,10 @@ def get_structures(x: int, y: int, generator: StructureGenerator, chance: tuple)
             # Structures that are not in this chunk
             if not 0 <= start_y - y * CHUNK_SIZE < CHUNK_SIZE:
                 return out
+            
+            struct_data = generator.generate((start_x, start_y))
+            out.append(struct_data)
 
-            out.append(generator.generate((start_x, start_y)))
     return out
 
 def generate_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerator, chance: tuple) -> dict:
