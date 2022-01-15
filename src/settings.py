@@ -85,17 +85,5 @@ class Settings():
                (self.config["keybinds"][action] == "mouse_right"  and eventkey == 3):
                 return True
         # Keybord bindings
-        elif eventkey == self.get_code(action):
+        elif eventkey == key_code(self.config["keybinds"][action]):
             return True
-
-    def get_code(self, action: str) -> int:
-        """Gets the pygame keycode for the keybind for the given action
-
-        Args:
-            action (str): The action to get the keybind and keycode for
-
-        Returns:
-            int: The key code of the keybind of the action
-        """
-
-        return key_code(self.config["keybinds"][action])
