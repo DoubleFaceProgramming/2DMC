@@ -10,6 +10,7 @@ class Settings():
         self.confdir_def_stem = confdirdefstem # def -> default not definition
         self.confdir = pathof(confdir)
         self.confdir_def = os.path.join(self.confdir, self.confdir_def_stem)
+        self.config_def = dict()
         self.config = dict()
 
         # Getting bottom level files
@@ -63,12 +64,18 @@ class Settings():
                     if not (new_file_dirpath := new_file.parent).exists():
                         new_file_dirpath.mkdir()
 
-                    # Writing the content of the default file into the new one
-                    if not new_file.exists():
-                        open(new_file, 'w').write(open(os.path.join(dirpath, file), 'r').read())
+    def is_default(self, catergory: str, action: str) -> bool:
+        """Checks if the given keybind is the default for that keybind
 
-        # Generating the config attribute
-        self.load()
+        Args:
+            catergory (str): The catergory of the setting, ex. "keybinds", "scroll"
+            action (str): The specific action to check, ex. "left", "reversed"
+
+        Returns:
+            bool: Whether the given keybind is the default or not
+        """
+        
+        return self.config[catergory][action] == self.config_def["keybinds"][action]
 
     def get_pressed(self, action: str, keys: dict, mouse: dict) -> bool:
         """Gets whether the keybind associated with the action is being held down
