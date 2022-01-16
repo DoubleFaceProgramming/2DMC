@@ -11,7 +11,32 @@ class Settings():
         self.confdir = pathof(confdir)
         self.confdir_def = os.path.join(self.confdir, self.confdir_def_stem)
         self.config = dict()
-        self.init_config()
+
+        # Getting bottom level files
+        for dirpath, _, files in os.walk(self.confdir_def):
+            for file in files:
+                # Making a path object for every new file and removing "default" from every path
+                new_file = Path((old_path := os.path.join(dirpath, file)).replace(self.confdir_def_stem, ''))
+
+                # Content of the default file
+                def_content = open(old_path, 'r').read()
+                if not new_file.exists():
+                    # Creating the parent directories for the new file
+                    if not (new_file_dirpath := new_file.parent).exists():
+                        new_file_dirpath.mkdir()
+
+                    # Writing the content of the default file into the new one
+                    open(new_file, 'w').write(def_content)
+
+                # Writing the default file content into the default controls dictionary: see comprehension in
+                # Settings.load() for details
+                self.config_def.update({Path(old_path).stem : json.loads(def_content)})
+                # Writing the file path for each "catergory" of setting
+                # ex. {"keybinds": "conf\\peripherals\\keybinds.json", "scroll": "conf\\peripherals\\mouse\\scroll.json"}
+                self.file_paths[Path(old_path).stem] = str(new_file)
+
+        # Generating the config attribute
+        self.load()
 
     def load(self) -> None:
         """Loading / reloading the configs from the .json files and parsing them"""
