@@ -10,6 +10,7 @@ class Settings():
         self.confdir_def_stem = confdirdefstem # def -> default not definition
         self.confdir = pathof(confdir)
         self.confdir_def = os.path.join(self.confdir, self.confdir_def_stem)
+        self.file_paths = dict()
         self.config_def = dict()
         self.config = dict()
 
@@ -52,17 +53,18 @@ class Settings():
             # ex output. {'keybinds': {'jump': 'w', 'left': 'a', 'right': 'd' [...] }, 'scroll': {'reversed': False}}
             self.config.update({(filepath := Path(os.path.join(dirpath, file))).stem: json.loads(open(filepath, 'r').read()) for file in files})
 
-    def init_config(self):
-        """Creating default control settings"""
+    def set_keybind(self, catergory: str, action: str, new: str) -> None:
+        """Change the desired keybind to the given new one
 
-        for dirpath, _, files in os.walk(self.confdir_def):
-            for file in files:
-                # Making a path object for every new file and removing "default" from every path
-                new_file = Path(os.path.join(dirpath, file).replace(self.confdir_def_stem, ''))
-                if not new_file.exists():
-                    # Creating the parent directories for the new file
-                    if not (new_file_dirpath := new_file.parent).exists():
-                        new_file_dirpath.mkdir()
+        Args:
+            catergory (str): The catergory of setting, ex. "keybinds", "scroll"
+            action (str): The specific action to change, ex. "left", "reversed"
+            new (str): The key / mouse button to change it to, ex. 'y', "mouse_left"
+        """
+
+        self.config[catergory][action] = new
+        # Writing the updated configs into their respective files
+        open(self.file_paths[catergory], 'w').write(json.dumps(self.config[catergory], indent = 4))
 
     def is_default(self, catergory: str, action: str) -> bool:
         """Checks if the given keybind is the default for that keybind
@@ -74,7 +76,7 @@ class Settings():
         Returns:
             bool: Whether the given keybind is the default or not
         """
-        
+
         return self.config[catergory][action] == self.config_def["keybinds"][action]
 
     def get_pressed(self, action: str, keys: dict, mouse: dict) -> bool:
@@ -89,15 +91,18 @@ class Settings():
             bool: Whether the keybind associated with the action is currently being held down
         """
 
+        # Handling unbound keybinds
+        if not (keybind := self.config["keybinds"][action]):
+            return False
         # Mouse keybindings
-        if self.config["keybinds"][action].startswith("mouse"):
-            if (self.config["keybinds"][action] == "mouse_left"   and mouse[0]) or \
-               (self.config["keybinds"][action] == "mouse_middle" and mouse[1]) or \
-               (self.config["keybinds"][action] == "mouse_right"  and mouse[2]):
+        elif keybind.startswith("mouse"):
+            if (keybind == "mouse_left"   and mouse[0]) or \
+               (keybind == "mouse_middle" and mouse[1]) or \
+               (keybind == "mouse_right"  and mouse[2]):
                 return True
         # Keyboard keybindings
         else:
-            return keys[key_code(self.config["keybinds"][action])]
+            return keys[key_code(keybind)]
 
     def get_pressed_short(self, action: str, eventkey: int) -> bool:
         """Returns whether the keybinding associated with the action was "tapped". Used in event loops
@@ -110,12 +115,15 @@ class Settings():
             bool: Whether the keybind was pressed or not
         """
 
+        # Handling unbound keybinds
+        if not (keybind := self.config["keybinds"][action]):
+            return False
         # Mouse keybindings
-        if self.config["keybinds"][action].startswith("mouse"):
-            if (self.config["keybinds"][action] == "mouse_left"   and eventkey == 1) or \
-               (self.config["keybinds"][action] == "mouse_middle" and eventkey == 2) or \
-               (self.config["keybinds"][action] == "mouse_right"  and eventkey == 3):
+        elif keybind.startswith("mouse"):
+            if (keybind == "mouse_left"   and eventkey == 1) or \
+               (keybind == "mouse_middle" and eventkey == 2) or \
+               (keybind == "mouse_right"  and eventkey == 3):
                 return True
         # Keybord bindings
-        elif eventkey == key_code(self.config["keybinds"][action]):
+        elif eventkey == key_code(keybind):
             return True
