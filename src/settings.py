@@ -53,31 +53,31 @@ class Settings():
             # ex output. {'keybinds': {'jump': 'w', 'left': 'a', 'right': 'd' [...] }, 'scroll': {'reversed': False}}
             self.config.update({(filepath := Path(os.path.join(dirpath, file))).stem: json.loads(open(filepath, 'r').read()) for file in files})
 
-    def set_keybind(self, catergory: str, action: str, new: str) -> None:
+    def set_keybind(self, category: str, action: str, new: str) -> None:
         """Change the desired keybind to the given new one
 
         Args:
-            catergory (str): The catergory of setting, ex. "keybinds", "scroll"
+            category (str): The category of setting, ex. "keybinds", "scroll"
             action (str): The specific action to change, ex. "left", "reversed"
             new (str): The key / mouse button to change it to, ex. 'y', "mouse_left"
         """
 
-        self.config[catergory][action] = new
+        self.config[category][action] = new
         # Writing the updated configs into their respective files
-        open(self.file_paths[catergory], 'w').write(json.dumps(self.config[catergory], indent = 4))
+        open(self.file_paths[category], 'w').write(json.dumps(self.config[category], indent = 4))
 
-    def is_default(self, catergory: str, action: str) -> bool:
+    def is_default(self, category: str, action: str) -> bool:
         """Checks if the given keybind is the default for that keybind
 
         Args:
-            catergory (str): The catergory of the setting, ex. "keybinds", "scroll"
+            category (str): The category of the setting, ex. "keybinds", "scroll"
             action (str): The specific action to check, ex. "left", "reversed"
 
         Returns:
             bool: Whether the given keybind is the default or not
         """
 
-        return self.config[catergory][action] == self.config_def["keybinds"][action]
+        return self.config[category][action] == self.config_def[category][action]
 
     def get_pressed(self, action: str, keys: dict, mouse: dict) -> bool:
         """Gets whether the keybind associated with the action is being held down
