@@ -18,6 +18,23 @@ seed(SEED)
 snoise = OpenSimplex(seed=SEED)
 pnoise = PerlinNoise(seed=SEED)
 
+class Structure(object):
+    instances = {}
+
+    def __init__(self, block_data: dict):
+        self.block_data = block_data
+        self.in_chunks = set([(block_pos[0] // CHUNK_SIZE, block_pos[1] // CHUNK_SIZE) for block_pos in block_data.keys()])
+        self.blocks_in_chunk = {}
+        for chunk in self.in_chunks:
+            if chunk in self.__class__.instances:
+                self.__class__.instances[chunk].append(self)
+            else:
+                self.__class__.instances[chunk] = [self]
+            self.blocks_in_chunk[chunk] = {}
+        for block_pos, block_name in self.block_data.items():
+            chunk = (block_pos[0] // CHUNK_SIZE, block_pos[1] // CHUNK_SIZE)
+            self.blocks_in_chunk[chunk][block_pos] = block_name
+
 class StructureGenerator(object):
     """Class that handles the generation of structures"""
     def __init__(self, name, obstruction=False):
@@ -76,16 +93,17 @@ class StructureGenerator(object):
                 case 3:
                     continue # Do not generate the block
 
+        Structure(block_data)
         return block_data
 
     def can_generate(self, block_pos: tuple, block_name: str, chunk_pos: tuple, chunk_data: dict) -> int:
-        if 0 <= block_pos[0]-chunk_pos[0]*CHUNK_SIZE < CHUNK_SIZE and 0 <= block_pos[1]-chunk_pos[1]*CHUNK_SIZE < CHUNK_SIZE:
-            if block_pos in chunk_data:
-                block_in_chunk = chunk_data[block_pos]
-            else:
-                block_in_chunk = None
+        # if 0 <= block_pos[0]-chunk_pos[0]*CHUNK_SIZE < CHUNK_SIZE and 0 <= block_pos[1]-chunk_pos[1]*CHUNK_SIZE < CHUNK_SIZE:
+        if block_pos in chunk_data:
+            block_in_chunk = chunk_data[block_pos]
         else:
-            block_in_chunk = generate_block(*block_pos)
+            block_in_chunk = None
+        # else:
+        #     block_in_chunk = generate_block(*block_pos)
         if block_in_chunk:
             if "overwriteable" in BLOCK_DATA[block_name]:
                 if block_in_chunk in BLOCK_DATA[block_name]["overwriteable"]:
@@ -186,6 +204,7 @@ class BlobGenerator(StructureGenerator):
                 case 3:
                     continue # Do not generate the block
 
+        Structure(block_data)
         return block_data
 
 class Chunk(object):
@@ -215,7 +234,8 @@ class Chunk(object):
     def generate(self, x: int, y: int) -> dict:
         """Takes the chunk coordinates and returns a dictionary containing the block data inside the chunk"""
 
-        # start = time.time()
+        start = time.time()
+
         seed(SEED + canter_pairing((x, y)))
         chunk_data = {}
         for y_pos in range(CHUNK_SIZE):
@@ -228,28 +248,33 @@ class Chunk(object):
                     chunk_data[block_pos] = block_name
 
         # Generate structures
-        if -1 <= y <= 1: # Surface generations
-            chunk_data = generate_structures(x, y, chunk_data, oak_tree_gen, (1, 2))
-            chunk_data = generate_structures(x, y, chunk_data, tall_grass_gen, (4, 3))
-        if y >= 0: # Everywhere underground
-            chunk_data = generate_structures(x, y, chunk_data, coal_ore_gen, (2, 15))
-            chunk_data = generate_structures(x, y, chunk_data, iron_ore_gen, (2, 18))
-        if y >= 5: # Lower than y-40
-            chunk_data = generate_structures(x, y, chunk_data, gold_ore_gen, (1, 16))
-        if y >= 7: # Lower than y-56
-            chunk_data = generate_structures(x, y, chunk_data, lapis_lazuli_ore_gen, (1, 22))
-        if y >= 10: # Lower than y-80
-            chunk_data = generate_structures(x, y, chunk_data, redstone_ore_gen, (2, 14))
-        if y >= 16: # Lower than y-128
-            chunk_data = generate_structures(x, y, chunk_data, diamond_ore_gen, (1, 32))
-        if y >= 20: # Lower than y-160
-            chunk_data = generate_structures(x, y, chunk_data, emerald_ore_gen, (1, 32))
-        if y >= 0: # Everywhere underground
-            chunk_data = generate_structures(x, y, chunk_data, granite_gen, (2, 14))
-            chunk_data = generate_structures(x, y, chunk_data, diorite_gen, (2, 14))
-            chunk_data = generate_structures(x, y, chunk_data, andesite_gen, (2, 14))
+        if (x, y) in Structure.instances:
+            for structure in Structure.instances[(x, y)]:
+                for block_pos, block_name in structure.blocks_in_chunk[(x, y)].items():
+                    chunk_data[block_pos] = block_name
+        else:
+            if -1 <= y <= 1: # Surface generations
+                chunk_data = generate_structures(x, y, chunk_data, oak_tree_gen, (1, 2))
+                chunk_data = generate_structures(x, y, chunk_data, tall_grass_gen, (4, 3))
+            if y >= 0: # Everywhere underground
+                chunk_data = generate_structures(x, y, chunk_data, coal_ore_gen, (2, 15))
+                chunk_data = generate_structures(x, y, chunk_data, iron_ore_gen, (2, 18))
+            if y >= 5: # Lower than y-40
+                chunk_data = generate_structures(x, y, chunk_data, gold_ore_gen, (1, 16))
+            if y >= 7: # Lower than y-56
+                chunk_data = generate_structures(x, y, chunk_data, lapis_lazuli_ore_gen, (1, 22))
+            if y >= 10: # Lower than y-80
+                chunk_data = generate_structures(x, y, chunk_data, redstone_ore_gen, (2, 14))
+            if y >= 16: # Lower than y-128
+                chunk_data = generate_structures(x, y, chunk_data, diamond_ore_gen, (1, 32))
+            if y >= 20: # Lower than y-160
+                chunk_data = generate_structures(x, y, chunk_data, emerald_ore_gen, (1, 32))
+            if y >= 0: # Everywhere underground
+                chunk_data = generate_structures(x, y, chunk_data, granite_gen, (2, 14))
+                chunk_data = generate_structures(x, y, chunk_data, diorite_gen, (2, 14))
+                chunk_data = generate_structures(x, y, chunk_data, andesite_gen, (2, 14))
 
-        # print(time.time() - start)
+        print(time.time() - start)
 
         return chunk_data
 
@@ -341,6 +366,8 @@ def generate_structures(x: int, y: int, chunk_data: dict, generator: StructureGe
         dict: the chunk data with the structure
     """
     chunk_data_orig = chunk_data.copy()
+    other_chunks_to_generate = set()
+
     # Check all chunks around the current chunk within the size limit of the structure
     for ox in range(-generator.chunks_to_check[0], generator.chunks_to_check[0] + 1):
         for oy in range(-generator.chunks_to_check[1], generator.chunks_to_check[1] + 1):
@@ -348,7 +375,16 @@ def generate_structures(x: int, y: int, chunk_data: dict, generator: StructureGe
             structs = get_structures(x + ox, y + oy, generator, chunk_data_orig, chance)
             for struct in structs:
                 for block, block_name in struct.items():
-                    chunk_data[block] = block_name
+                    if 0 <= block[0]-x*CHUNK_SIZE < CHUNK_SIZE and 0 <= block[1]-y*CHUNK_SIZE < CHUNK_SIZE:
+                        chunk_data[block] = block_name
+                    else:
+                        if (chunk := (block[0] // CHUNK_SIZE, block[1] // CHUNK_SIZE)) not in Chunk.instances:
+                            other_chunks_to_generate.add(chunk)
+                        
+    for chunk in other_chunks_to_generate:
+        print(f"Chunk {chunk} is an incidental generation")
+        Chunk(chunk)
+
     return chunk_data
 
 def load_chunks(camera: Camera) -> list:
