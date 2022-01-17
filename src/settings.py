@@ -20,8 +20,13 @@ class Settings():
                 # Making a path object for every new file and removing "default" from every path
                 new_file = Path((old_path := os.path.join(dirpath, file)).replace(self.confdir_def_stem, ''))
 
-                # Content of the default file
-                def_content = open(old_path, 'r').read()
+                # Writing the default file content into the default controls dictionary: see comprehension in
+                # Settings.load() for details
+                self.config_def.update({Path(old_path).stem : json.loads((def_content := open(old_path, 'r').read()))})
+                # Writing the file path for each "category" of setting
+                # ex. {"keybinds": "conf\\peripherals\\keybinds.json", "scroll": "conf\\peripherals\\mouse\\scroll.json"}
+                self.file_paths[Path(old_path).stem] = str(new_file)
+
                 if not new_file.exists():
                     # Creating the parent directories for the new file
                     if not (new_file_dirpath := new_file.parent).exists():
@@ -29,13 +34,6 @@ class Settings():
 
                     # Writing the content of the default file into the new one
                     open(new_file, 'w').write(def_content)
-
-                # Writing the default file content into the default controls dictionary: see comprehension in
-                # Settings.load() for details
-                self.config_def.update({Path(old_path).stem : json.loads(def_content)})
-                # Writing the file path for each "catergory" of setting
-                # ex. {"keybinds": "conf\\peripherals\\keybinds.json", "scroll": "conf\\peripherals\\mouse\\scroll.json"}
-                self.file_paths[Path(old_path).stem] = str(new_file)
 
         # Generating the config attribute
         self.load()
@@ -53,46 +51,20 @@ class Settings():
             # ex output. {'keybinds': {'jump': 'w', 'left': 'a', 'right': 'd' [...] }, 'scroll': {'reversed': False}}
             self.config.update({(filepath := Path(os.path.join(dirpath, file))).stem: json.loads(open(filepath, 'r').read()) for file in files})
 
-    def set_keybind(self, category: str, action: str, new: str) -> None:
-        """Change the desired keybind to the given new one
+    def get_pressed(self, setting: str, keys: dict, mouse: dict) -> bool:
+        """Gets whether the keybind associated with the setting is being held down
 
         Args:
-            category (str): The category of setting, ex. "keybinds", "scroll"
-            action (str): The specific action to change, ex. "left", "reversed"
-            new (str): The key / mouse button to change it to, ex. 'y', "mouse_left"
-        """
-
-        self.config[category][action] = new
-        # Writing the updated configs into their respective files
-        open(self.file_paths[category], 'w').write(json.dumps(self.config[category], indent = 4))
-
-    def is_default(self, category: str, action: str) -> bool:
-        """Checks if the given keybind is the default for that keybind
-
-        Args:
-            category (str): The category of the setting, ex. "keybinds", "scroll"
-            action (str): The specific action to check, ex. "left", "reversed"
-
-        Returns:
-            bool: Whether the given keybind is the default or not
-        """
-
-        return self.config[category][action] == self.config_def[category][action]
-
-    def get_pressed(self, action: str, keys: dict, mouse: dict) -> bool:
-        """Gets whether the keybind associated with the action is being held down
-
-        Args:
-            action (str): The action to get the keybind from
+            setting (str): The setting to get the keybind from
             keys (dict): The dictionary returned from pygame.key.get_pressed()
             mouse (dict): The dictionary returned from pygame.mouse.get_pressed()
 
         Returns:
-            bool: Whether the keybind associated with the action is currently being held down
+            bool: Whether the keybind associated with the setting is currently being held down
         """
 
         # Handling unbound keybinds
-        if not (keybind := self.config["keybinds"][action]):
+        if not (keybind := self.config["keybinds"][setting]):
             return False
         # Mouse keybindings
         elif keybind.startswith("mouse"):
@@ -104,11 +76,11 @@ class Settings():
         else:
             return keys[key_code(keybind)]
 
-    def get_pressed_short(self, action: str, eventkey: int) -> bool:
-        """Returns whether the keybinding associated with the action was "tapped". Used in event loops
+    def get_pressed_short(self, setting: str, eventkey: int) -> bool:
+        """Returns whether the keybinding associated with the setting was "tapped". Used in event loops
 
         Args:
-            action (str): The action to get the keybind of
+            setting (str): The setting to get the keybind of
             eventkey (int): The event key or button to calculate the pressed state with: look at implementations
 
         Returns:
@@ -116,7 +88,7 @@ class Settings():
         """
 
         # Handling unbound keybinds
-        if not (keybind := self.config["keybinds"][action]):
+        if not (keybind := self.config["keybinds"][setting]):
             return False
         # Mouse keybindings
         elif keybind.startswith("mouse"):
@@ -127,3 +99,42 @@ class Settings():
         # Keybord bindings
         elif eventkey == key_code(keybind):
             return True
+
+    # The following functions are not strictly necessary
+    # but provide a cleaner implentation for the future
+
+    def set_keybind(self, category: str, setting: str, new: str) -> None:
+        """Change the desired keybind to the given new one
+
+        Args:
+            category (str): The category of setting, ex. "keybinds", "scroll"
+            setting (str): The specific setting to change, ex. "left", "reversed"
+            new (str): The key / mouse button to change it to, ex. 'y', "mouse_left"
+        """
+
+        self.config[category][setting] = new
+        # Writing the updated configs into their respective files
+        open(self.file_paths[category], 'w').write(json.dumps(self.config[category], indent = 4))
+
+    def is_default(self, category: str, setting: str) -> bool:
+        """Checks if the given keybind is the default for that keybind
+
+        Args:
+            category (str): The category of the setting, ex. "keybinds", "scroll"
+            setting (str): The specific setting to check, ex. "left", "reversed"
+
+        Returns:
+            bool: Whether the given keybind is the default or not
+        """
+
+        return self.config[category][setting] == self.config_def["keybinds"][setting]
+
+    def reset_config(self, category: str, setting: str) -> None:
+        """Reset the given setting to its default
+
+        Args:
+            category (str): The category of the setting, ex. "keybinds", "scroll"
+            setting (str): The specific setting to change, ex. "left", "reversed"
+        """
+
+        self.set_keybind(category, setting, self.config_def[category][setting])

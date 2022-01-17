@@ -16,7 +16,7 @@ class Item(object):
         self.nbt = {}
 
 class InventoryFullException(Exception):
-    def __init__(self, item: Item, message="The inventory was full when trying to add item: ") -> None:
+    def __init__(self, item: Item, message: str = "Inventory was full while trying to add item: ") -> None:
         self.message = message
         self.item = item
         super().__init__()
@@ -181,11 +181,11 @@ class Hotbar(object):
         if not self.inventory.visible:
             keys = pygame.key.get_pressed()
             # Looping through the hotbar numbers (ie. "1", "2", "3" ect)
-            for hotbarkey in SETTINGS.config["keybinds"]["hotbar"]:
+            for hotbarkey in (hotbarkbs := {setting: bind for setting, bind in SETTINGS.config["keybinds"].items() if setting.startswith("hotbar")}):
                 # Gets the key bound to the hotbar number and tests if it is being pressed
-                if keys[pygame.key.key_code(str(SETTINGS.config["keybinds"]["hotbar"][hotbarkey]))]:
-                    # Subtracting 1 because json isnt 0 indexed for clarity
-                    self.change_selected(int(hotbarkey) - 1)
+                if keys[pygame.key.key_code(str(hotbarkbs[hotbarkey]))]:
+                    # Subtracting 1 because json isnt 0-indexed for clarity
+                    self.change_selected(int(hotbarkbs[hotbarkey]) - 1)
                     break
 
             # Increasing or decreasing scroll object (using a kinda unecessary but cool new feature :D)
