@@ -18,195 +18,6 @@ seed(SEED)
 snoise = OpenSimplex(seed=SEED)
 pnoise = PerlinNoise(seed=SEED)
 
-class Structure(object):
-    instances = {}
-
-    def __init__(self, block_data: dict):
-        self.block_data = block_data
-        self.in_chunks = set([(block_pos[0] // CHUNK_SIZE, block_pos[1] // CHUNK_SIZE) for block_pos in block_data.keys()])
-        self.blocks_in_chunk = {}
-        for chunk in self.in_chunks:
-            if chunk in self.__class__.instances:
-                self.__class__.instances[chunk].append(self)
-            else:
-                self.__class__.instances[chunk] = [self]
-            self.blocks_in_chunk[chunk] = {}
-        for block_pos, block_name in self.block_data.items():
-            chunk = (block_pos[0] // CHUNK_SIZE, block_pos[1] // CHUNK_SIZE)
-            self.blocks_in_chunk[chunk][block_pos] = block_name
-
-class StructureGenerator(object):
-    """Class that handles the generation of structures"""
-    def __init__(self, name, obstruction=False):
-        self.name = name
-        self.on_surface = True
-        self.obstruction = obstruction
-        self.files = structures[name]
-        self.distribution = structures[name]["distribution"]
-        self.BLOCK_DATA = {}
-
-        self.get_max_size()
-        self.get_max_chunks()
-
-    def get_max_size(self) -> None:
-        """Get the maximum dimensions of all the possible variations of this structure"""
-        max_sizes = []
-        for file in self.files:
-            if file != "distribution":
-                self.BLOCK_DATA[file] = structures[self.name][file]
-                # Append the max size of all the different possible variations
-                max_sizes.append((max(x for x, y in self.BLOCK_DATA[file][1]) - min(x for x, y in self.BLOCK_DATA[file][1]) + 1,
-                            max(y for x, y in self.BLOCK_DATA[file][1]) - min(y for x, y in self.BLOCK_DATA[file][1]) + 1))
-        # Get the biggest one
-        self.max_size = max(max_sizes)
-
-    def get_max_chunks(self) -> None:
-        """Get the maximum number of chunks the structure could span from the max_size"""
-        self.chunks_to_check = int(ceil(self.max_size[0] / CHUNK_SIZE)), int(ceil(self.max_size[1] / CHUNK_SIZE))
-
-    def generate(self, origin: tuple, chunk_data: dict) -> dict:
-        """Generates chunk data that includes a structure at the given origin
-
-        Returns:
-            dict: A dictionary containing the block data of the structure.
-        """
-        seed(SEED + canter_pairing(origin) + ascii_str_sum(self.name)) # Seeding random-ness
-        file = choices(self.distribution["files"], weights=self.distribution["weights"])[0] # Picking a random file using the files and weights generated in load_structures()
-        mirror = bool(randint(0, 1)) # Bool whether the structure should be flipped or not.
-
-        block_data = {}
-        for offset, block in self.BLOCK_DATA[file][1].items():
-            if mirror: block_pos = (origin[0] + offset[0], origin[1] + offset[1])
-            else: block_pos = (origin[0] - offset[0], origin[1] + offset[1])
-
-            if "," in block:
-                block_name = choices([i.split("=")[0] for i in block.split(",")],
-                             weights=[int(i.split("=")[1]) for i in block.split(",")])[0]
-            else:
-                block_name = block
-
-            match self.can_generate(block_pos, block_name, (block_pos[0]//CHUNK_SIZE, block_pos[1]//CHUNK_SIZE), chunk_data):
-                case 1:
-                    block_data[block_pos] = block_name # Generate the block
-                case 2:
-                    return {} # Do not generate the entire structure
-                case 3:
-                    continue # Do not generate the block
-
-        Structure(block_data)
-        return block_data
-
-    def can_generate(self, block_pos: tuple, block_name: str, chunk_pos: tuple, chunk_data: dict) -> int:
-        # if 0 <= block_pos[0]-chunk_pos[0]*CHUNK_SIZE < CHUNK_SIZE and 0 <= block_pos[1]-chunk_pos[1]*CHUNK_SIZE < CHUNK_SIZE:
-        if block_pos in chunk_data:
-            block_in_chunk = chunk_data[block_pos]
-        else:
-            block_in_chunk = None
-        # else:
-        #     block_in_chunk = generate_block(*block_pos)
-        if block_in_chunk:
-            if "overwriteable" in BLOCK_DATA[block_name]:
-                if block_in_chunk in BLOCK_DATA[block_name]["overwriteable"]:
-                    return 1
-                elif self.obstruction:
-                    return 2
-            elif "can_only_overwrite" in BLOCK_DATA[block_name]:
-                if block_in_chunk in BLOCK_DATA[block_name]["can_only_overwrite"]:
-                    return 1
-                elif self.obstruction:
-                    return 2
-            elif self.obstruction:
-                return 2
-            else:
-                return 1
-        elif "can_only_overwrite" not in BLOCK_DATA[block_name]:
-            return 1
-        return 3
-
-class BlobGenerator(StructureGenerator):
-    def __init__(self, name, max_size, density, cycles, obstruction=False):
-        self.name = name
-        self.on_surface = False
-        self.obstruction = obstruction
-        self.max_size = max_size
-        self.density = density
-        self.cycles = cycles
-        self.get_max_chunks()
-
-    def CA(self, struct_seed: int, size: tuple, density: int, cycles: int) -> dict:
-        """Function for generating a blob with the Cellular Automata algorithm
-
-        Args:
-            struct_seed (int): the unique seed for this blob, this chunk, this seed
-            size (int): size of the grid in which to generate the blob
-            density (int): how dense is the starting grid in the CA (Cellular Automata) algorithm
-            cycles (int): how many CA (Cellular Automata) iterations to go through
-
-        Returns:
-            dict: A dict containing the block information of the blob
-        """
-        seed(struct_seed)
-
-        is_empty = True
-        while is_empty:
-            blob = []
-
-            # Create a 2D list with density/11 filled with the block type (self.name)
-            for y in range(size[1]):
-                blob.append([])
-                for x in range(size[0]):
-                    if randint(0, 10) < density:
-                        blob[y].append(" ")
-                    else:
-                        blob[y].append(self.name)
-
-            neighbors_offset = [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
-
-            for _ in range(cycles):                                   # Number of Cellular Automata iterations
-                for y, line in enumerate(blob):                       # Go through each line
-                    for x, block in enumerate(line):                  # Go through each block
-                        neighbors = 0
-                        for n in neighbors_offset:                    # Check every neighbor around the current block
-                            try:                                      # Try and except for blocks around the edge of the list which lacks neighbors
-                                if blob[y+n[0]][x+n[1]] == self.name: # If the neighboring block exists (== self.name)
-                                    neighbors += 1                    # Increment the neighbor counter
-                            except: pass
-                        if neighbors <= 3:                            # If there are less than or equal to 3 neighboring blocks
-                            blob[y][x] = " "                          # That block disappears
-                        elif neighbors > 5:                           # If there are more than 5 neighboring blocks
-                            blob[y][x] = self.name                    # That block appears
-
-            # Turn the list into a dictionary for structure generation
-            blob_dict = {}
-            for y, line in enumerate(blob):
-                for x, block in enumerate(line):
-                    if block != " ":
-                        is_empty = False
-                        blob_dict[(x, y)] = block
-
-        return blob_dict
-
-    def generate(self, origin: tuple, chunk_data: dict) -> dict:
-        struct_seed = SEED + canter_pairing(origin) + ascii_str_sum(self.name)
-        # Create a dictionary of the block data of the blob with Cellular Automata
-        blob = self.CA(struct_seed, self.max_size, self.density, self.cycles)
-
-        block_data = {}
-        for offset, block in blob.items():
-            # Convert the positions to real world position by adding the origin to the block position (offset)
-            block_pos = (origin[0] + offset[0], origin[1] + offset[1])
-
-            match self.can_generate(block_pos, block, (block_pos[0]//CHUNK_SIZE, block_pos[1]//CHUNK_SIZE), chunk_data):
-                case 1:
-                    block_data[block_pos] = block # Generate the block
-                case 2:
-                    return {} # Do not generate the entire structure
-                case 3:
-                    continue # Do not generate the block
-
-        Structure(block_data)
-        return block_data
-
 class Chunk(object):
     """The class responsible for updating and drawing chunks."""
     instances = {}
@@ -247,33 +58,6 @@ class Chunk(object):
                 if block_name != "":
                     chunk_data[block_pos] = block_name
 
-        # Generate structures
-        if (x, y) in Structure.instances:
-            for structure in Structure.instances[(x, y)]:
-                for block_pos, block_name in structure.blocks_in_chunk[(x, y)].items():
-                    chunk_data[block_pos] = block_name
-        else:
-            if -1 <= y <= 1: # Surface generations
-                chunk_data = generate_structures(x, y, chunk_data, oak_tree_gen, (1, 2))
-                chunk_data = generate_structures(x, y, chunk_data, tall_grass_gen, (4, 3))
-            if y >= 0: # Everywhere underground
-                chunk_data = generate_structures(x, y, chunk_data, coal_ore_gen, (2, 15))
-                chunk_data = generate_structures(x, y, chunk_data, iron_ore_gen, (2, 18))
-            if y >= 5: # Lower than y-40
-                chunk_data = generate_structures(x, y, chunk_data, gold_ore_gen, (1, 16))
-            if y >= 7: # Lower than y-56
-                chunk_data = generate_structures(x, y, chunk_data, lapis_lazuli_ore_gen, (1, 22))
-            if y >= 10: # Lower than y-80
-                chunk_data = generate_structures(x, y, chunk_data, redstone_ore_gen, (2, 14))
-            if y >= 16: # Lower than y-128
-                chunk_data = generate_structures(x, y, chunk_data, diamond_ore_gen, (1, 32))
-            if y >= 20: # Lower than y-160
-                chunk_data = generate_structures(x, y, chunk_data, emerald_ore_gen, (1, 32))
-            if y >= 0: # Everywhere underground
-                chunk_data = generate_structures(x, y, chunk_data, granite_gen, (2, 14))
-                chunk_data = generate_structures(x, y, chunk_data, diorite_gen, (2, 14))
-                chunk_data = generate_structures(x, y, chunk_data, andesite_gen, (2, 14))
-
         print(time.time() - start)
 
         return chunk_data
@@ -313,79 +97,6 @@ def generate_block(x, y):
                     block_name = choices(["poppy", "dandelion"], weights=[1, 2])[0]
 
     return block_name
-
-def get_structures(x: int, y: int, generator: StructureGenerator, chunk_data: dict, chance: tuple) -> list:
-    """Get structures inside the current chunk (x, y)
-
-    Args:
-        x (int): chunk position x
-        y (int): chunk position y
-        generator (StructureGenerator): structure object to generate
-        chunk_data (dict): block data of the current chunk
-        chance (tuple): the odds of the structure generating, (number-of-structure-possible-per-chunk, odds-off-the-structure-generating-per-block-in-chunk)
-
-    Returns:
-        list: a list containing the block data of the structures in the chunk
-    """
-    out = []
-    seed(SEED + canter_pairing((x, y)) + ascii_str_sum(generator.name))
-    for _ in range(chance[0]):
-        if randint(0, chance[1]) == 0:
-            start_x = x * CHUNK_SIZE + randrange(0, CHUNK_SIZE)
-            if generator.on_surface:
-                # Generate on the surface of the world
-                start_y = terrain_generate(start_x)-1
-                # If it is cut off by a cave, don't generate
-                if (92.7 < cave_generate([start_x/70, start_y/70]) < 100) or (92.7 < cave_generate([start_x/70, (start_y+1)/70]) < 100):
-                    return out
-            else:
-                start_y = y * CHUNK_SIZE + randrange(0, CHUNK_SIZE)
-
-            # Structures that are not in this chunk
-            if not 0 <= start_y - y * CHUNK_SIZE < CHUNK_SIZE:
-                return out
-
-            struct_data = generator.generate((start_x, start_y), chunk_data)
-
-            if struct_data:
-                out.append(struct_data)
-
-    return out
-
-def generate_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerator, chance: tuple) -> dict:
-    """Check the surrounding chunks for structures that generates in the current chunk (x, y), and then returns the chunk data with the structure
-
-    Args:
-        x (int): chunk position x
-        y (int): chunk position y
-        chunk_data (dict): original chunk data
-        generator (StructureGenerator): the structure object to generate
-        chance (tuple): the odds of the structure generating, (number-of-structure-possible-per-chunk, odds-of-a-chunk-containing-the-structure)
-
-    Returns:
-        dict: the chunk data with the structure
-    """
-    chunk_data_orig = chunk_data.copy()
-    other_chunks_to_generate = set()
-
-    # Check all chunks around the current chunk within the size limit of the structure
-    for ox in range(-generator.chunks_to_check[0], generator.chunks_to_check[0] + 1):
-        for oy in range(-generator.chunks_to_check[1], generator.chunks_to_check[1] + 1):
-            # Get the surrounding structures that MIGHT protrude into the current chunk
-            structs = get_structures(x + ox, y + oy, generator, chunk_data_orig, chance)
-            for struct in structs:
-                for block, block_name in struct.items():
-                    if 0 <= block[0]-x*CHUNK_SIZE < CHUNK_SIZE and 0 <= block[1]-y*CHUNK_SIZE < CHUNK_SIZE:
-                        chunk_data[block] = block_name
-                    else:
-                        if (chunk := (block[0] // CHUNK_SIZE, block[1] // CHUNK_SIZE)) not in Chunk.instances:
-                            other_chunks_to_generate.add(chunk)
-                        
-    for chunk in other_chunks_to_generate:
-        print(f"Chunk {chunk} is an incidental generation")
-        Chunk(chunk)
-
-    return chunk_data
 
 def load_chunks(camera: Camera) -> list:
     """Generate, unload and delete chunks.
@@ -570,15 +281,15 @@ def load_structures() -> dict:
 
 structures = load_structures()
 
-oak_tree_gen = StructureGenerator("oak_tree")
-tall_grass_gen = StructureGenerator("tall_grass", obstruction=True)
-granite_gen = BlobGenerator("granite", (10, 10), 5, 3, obstruction=True)
-diorite_gen = BlobGenerator("diorite", (10, 10), 5, 3, obstruction=True)
-andesite_gen = BlobGenerator("andesite", (10, 10), 5, 3, obstruction=True)
-coal_ore_gen = BlobGenerator("coal_ore", (8, 4), 4, 2)
-iron_ore_gen = BlobGenerator("iron_ore", (3, 4), 4, 1)
-gold_ore_gen = BlobGenerator("gold_ore", (3, 3), 4, 1)
-lapis_lazuli_ore_gen = BlobGenerator("lapis_lazuli_ore", (3, 3), 4, 1)
-redstone_ore_gen = BlobGenerator("redstone_ore", (3, 3), 4, 1)
-diamond_ore_gen = BlobGenerator("diamond_ore", (3, 3), 4, 1)
-emerald_ore_gen = BlobGenerator("emerald_ore", (2, 2), 1, 1)
+# oak_tree_gen = StructureGenerator("oak_tree")
+# tall_grass_gen = StructureGenerator("tall_grass", obstruction=True)
+# granite_gen = BlobGenerator("granite", (10, 10), 5, 3, obstruction=True)
+# diorite_gen = BlobGenerator("diorite", (10, 10), 5, 3, obstruction=True)
+# andesite_gen = BlobGenerator("andesite", (10, 10), 5, 3, obstruction=True)
+# coal_ore_gen = BlobGenerator("coal_ore", (8, 4), 4, 2)
+# iron_ore_gen = BlobGenerator("iron_ore", (3, 4), 4, 1)
+# gold_ore_gen = BlobGenerator("gold_ore", (3, 3), 4, 1)
+# lapis_lazuli_ore_gen = BlobGenerator("lapis_lazuli_ore", (3, 3), 4, 1)
+# redstone_ore_gen = BlobGenerator("redstone_ore", (3, 3), 4, 1)
+# diamond_ore_gen = BlobGenerator("diamond_ore", (3, 3), 4, 1)
+# emerald_ore_gen = BlobGenerator("emerald_ore", (2, 2), 1, 1)
