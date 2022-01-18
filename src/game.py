@@ -71,8 +71,11 @@ class Game():
             Chunk.instances[chunk].update(self.player.camera)
 
     def draw(self, screen, mpos) -> None:
-        screen.fill((135, 206, 250))
-
+        # Ik this shouldnt be a one liner but I couldn't resist (it looks so coool :DDDD)
+        # Basiclaly a modified version of the crosshair colour changer, but this will always display blue
+        # at y > 0, black at y <= 1024 (world limit) and anywhere inbetween it is a "gradient" of sorts.
+        # Go from y = 0 -> y = 1024 ingame and you will understand what it does xD
+        screen.fill(col if min((col := ([old + (new - old) / (MAX_Y / self.player.coords.y) for old, new in zip(BLUE_SKY, (0, 0, 0))]) if self.player.coords.y > 0 else BLUE_SKY)) > 0 else (0, 0, 0))
         # Calling relevant draw functions.
         for chunk in self.rendered_chunks:
             Chunk.instances[chunk].draw(self.player.camera, screen)
