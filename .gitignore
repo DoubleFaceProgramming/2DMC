@@ -2,3 +2,4 @@ src/__pycache__
 /.vscode
 src/test.py
 conf/
+src/CAtest.py

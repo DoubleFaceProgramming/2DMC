@@ -1,5 +1,6 @@
 from sys import exit as sysexit
 from random import seed
+from math import cos, pi
 import pygame
 import os
 from pygame.locals import  (
@@ -75,7 +76,7 @@ class Game():
         # Basiclaly a modified version of the crosshair colour changer, but this will always display blue
         # at y > 0, black at y <= 1024 (world limit) and anywhere inbetween it is a "gradient" of sorts.
         # Go from y = 0 -> y = 1024 ingame and you will understand what it does xD
-        screen.fill(col if min((col := ([old + (new - old) / (MAX_Y / self.player.coords.y) for old, new in zip(BLUE_SKY, (0, 0, 0))]) if self.player.coords.y > 0 else BLUE_SKY)) > 0 else (0, 0, 0))
+        screen.fill(color if min((color := ([old + (new - old) * ((3.2 * (y_perc := self.player.coords.y / MAX_Y) ** 3 - 6.16 * y_perc ** 2 + 4.13 * y_perc) / 1.17) for old, new in zip(BLUE_SKY, (0, 0, 0))]) if self.player.coords.y > 0 else BLUE_SKY)) > 0 else (0, 0, 0))
         # Calling relevant draw functions.
         for chunk in self.rendered_chunks:
             Chunk.instances[chunk].draw(self.player.camera, screen)
