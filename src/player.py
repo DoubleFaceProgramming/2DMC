@@ -219,7 +219,7 @@ class Player(pygame.sprite.Sprite):
         # Determine how many sections to split the delta velocity into based on the delta time
         split = ceil(90 * dt / 62.5 * 1.5)
         flag = False
-        detecting_rects = list()
+        detecting_rects = []
 
         for _ in range(split): # Split the movement
             # Only detect collision within a 3 by 4 area around the player
