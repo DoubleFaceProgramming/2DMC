@@ -36,6 +36,7 @@ class Inventory(object):
         self.visible = False
         self.selected = None
         self.hovering = None
+        self.overhotbar = False
         self.max_items = 36
         self.transparent_background = pygame.Surface((WIDTH, HEIGHT)).convert_alpha()
         self.transparent_background.fill((0, 0, 0, 125))
@@ -44,20 +45,22 @@ class Inventory(object):
         if self.visible:
             mpos = VEC(pygame.mouse.get_pos())
             # Check if the mouse is within the inventory slots area
-            y_test = self.slot_start.y < mpos.y < self.slot_start.y+(self.slot_size[1]+5)*3
-            x_test = self.slot_start.x < mpos.x < self.slot_start.x+(self.slot_size[0]+5)*9
+            in_inv_x = self.slot_start.x < mpos.x < self.slot_start.x+(self.slot_size[0]+5)*9
+            over_inv = self.slot_start.y < mpos.y < self.slot_start.y+(self.slot_size[1]+5)*3 and in_inv_x
+
             # Check if the mouse is within the inventory hotbar slots area
-            hotbar_y_test = 446 < mpos.y < 446+(self.slot_size[1]+5)
+            self.overhotbar = 446 < mpos.y < 446+(self.slot_size[1]+5) and in_inv_x
 
             # Save the item that the mouse is currently hovering over
-            if y_test:
+            if over_inv:
                 self.hovering = inttup(((mpos.x-self.slot_start.x)//(self.slot_size[0]+5), (mpos.y-self.slot_start.y)//(self.slot_size[1]+5)+1))
-            elif hotbar_y_test:
+            elif self.overhotbar:
                 self.hovering = inttup(((mpos.x-400)//(self.slot_size[0]+5), 0))
             else:
                 self.hovering = None
+
             # If the mouse left button is pressed when it is hovering over a valid slot
-            if m_state == 1 and (y_test or hotbar_y_test) and x_test:
+            if m_state == 1 and (over_inv or self.overhotbar) and in_inv_x:
                 if self.hovering in self.items:                   # If the hovering slot has an item
                     if not self.selected:                         # If nothing is currently picked up
                         self.selected = self.items[self.hovering] # Pick up the item that is being hovered over
@@ -91,9 +94,23 @@ class Inventory(object):
                     screen.blit(item_img, self.slot_start+VEC(slot[0]*(self.slot_size[0]+5), (slot[1]-1)*(self.slot_size[1]+5)))
                 else:
                     screen.blit(item_img, self.slot_start+VEC(0, 190)+VEC(slot[0]*(self.slot_size[0]+5), (slot[1]-1)*(self.slot_size[1]+5)))
+
+            # Drawing an slightly transparent selection / hovering rectangle behind the mouse cursor
+            if self.hovering:
+                hover_surf = pygame.surface.Surface(self.slot_size) # Surface for the rectangle to be drawn onto
+                hover_surf.fill((255, 255, 255))                    # Setting the colour and opacity
+                hover_surf.set_alpha(100)
+                
+                # Blitting this surface to the correct location
+                # Topleft is a tuple which contains the topleft position of the slot the player is hovering over
+                # Note a lot of this logic is because there is a 10px gap between the inventory and hotbar, and the hotbar's y is 0 not 4.
+                # Ik its super messy but it looks cool af :D
+                screen.blit(hover_surf, ((topleft := self.slot_start + VEC(((hoveringover := (self.hovering[0], self.hovering[1] if not self.overhotbar else 4))[0]) * (self.slot_size[0] + 5), (hoveringover[1] - 1) * (self.slot_size[1] + 5)))[0], topleft[1] if not self.overhotbar else topleft[1] + 10))
+
             # Display the item that is picked up but slightly smaller by a factor of 0.9
             if self.selected:
                 screen.blit(pygame.transform.scale(block_textures[self.selected.name], inttup(VEC(self.slot_size)*0.9)), VEC(pygame.mouse.get_pos())-VEC(self.slot_size)*0.45)
+
             # Draw the textbox of the item that is being hovered over
             if self.hovering in self.items:
                 name = self.items[self.hovering].name.replace("_", " ").capitalize()
