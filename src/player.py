@@ -431,8 +431,11 @@ class Crosshair():
 
         # Drawing a selection box around the block beneath the mouse (but 2px larger than the block)
         if block := self.block_at_pos(mpos):
-            # NOTE: add a config for line selection when dev0.2 and controls are merged
-            pygame.draw.rect(screen, (0, 0, 0), Rect((block.rect.left - 2, block.rect.top - 2, BLOCK_SIZE + 4, BLOCK_SIZE + 4)), 2)
+            # If the block is a solid block (not a flower)
+            # Technically we dont need the first check if we have this but whatever
+            if block.data["collision_box"] == "full":
+                # NOTE: add a config for line selection when dev0.2 and controls are merged
+                pygame.draw.rect(screen, (0, 0, 0), Rect((block.rect.left - 2, block.rect.top - 2, block.rect.width + 4, block.rect.height + 4)), 2)
 
         # The 2 boxes that make up the crosshair
         pygame.draw.rect(screen, self.old_color, (mpos[0]-2, mpos[1]-16, 4, 32))
