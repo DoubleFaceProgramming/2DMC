@@ -41,15 +41,14 @@ class Settings():
     def load(self) -> None:
         """Loading / reloading the configs from the .json files and parsing them"""
 
-        # Getting all bottom level files and dirpath
-        for dirpath, _, files in os.walk(self.confdir):
-            if self.confdir_def_stem in dirpath:
-                continue
-
-            # Loops through all bottom level files, sets the key to the stem of the file (ex. keybinds not keybinds.json)
-            # and the value to the parsed json content of the file
-            # ex output. {'keybinds': {'jump': 'w', 'left': 'a', 'right': 'd' [...] }, 'scroll': {'reversed': False}}
-            self.config.update({(filepath := Path(os.path.join(dirpath, file))).stem: json.loads(open(filepath, 'r').read()) for file in files})
+        # Gets and loops through all bottom level files, and, if they are not in conf/default
+        # sets the key to the stem of the file (ex. keybinds not keybinds.json)
+        # and the value to the parsed json content of the file
+        # ex output. {'keybinds': {'jump': 'w', 'left': 'a', 'right': 'd' [...] }, 'scroll': {'reversed': False}}
+        self.config = {
+            (Path(filepath := os.path.join(dirpath, file))).stem : json.loads(open(filepath, 'r').read())
+            for dirpath, _, files in os.walk(self.confdir) for file in files if self.confdir_def_stem not in dirpath
+        }
 
     def get_pressed(self, setting: str, keys: dict, mouse: dict) -> bool:
         """Gets whether the keybind associated with the setting is being held down
