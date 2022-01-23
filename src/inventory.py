@@ -36,11 +36,11 @@ class Inventory(object):
         self.visible = False
         self.selected = None
         self.hovering = None
-        self.overhotbar = False
+        self.over_hotbar = False
         self.max_items = 36
-        self.hoversurf = pygame.surface.Surface(self.slot_size, pygame.SRCALPHA)
-        self.hoversurf.fill((255, 255, 255))
-        self.hoversurf.set_alpha(100)
+        self.hover_surf = pygame.surface.Surface(self.slot_size, pygame.SRCALPHA)
+        self.hover_surf.fill((255, 255, 255))
+        self.hover_surf.set_alpha(100)
         self.transparent_background = pygame.Surface((WIDTH, HEIGHT)).convert_alpha()
         self.transparent_background.fill((0, 0, 0, 125))
 
@@ -52,18 +52,18 @@ class Inventory(object):
             over_inv = self.slot_start.y < mpos.y < self.slot_start.y+(self.slot_size[1]+5)*3 and in_inv_x
 
             # Check if the mouse is within the inventory hotbar slots area
-            self.overhotbar = 446 < mpos.y < 446+(self.slot_size[1]+5) and in_inv_x
+            self.over_hotbar = 446 < mpos.y < 446+(self.slot_size[1]+5) and in_inv_x
 
             # Save the item that the mouse is currently hovering over
             if over_inv:
                 self.hovering = inttup(((mpos.x-self.slot_start.x)//(self.slot_size[0]+5), (mpos.y-self.slot_start.y)//(self.slot_size[1]+5)+1))
-            elif self.overhotbar:
+            elif self.over_hotbar:
                 self.hovering = inttup(((mpos.x-400)//(self.slot_size[0]+5), 0))
             else:
                 self.hovering = None
 
             # If the mouse left button is pressed when it is hovering over a valid slot
-            if m_state == 1 and (over_inv or self.overhotbar) and in_inv_x:
+            if m_state == 1 and (over_inv or self.over_hotbar) and in_inv_x:
                 if self.hovering in self.items:                   # If the hovering slot has an item
                     if not self.selected:                         # If nothing is currently picked up
                         self.selected = self.items[self.hovering] # Pick up the item that is being hovered over
@@ -105,7 +105,7 @@ class Inventory(object):
             # another vector that contains (0, 10) if the player is hovering over the hotbar and (0, 5) if not. This is because there is a 10px
             # between the inventory and the hotbar.
             if self.hovering:
-                screen.blit(self.hoversurf, self.slot_start + ( VEC(self.hovering[0], (self.hovering[1] if not self.overhotbar else 4) - 1) * (self.slot_size[0] + 5) ) + VEC((0, 10) if self.overhotbar else (0, 0)))
+                screen.blit(self.hover_surf, self.slot_start + ( VEC(self.hovering[0], (self.hovering[1] if not self.over_hotbar else 4) - 1) * (self.slot_size[0] + 5) ) + VEC((0, 10) if self.over_hotbar else (0, 0)))
 
             # Display the item that is picked up but slightly smaller by a factor of 0.9
             if self.selected:
