@@ -93,18 +93,20 @@ class Inventory(object):
             # Display the item images in the correct slots
             for slot in self.items:
                 item_img = pygame.transform.scale(block_textures[self.items[slot].name], self.slot_size)
-                if slot[1] != 0:
+                if slot[1]:
                     screen.blit(item_img, self.slot_start+VEC(slot[0]*(self.slot_size[0]+5), (slot[1]-1)*(self.slot_size[1]+5)))
                 else:
                     screen.blit(item_img, self.slot_start+VEC(0, 190)+VEC(slot[0]*(self.slot_size[0]+5), (slot[1]-1)*(self.slot_size[1]+5)))
 
             # Drawing an slightly transparent selection / hovering rectangle behind the mouse cursor
-            # Also yes this shouldn't be a one-liner but cmon, this looks cool
-            # Topleft is a tuple which contains the topleft position of the slot the player is hovering over
-            # A lot of this logic is because there is a 10px gap between the inventory and hotbar, and the hotbar's ""y"" is 0 not 4.
-            # There is also a 5px gap between slots, hence self.slot_size[x] + 5
-            if self.hovering: screen.blit(self.hoversurf, ((topleft := self.slot_start + VEC(((hoveringover := (self.hovering[0], self.hovering[1] if not self.overhotbar else 4))[0]) * (self.slot_size[0] + 5), (hoveringover[1] - 1) * (self.slot_size[1] + 5)))[0], topleft[1] if not self.overhotbar else topleft[1] + 10))
- 
+            # We get the pos by adding the starting position of the inventory to a vector containing the slot the player is hovering over (hotbar
+            # is classed as y0, so we set this to 4 if the user is over the hotbar so it displays correctly. We also -1 because... idk it justs makes it
+            # work, and times it by the size of a slot + 5 because that is the distance between the left side of each slot, there is a 5px border), and
+            # another vector that contains (0, 10) if the player is hovering over the hotbar and (0, 5) if not. This is because there is a 10px
+            # between the inventory and the hotbar.
+            if self.hovering:
+                screen.blit(self.hoversurf, self.slot_start + ( VEC(self.hovering[0], (self.hovering[1] if not self.overhotbar else 4) - 1) * (self.slot_size[0] + 5) ) + VEC((0, 10) if self.overhotbar else (0, 0)))
+
             # Display the item that is picked up but slightly smaller by a factor of 0.9
             if self.selected:
                 screen.blit(pygame.transform.scale(block_textures[self.selected.name], inttup(VEC(self.slot_size)*0.9)), VEC(pygame.mouse.get_pos())-VEC(self.slot_size)*0.45)
