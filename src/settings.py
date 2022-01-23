@@ -99,9 +99,6 @@ class Settings():
         elif eventkey == key_code(keybind):
             return True
 
-    # The following functions are not strictly necessary
-    # but provide a cleaner implentation for the future
-
     def set_keybind(self, category: str, setting: str, new: str) -> None:
         """Change the desired keybind to the given new one
 
@@ -114,6 +111,9 @@ class Settings():
         self.config[category][setting] = new
         # Writing the updated configs into their respective files
         open(self.file_paths[category], 'w').write(json.dumps(self.config[category], indent = 4))
+
+    # The following functions are not strictly necessary
+    # but will provide a cleaner implentation in the future
 
     def is_default(self, category: str, setting: str) -> bool:
         """Checks if the given keybind is the default for that keybind
