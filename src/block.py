@@ -9,8 +9,8 @@ from src.utils import *
 
 # Load json block data into a dictionary
 BLOCK_DATA = {}
-for j in os.listdir(pathof("data/blocks/")):
-    BLOCK_DATA[j[:-5]] = json.loads(open(os.path.join(pathof("data/blocks/"), j), "r").read())
+for file in os.listdir(pathof("data/blocks/")):
+    BLOCK_DATA[Path(file).stem] = json.loads(open(os.path.join(pathof("data/blocks/"), file), "r").read())
 
 class Block(pygame.sprite.Sprite):
     """Class that handles the managaing, updating and drawing of blocks."""
