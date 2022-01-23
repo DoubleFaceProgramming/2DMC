@@ -38,6 +38,9 @@ class Inventory(object):
         self.hovering = None
         self.overhotbar = False
         self.max_items = 36
+        self.hoversurf = pygame.surface.Surface(self.slot_size, pygame.SRCALPHA)
+        self.hoversurf.fill((255, 255, 255))
+        self.hoversurf.set_alpha(100)
         self.transparent_background = pygame.Surface((WIDTH, HEIGHT)).convert_alpha()
         self.transparent_background.fill((0, 0, 0, 125))
 
@@ -96,17 +99,12 @@ class Inventory(object):
                     screen.blit(item_img, self.slot_start+VEC(0, 190)+VEC(slot[0]*(self.slot_size[0]+5), (slot[1]-1)*(self.slot_size[1]+5)))
 
             # Drawing an slightly transparent selection / hovering rectangle behind the mouse cursor
-            if self.hovering:
-                hover_surf = pygame.surface.Surface(self.slot_size) # Surface for the rectangle to be drawn onto
-                hover_surf.fill((255, 255, 255))                    # Setting the colour and opacity
-                hover_surf.set_alpha(100)
-                
-                # Blitting this surface to the correct location
-                # Topleft is a tuple which contains the topleft position of the slot the player is hovering over
-                # Note a lot of this logic is because there is a 10px gap between the inventory and hotbar, and the hotbar's y is 0 not 4.
-                # Ik its super messy but it looks cool af :D
-                screen.blit(hover_surf, ((topleft := self.slot_start + VEC(((hoveringover := (self.hovering[0], self.hovering[1] if not self.overhotbar else 4))[0]) * (self.slot_size[0] + 5), (hoveringover[1] - 1) * (self.slot_size[1] + 5)))[0], topleft[1] if not self.overhotbar else topleft[1] + 10))
-
+            # Also yes this shouldn't be a one-liner but cmon, this looks cool
+            # Topleft is a tuple which contains the topleft position of the slot the player is hovering over
+            # A lot of this logic is because there is a 10px gap between the inventory and hotbar, and the hotbar's ""y"" is 0 not 4.
+            # There is also a 5px gap between slots, hence self.slot_size[x] + 5
+            if self.hovering: screen.blit(self.hoversurf, ((topleft := self.slot_start + VEC(((hoveringover := (self.hovering[0], self.hovering[1] if not self.overhotbar else 4))[0]) * (self.slot_size[0] + 5), (hoveringover[1] - 1) * (self.slot_size[1] + 5)))[0], topleft[1] if not self.overhotbar else topleft[1] + 10))
+ 
             # Display the item that is picked up but slightly smaller by a factor of 0.9
             if self.selected:
                 screen.blit(pygame.transform.scale(block_textures[self.selected.name], inttup(VEC(self.slot_size)*0.9)), VEC(pygame.mouse.get_pos())-VEC(self.slot_size)*0.45)
