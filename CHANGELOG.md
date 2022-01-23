@@ -7,6 +7,7 @@
 ## Changes
 
 - Crosshair now fades between colors instead of instantly changing
+- The colour now has a gradient between the default blue (y = 0-) and black (y = 1024)
 - Added "Block position" to the debug menu, which shows the coordinates of the block the cursor is hovering over
 - Added "Particles" to the debug menu, which shows the number of particles that is being calculated
 
