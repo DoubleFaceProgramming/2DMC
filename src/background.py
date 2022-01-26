@@ -35,6 +35,9 @@ class Background():
             # Trevor doesnt understand the maff so wont comment it but it looks cool
             # Also wk it shouldn't be a 1-liner but it looks so cool you can't not :D
             self.color = color if min((color := ([old + (new - old) * ((3.2 * (y_perc := player_y / MAX_Y) ** 3 - 6.16 * y_perc ** 2 + 4.13 * y_perc) / 1.17) for old, new in zip(BLUE_SKY, (0, 0, 0))]) if player_y > 0 else BLUE_SKY)) > 0 else (0, 0, 0)
+            # DaNub: To add on, the dimness of the sky is determined by a cubic relation between the player y-coords and the color multiplier
+            # The values of the cubic function is approximated by a curve fitting website at https://www.colby.edu/chemistry/PChem/scripts/lsfitpl.html
+            # It is then slightly modified for our needs
 
         def draw(self, screen: Surface) -> None:
             """Clears the frame"""
