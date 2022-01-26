@@ -7,12 +7,12 @@ from os.path import join
 from pathlib import Path
 from os import listdir
 from math import ceil
-import time
 
 from src.constants import CHUNK_SIZE, BLOCK_SIZE, SEED, WIDTH, HEIGHT, STRUCTURE_SEQUENCE, STRUCTURE_SEQUENCE_DICT
 from src.block import Block, BLOCK_DATA
 from src.player import Camera
 from src.utils import ascii_str_sum, canter_pairing, pathof
+from src.chunk_thread import ChunkThread
 
 seed(SEED)
 snoise = OpenSimplex(seed=SEED)
@@ -224,7 +224,9 @@ class Chunk(object):
     def __init__(self, pos: tuple) -> None:
         self.__class__.instances[pos] = self
         self.pos = pos
-        self.block_data = self.generate(pos[0], pos[1])
+        chunk_thread = ChunkThread(target=self.generate, args=(pos[0], pos[1]))
+        chunk_thread.start()
+        self.block_data = chunk_thread.join()
         self.rect = Rect(0, 0, CHUNK_SIZE * BLOCK_SIZE, CHUNK_SIZE * BLOCK_SIZE)
 
     def update(self, camera: Camera) -> None:
@@ -243,8 +245,6 @@ class Chunk(object):
 
     def generate(self, x: int, y: int) -> dict:
         """Takes the chunk coordinates and returns a dictionary containing the block data inside the chunk"""
-
-        start = time.time()
 
         seed(SEED + canter_pairing((x, y)))
         chunk_data = {}
@@ -283,8 +283,6 @@ class Chunk(object):
                 chunk_data = generate_structures(x, y, chunk_data, granite_gen, (2, 14))
                 chunk_data = generate_structures(x, y, chunk_data, diorite_gen, (2, 14))
                 chunk_data = generate_structures(x, y, chunk_data, andesite_gen, (2, 14))
-
-        # print(time.time() - start)
 
         return chunk_data
 
