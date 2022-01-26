@@ -63,9 +63,14 @@ class StructureGenerator(object):
 
     def get_max_chunks(self) -> None:
         """Get the maximum number of chunks the structure could span from the max_size"""
-        self.chunks_to_check = int(ceil(self.max_size[0] / CHUNK_SIZE)), int(ceil(self.max_size[1] / CHUNK_SIZE))
+        self.chunks_to_check = [int(ceil(self.max_size[0] / CHUNK_SIZE)), int(ceil(self.max_size[1] / CHUNK_SIZE))]
+        if self.chunks_to_check[0] < 2:
+            self.chunks_to_check[0] = 2
+        if self.chunks_to_check[1] < 2:
+            self.chunks_to_check[1] = 2
+        self.chunks_to_check = tuple(self.chunks_to_check)
 
-    def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict) -> dict:
+    def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict) -> Structure | None:
         """Generates chunk data that includes a structure at the given origin
         Returns:
             dict: A dictionary containing the block data of the structure.
@@ -86,14 +91,11 @@ class StructureGenerator(object):
                 case 1:
                     block_data[block_pos] = block_name # Generate the block
                 case 2:
-                    return {} # Do not generate the entire structure
+                    return # Do not generate the entire structure
                 case 3:
                     continue # Do not generate the block
-                case _:
-                    return {}
 
-        Structure(self.name, block_data)
-        return block_data
+        return Structure(self.name, block_data)
 
     def can_generate(self, block_pos: tuple, block_name: str, chunk_pos: tuple, chunk_data: dict) -> int:
         if 0 <= block_pos[0]-chunk_pos[0]*CHUNK_SIZE < CHUNK_SIZE and 0 <= block_pos[1]-chunk_pos[1]*CHUNK_SIZE < CHUNK_SIZE:
@@ -101,15 +103,14 @@ class StructureGenerator(object):
                 block_in_chunk = chunk_data[block_pos]
             else:
                 block_in_chunk = ""
-            if (real_chunk_pos := (block_pos[0] // CHUNK_SIZE, block_pos[1] // CHUNK_SIZE)) in Structure.instances:
-                for structure in Structure.instances[real_chunk_pos]:
-                    if STRUCTURE_SEQUENCE_DICT[self.name] <= STRUCTURE_SEQUENCE_DICT[structure.name]:
-                        if block_pos in structure.block_data:
-                            block_in_chunk = structure.block_data[block_pos]
-                            # print(block_name, block_in_chunk, block_pos)
-                            break
-                    else:
-                        return 2
+        if (real_chunk_pos := (block_pos[0] // CHUNK_SIZE, block_pos[1] // CHUNK_SIZE)) in Structure.instances:
+            for structure in Structure.instances[real_chunk_pos]:
+                if STRUCTURE_SEQUENCE_DICT[self.name] <= STRUCTURE_SEQUENCE_DICT[structure.name]:
+                    if block_pos in structure.block_data:
+                        block_in_chunk = structure.block_data[block_pos]
+                        break
+                else:
+                    return 2
             else:
                 block_in_chunk = generate_block(*block_pos)
         else:
@@ -198,7 +199,7 @@ class BlobGenerator(StructureGenerator):
 
         return blob_dict
 
-    def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict) -> dict:
+    def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict) -> Structure | None:
         struct_seed = SEED + canter_pairing(origin) + ascii_str_sum(self.name)
         # Create a dictionary of the block data of the blob with Cellular Automata
         blob = self.CA(struct_seed, self.max_size, self.density, self.cycles)
@@ -210,12 +211,11 @@ class BlobGenerator(StructureGenerator):
                 case 1:
                     block_data[block_pos] = block # Generate the block
                 case 2:
-                    return {} # Do not generate the entire structure
+                    return # Do not generate the entire structure
                 case 3:
                     continue # Do not generate the block
 
-        Structure(self.name, block_data)
-        return block_data
+        return Structure(self.name, block_data)
 
 class Chunk(object):
     """The class responsible for updating and drawing chunks."""
@@ -284,7 +284,7 @@ class Chunk(object):
                 chunk_data = generate_structures(x, y, chunk_data, diorite_gen, (2, 14))
                 chunk_data = generate_structures(x, y, chunk_data, andesite_gen, (2, 14))
 
-        print(time.time() - start)
+        # print(time.time() - start)
 
         return chunk_data
 
@@ -318,8 +318,9 @@ def get_structures(x: int, y: int, chunk_data: tuple, generator: StructureGenera
             if not 0 <= start_y - y * CHUNK_SIZE < CHUNK_SIZE:
                 return out
 
-            struct_data = generator.generate((start_x, start_y), (x, y), chunk_data)
-            out.append(struct_data)
+            structure = generator.generate((start_x, start_y), (x, y), chunk_data)
+            if structure:
+                out.append(structure.block_data)
 
     return out
 
