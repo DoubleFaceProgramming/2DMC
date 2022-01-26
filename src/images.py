@@ -4,6 +4,7 @@ import os
 
 from src.constants import *
 from src.utils import pathof
+from pathlib import Path
 
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (50, 50)
 pygame.init()
@@ -46,7 +47,7 @@ hotbar_selection_img = pygame.transform.scale(hotbar_selection_img, (int(hotbar_
 # Load block textures
 block_textures = {}
 for img in os.listdir(pathof("assets/textures/blocks/")):
-    block_textures[img[:-4]] = pygame.image.load(os.path.join(pathof("assets/textures/blocks/"), img)).convert()
+    block_textures[Path(img).stem] = pygame.image.load(os.path.join(pathof("assets/textures/blocks/"), img)).convert()
 for image in block_textures:
     block_textures[image] = pygame.transform.scale(block_textures[image], (BLOCK_SIZE, BLOCK_SIZE))
     block_textures[image].set_colorkey((255, 255, 255))

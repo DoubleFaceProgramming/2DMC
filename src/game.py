@@ -9,7 +9,7 @@ from pygame.locals import  (
     K_e, K_F5,
     QUIT,
 )
-from src.inventory import Item
+from src.background import Background
 from src.player import *
 from src.particle import *
 from src.constants import *
@@ -30,6 +30,7 @@ class Game():
         seed(SEED)
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), HWSURFACE | DOUBLEBUF)
+        self.background = Background()
         self.clock = pygame.time.Clock()
         self.rendered_chunks = []
         self.debug_bool = False
@@ -64,6 +65,7 @@ class Game():
                     self.player.toggle_inventory()
 
         # Calling relevant update functions.
+        self.background.update(self.player.coords.y)
         self.rendered_chunks = load_chunks(self.player.camera)
         self.player.update(Block.instances, mouse_state, dt)
         for particle in Particle.instances:
@@ -72,11 +74,9 @@ class Game():
             Chunk.instances[chunk].update(self.player.camera)
 
     def draw(self, screen, mpos) -> None:
-        # Ik this shouldnt be a one liner but I couldn't resist (it looks so coool :DDDD)
-        # Basiclaly a modified version of the crosshair colour changer, but this will always display blue
-        # at y > 0, black at y <= 1024 (world limit) and anywhere inbetween it is a "gradient" of sorts.
-        # Go from y = 0 -> y = 1024 ingame and you will understand what it does xD
-        screen.fill(color if min((color := ([old + (new - old) * ((3.2 * (y_perc := self.player.coords.y / MAX_Y) ** 3 - 6.16 * y_perc ** 2 + 4.13 * y_perc) / 1.17) for old, new in zip(BLUE_SKY, (0, 0, 0))]) if self.player.coords.y > 0 else BLUE_SKY)) > 0 else (0, 0, 0))
+        # Clears the frame + also drawing the sky
+        self.background.draw(screen)
+
         # Calling relevant draw functions.
         for chunk in self.rendered_chunks:
             Chunk.instances[chunk].draw(self.player.camera, screen)
@@ -84,10 +84,10 @@ class Game():
             particle.draw(self.player.camera, screen)
 
         self.player.draw(screen, mpos)
-        
+
         if self.debug_bool:
             self.debug(self.screen, mpos)
-                
+
         self.player.inventory.draw(screen)
         if not self.player.inventory.visible:
             self.player.crosshair.draw(screen, mpos)

@@ -36,7 +36,11 @@ class Inventory(object):
         self.visible = False
         self.selected = None
         self.hovering = None
+        self.over_hotbar = False
         self.max_items = 36
+        self.hover_surf = pygame.surface.Surface(self.slot_size, pygame.SRCALPHA)
+        self.hover_surf.fill((255, 255, 255))
+        self.hover_surf.set_alpha(100)
         self.transparent_background = pygame.Surface((WIDTH, HEIGHT)).convert_alpha()
         self.transparent_background.fill((0, 0, 0, 125))
 
@@ -44,20 +48,22 @@ class Inventory(object):
         if self.visible:
             mpos = VEC(pygame.mouse.get_pos())
             # Check if the mouse is within the inventory slots area
-            y_test = self.slot_start.y < mpos.y < self.slot_start.y+(self.slot_size[1]+5)*3
-            x_test = self.slot_start.x < mpos.x < self.slot_start.x+(self.slot_size[0]+5)*9
+            in_inv_x = self.slot_start.x < mpos.x < self.slot_start.x+(self.slot_size[0]+5)*9
+            over_inv = self.slot_start.y < mpos.y < self.slot_start.y+(self.slot_size[1]+5)*3 and in_inv_x
+
             # Check if the mouse is within the inventory hotbar slots area
-            hotbar_y_test = 446 < mpos.y < 446+(self.slot_size[1]+5)
+            self.over_hotbar = 446 < mpos.y < 446+(self.slot_size[1]+5) and in_inv_x
 
             # Save the item that the mouse is currently hovering over
-            if y_test:
+            if over_inv:
                 self.hovering = inttup(((mpos.x-self.slot_start.x)//(self.slot_size[0]+5), (mpos.y-self.slot_start.y)//(self.slot_size[1]+5)+1))
-            elif hotbar_y_test:
+            elif self.over_hotbar:
                 self.hovering = inttup(((mpos.x-400)//(self.slot_size[0]+5), 0))
             else:
                 self.hovering = None
+
             # If the mouse left button is pressed when it is hovering over a valid slot
-            if m_state == 1 and (y_test or hotbar_y_test) and x_test:
+            if m_state == 1 and (over_inv or self.over_hotbar) and in_inv_x:
                 if self.hovering in self.items:                   # If the hovering slot has an item
                     if not self.selected:                         # If nothing is currently picked up
                         self.selected = self.items[self.hovering] # Pick up the item that is being hovered over
@@ -87,13 +93,24 @@ class Inventory(object):
             # Display the item images in the correct slots
             for slot in self.items:
                 item_img = pygame.transform.scale(block_textures[self.items[slot].name], self.slot_size)
-                if slot[1] != 0:
+                if slot[1]:
                     screen.blit(item_img, self.slot_start+VEC(slot[0]*(self.slot_size[0]+5), (slot[1]-1)*(self.slot_size[1]+5)))
                 else:
                     screen.blit(item_img, self.slot_start+VEC(0, 190)+VEC(slot[0]*(self.slot_size[0]+5), (slot[1]-1)*(self.slot_size[1]+5)))
+
+            # Drawing an slightly transparent selection / hovering rectangle behind the mouse cursor
+            # We get the pos by adding the starting position of the inventory to a vector containing the slot the player is hovering over (hotbar
+            # is classed as y0, so we set this to 4 if the user is over the hotbar so it displays correctly. We also -1 because... idk it justs makes it
+            # work, and times it by the size of a slot + 5 because that is the distance between the left side of each slot, there is a 5px border), and
+            # another vector that contains (0, 10) if the player is hovering over the hotbar and (0, 5) if not. This is because there is a 10px
+            # between the inventory and the hotbar.
+            if self.hovering:
+                screen.blit(self.hover_surf, self.slot_start + ( VEC(self.hovering[0], (self.hovering[1] if not self.over_hotbar else 4) - 1) * (self.slot_size[0] + 5) ) + VEC((0, 10) if self.over_hotbar else (0, 0)))
+
             # Display the item that is picked up but slightly smaller by a factor of 0.9
             if self.selected:
                 screen.blit(pygame.transform.scale(block_textures[self.selected.name], inttup(VEC(self.slot_size)*0.9)), VEC(pygame.mouse.get_pos())-VEC(self.slot_size)*0.45)
+
             # Draw the textbox of the item that is being hovered over
             if self.hovering in self.items:
                 name = self.items[self.hovering].name.replace("_", " ").capitalize()

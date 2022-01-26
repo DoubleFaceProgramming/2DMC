@@ -221,7 +221,7 @@ class Player(pygame.sprite.Sprite):
         # Determine how many sections to split the delta velocity into based on the delta time
         split = ceil(90 * dt / 62.5 * 1.5)
         flag = False
-        detecting_rects = list()
+        detecting_rects = []
 
         for _ in range(split): # Split the movement
             # Only detect collision within a 3 by 4 area around the player
@@ -434,7 +434,25 @@ class Crosshair():
         # Drawing a selection box around the block beneath the mouse (but 2px larger than the block)
         if block := self.block_at_pos(mpos):
             # NOTE: add a config for line selection when dev0.2 and controls are merged
-            pygame.draw.rect(screen, (0, 0, 0), Rect((block.rect.left - 2, block.rect.top - 2, BLOCK_SIZE + 4, BLOCK_SIZE + 4)), 2)
+
+            outlines = [block]
+            for neighbour in block.neighbors:
+                if block.neighbors[neighbour] in Block.instances: # if block is in neighbour counterparts
+                    if "counterparts" in BLOCK_DATA[(neighbouring_block := Block.instances[block.neighbors[neighbour]]).name]:
+                        if block.name in BLOCK_DATA[neighbouring_block.name]["counterparts"].values():
+                            outlines.append(neighbouring_block)
+
+                    if "counterparts" in block.data:
+                        if neighbouring_block.name in BLOCK_DATA[block.name]["counterparts"].values():
+                            outlines.append(neighbouring_block)
+
+            for block in outlines:
+                outline = pygame.mask.from_surface(block.image).outline()
+                pos = block.pos - self.master.camera.pos
+                for index, point in enumerate(outline):
+                    outline[index] = VEC(point) + pos
+
+                pygame.draw.polygon(screen, (0, 0, 0), outline, 2)
 
         # The 2 boxes that make up the crosshair
         pygame.draw.rect(screen, self.old_color, (mpos[0]-2, mpos[1]-16, 4, 32))
