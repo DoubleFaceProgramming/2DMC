@@ -16,7 +16,7 @@ SPACING = 24
 TERMINAL_VEL = 24
 BLOCK_SIZE = 64
 CHUNK_SIZE = 8
-SEED = randint(-2147483648, 2147483647)
+SEED = randint(-2147483648, 2147483647) # Seed for structure gen testing: -1797233725
 
 FPS = getattr(EnumDisplaySettings(EnumDisplayDevices().DeviceName, -1), "DisplayFrequency")
 VEC = Vector2
@@ -27,3 +27,19 @@ if not os.path.exists(REGULAR_FONT_LOC):
     REGULAR_FONT_LOC = os.path.abspath(os.path.join(BUNDLE_DIR, "../assets/fonts/regular.ttf"))
 FONT24 = Font(REGULAR_FONT_LOC, 24)
 FONT20 = Font(REGULAR_FONT_LOC, 20)
+
+STRUCTURE_SEQUENCE = [
+    "oak_tree",
+    "tall_grass",
+    "coal_ore",
+    "iron_ore",
+    "gold_ore",
+    "lapis_lazuli_ore",
+    "redstone_ore",
+    "diamond_ore",
+    "emerald_ore",
+    "granite",
+    "diorite",
+    "andesite"
+]
+STRUCTURE_SEQUENCE_DICT = {struct : i for i, struct in enumerate(STRUCTURE_SEQUENCE)}

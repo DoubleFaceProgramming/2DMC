@@ -2,5 +2,6 @@
     "name": "gold_ore", 
     "collision_box": "full", 
     "bounding_box": "full", 
-    "support": false
+    "support": false, 
+    "can_only_overwrite": ["stone", "granite", "andesite", "diorite"]
 }

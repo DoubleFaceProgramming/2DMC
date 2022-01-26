@@ -1,0 +1,7 @@
+{
+    "name": "diorite", 
+    "collision_box": "full", 
+    "bounding_box": "full", 
+    "support": false,
+    "can_only_overwrite": ["stone", "diorite", "granite", "andesite"]
+}

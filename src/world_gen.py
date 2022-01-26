@@ -1,94 +1,221 @@
-from random import randint, seed, choices, randrange
+from random import randint, seed, choices, choice, randrange
 from pygame.draw import rect as drawrect
 from perlin_noise import PerlinNoise
 from opensimplex import OpenSimplex
 from pygame import Rect, Surface
 from os.path import join
+from pathlib import Path
 from os import listdir
 from math import ceil
+import time
 
-from src.constants import CHUNK_SIZE, BLOCK_SIZE, SEED, WIDTH, HEIGHT
+from src.constants import CHUNK_SIZE, BLOCK_SIZE, SEED, WIDTH, HEIGHT, STRUCTURE_SEQUENCE, STRUCTURE_SEQUENCE_DICT
 from src.block import Block, BLOCK_DATA
 from src.player import Camera
-from src.utils import pathof
+from src.utils import ascii_str_sum, canter_pairing, pathof
 
 seed(SEED)
 snoise = OpenSimplex(seed=SEED)
 pnoise = PerlinNoise(seed=SEED)
 
+class Structure(object):
+    instances = {}
+
+    def __init__(self, name: str, block_data: dict):
+        self.name = name
+        self.block_data = block_data
+        self.in_chunks = set([(block_pos[0] // CHUNK_SIZE, block_pos[1] // CHUNK_SIZE) for block_pos in block_data])
+        self.blocks_in_chunk = {}
+        for chunk in self.in_chunks:
+            if chunk in self.__class__.instances:
+                self.__class__.instances[chunk].append(self)
+            else:
+                self.__class__.instances[chunk] = [self]
+            self.blocks_in_chunk[chunk] = {}
+        for block_pos, block_name in self.block_data.items():
+            chunk = (block_pos[0] // CHUNK_SIZE, block_pos[1] // CHUNK_SIZE)
+            self.blocks_in_chunk[chunk][block_pos] = block_name
+
 class StructureGenerator(object):
     """Class that handles the generation of structures"""
-    def __init__(self, folder, obstruction=False):
-        self.folder = folder
+    def __init__(self, name, obstruction=False):
+        self.name = name
+        self.on_surface = True
         self.obstruction = obstruction
-        self.files = structures[folder]
-        self.distribution = structures[folder]["distribution"]
+        self.files = structures[name]
+        self.distribution = structures[name]["distribution"]
         self.BLOCK_DATA = {}
 
-        # Get the maximum dimensions of all the possible variations of this structure
+        self.get_max_size()
+        self.get_max_chunks()
+
+    def get_max_size(self) -> None:
+        """Get the maximum dimensions of all the possible variations of this structure"""
         max_sizes = []
         for file in self.files:
             if file != "distribution":
-                self.BLOCK_DATA[file] = structures[folder][file]
+                self.BLOCK_DATA[file] = structures[self.name][file]
                 # Append the max size of all the different possible variations
                 max_sizes.append((max(x for x, y in self.BLOCK_DATA[file][1]) - min(x for x, y in self.BLOCK_DATA[file][1]) + 1,
                             max(y for x, y in self.BLOCK_DATA[file][1]) - min(y for x, y in self.BLOCK_DATA[file][1]) + 1))
         # Get the biggest one
         self.max_size = max(max_sizes)
 
-        # Get the maximum number of chunks the structure could span from the "max_size"
-        self.chunks_to_check = int(ceil(self.max_size[0] / CHUNK_SIZE)), int(ceil(self.max_size[1] / CHUNK_SIZE))
+    def get_max_chunks(self) -> None:
+        """Get the maximum number of chunks the structure could span from the max_size"""
+        self.chunks_to_check = [int(ceil(self.max_size[0] / CHUNK_SIZE)), int(ceil(self.max_size[1] / CHUNK_SIZE))]
+        if self.chunks_to_check[0] < 2:
+            self.chunks_to_check[0] = 2
+        if self.chunks_to_check[1] < 2:
+            self.chunks_to_check[1] = 2
+        self.chunks_to_check = tuple(self.chunks_to_check)
 
-    def generate(self, origin: tuple) -> dict:
+    def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict) -> Structure | None:
         """Generates chunk data that includes a structure at the given origin
-
         Returns:
             dict: A dictionary containing the block data of the structure.
         """
-        seed(SEED + origin[0] * CHUNK_SIZE + origin[1] * CHUNK_SIZE) # Seeding random-ness
+        seed(SEED + canter_pairing(origin) + ascii_str_sum(self.name)) # Seeding random-ness
         file = choices(self.distribution["files"], weights=self.distribution["weights"])[0] # Picking a random file using the files and weights generated in load_structures()
         mirror = bool(randint(0, 1)) # Bool whether the structure should be flipped or not.
+        block_data = {}
+        for offset, block in self.BLOCK_DATA[file][1].items():
+            if mirror: block_pos = (origin[0] + offset[0], origin[1] + offset[1])
+            else: block_pos = (origin[0] - offset[0], origin[1] + offset[1])
+            if "," in block:
+                block_name = choices([i.split("=")[0] for i in block.split(",")],
+                             weights=[int(i.split("=")[1]) for i in block.split(",")])[0]
+            else:
+                block_name = block
+            match self.can_generate(block_pos, block_name, chunk_pos, chunk_data):
+                case 1:
+                    block_data[block_pos] = block_name # Generate the block
+                case 2:
+                    return # Do not generate the entire structure
+                case 3:
+                    continue # Do not generate the block
 
-        # Generating a dictionary containing block data for the structure.
-        # self.BLOCK_DATA contains a key for each type of structure that can be generated by the StructureGenerator.
-        # self.BLOCK_DATA["short_oak_tree"], for example, contains a tuple - the first element is the origin of the
-        # structure (which is not used) and the second is the block data of the structure, which is a dict.
-        # The key of this dict is the offset from origin, and the value is the block name.
-        # The left hand side of the colon is the position of the block - if we should mirror the structure (flip it),
-        # we add the x values of origin and offset for every item, otherwise we subtract it.
-        # The right hand side of the colon contains the block name. However, sometimes there is a random choice between
-        # 2 different blocks - for example: 'oak_leaves=50,leafed_oak_log=50'. This means that there is a 50% chance of
-        # getting oak_leaves and a 50% chance of leafed_oak_log. However sometimes it is guaranteed that we get a specific
-        # block - ex. 'oak_leaves'
-        # We parse this by just using the value of block_name if it does not contain a comma, however if it does we use the
-        # random.choices() function to decide which block to use. choices() takes to arguments, the options to choose from
-        # and the arguments for each one: we get the choices by splitting the string by ',' (["oak_leaves=50", "leafed_oak_log=50"]),
-        # then splitting each element in that list by '=' (["oak_leaves", "50"] and ["leafed_oak_log" "50"]) then getting the first
-        # element of each of those, resulting in ["oak_leaves", "leafed_oak_log"]. To get the weights, we do the exact same process
-        # but get the second element of (["oak_leaves", "50"] and ["leafed_oak_log" "50"]) and cast it into an integer, resulting
-        # in [50, 50]. This process results in: choices(["oak_leaves", "leafed_oak_log"], weights=[50, 50]).
+        return Structure(self.name, block_data)
 
-        # An example of the return data might be:
-        # {
-        #    (-30, -6): 'oak_leaves',
-        #    ...
-        #    (-30, -5): 'leafed_oak_log'
-        #    ...
-        #    (-30, 1): 'oak_log'
-        #    ...
-        #    (-30, 5): 'dirt'
-        #    ect.
-        # }
+    def can_generate(self, block_pos: tuple, block_name: str, chunk_pos: tuple, chunk_data: dict) -> int:
+        if 0 <= block_pos[0]-chunk_pos[0]*CHUNK_SIZE < CHUNK_SIZE and 0 <= block_pos[1]-chunk_pos[1]*CHUNK_SIZE < CHUNK_SIZE:
+            if block_pos in chunk_data:
+                block_in_chunk = chunk_data[block_pos]
+            else:
+                block_in_chunk = ""
+        if (real_chunk_pos := (block_pos[0] // CHUNK_SIZE, block_pos[1] // CHUNK_SIZE)) in Structure.instances:
+            for structure in Structure.instances[real_chunk_pos]:
+                if STRUCTURE_SEQUENCE_DICT[self.name] <= STRUCTURE_SEQUENCE_DICT[structure.name]:
+                    if block_pos in structure.block_data:
+                        block_in_chunk = structure.block_data[block_pos]
+                        break
+                else:
+                    return 2
+            else:
+                block_in_chunk = generate_block(*block_pos)
+        else:
+            block_in_chunk = generate_block(*block_pos)
 
-        # This is one beautiful piece of code isn't it?
-        block_data = {
-            (origin[0] + offset[0] if mirror else origin[0] - offset[0], origin[1] + offset[1]):
-            (block if "," not in block else (choices([i.split("=")[0] for i in block.split(",")],
-            weights=[int(i.split("=")[1]) for i in block.split(",")])[0]))
-            for offset, block in self.BLOCK_DATA[file][1].items()
-        }
+        if block_in_chunk:
+            if "overwriteable" in BLOCK_DATA[block_name]:
+                if block_in_chunk in BLOCK_DATA[block_name]["overwriteable"]:
+                    return 1
+                elif self.obstruction:
+                    return 2
+            elif "can_only_overwrite" in BLOCK_DATA[block_name]:
+                if block_in_chunk in BLOCK_DATA[block_name]["can_only_overwrite"]:
+                    return 1
+                elif self.obstruction:
+                    return 2
+            elif self.obstruction:
+                return 2
+            else:
+                return 1
+        elif "can_only_overwrite" in BLOCK_DATA[block_name]:
+            return 3
+        else:
+            return 1
 
-        return block_data
+class BlobGenerator(StructureGenerator):
+    def __init__(self, name, max_size, density, cycles, obstruction=False):
+        self.name = name
+        self.on_surface = False
+        self.obstruction = obstruction
+        self.max_size = max_size
+        self.density = density
+        self.cycles = cycles
+        self.get_max_chunks()
+
+    def CA(self, struct_seed: int, size: tuple, density: int, cycles: int) -> dict:
+        """Function for generating a blob with the Cellular Automata algorithm
+
+        Args:
+            struct_seed (int): the unique seed for this blob, this chunk, this seed
+            size (int): size of the grid in which to generate the blob
+            density (int): how dense is the starting grid in the CA (Cellular Automata) algorithm
+            cycles (int): how many CA (Cellular Automata) iterations to go through
+
+        Returns:
+            dict: A dict containing the block information of the blob
+        """
+        seed(struct_seed)
+
+        is_empty = True
+        while is_empty:
+            blob = []
+
+            # Create a 2D list with density/11 filled with the block type (self.name)
+            for y in range(size[1]):
+                blob.append([])
+                for x in range(size[0]):
+                    if randint(0, 10) < density:
+                        blob[y].append(" ")
+                    else:
+                        blob[y].append(self.name)
+
+            neighbors_offset = [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
+
+            for _ in range(cycles):                                   # Number of Cellular Automata iterations
+                for y, line in enumerate(blob):                       # Go through each line
+                    for x, block in enumerate(line):                  # Go through each block
+                        neighbors = 0
+                        for n in neighbors_offset:                    # Check every neighbor around the current block
+                            try:                                      # Try and except for blocks around the edge of the list which lacks neighbors
+                                if blob[y+n[0]][x+n[1]] == self.name: # If the neighboring block exists (== self.name)
+                                    neighbors += 1                    # Increment the neighbor counter
+                            except: pass
+                        if neighbors <= 3:                            # If there are less than or equal to 3 neighboring blocks
+                            blob[y][x] = " "                          # That block disappears
+                        elif neighbors > 5:                           # If there are more than 5 neighboring blocks
+                            blob[y][x] = self.name                    # That block appears
+
+            # Turn the list into a dictionary for structure generation
+            blob_dict = {}
+            for y, line in enumerate(blob):
+                for x, block in enumerate(line):
+                    if block != " ":
+                        is_empty = False
+                        blob_dict[(x, y)] = block
+
+        return blob_dict
+
+    def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict) -> Structure | None:
+        struct_seed = SEED + canter_pairing(origin) + ascii_str_sum(self.name)
+        # Create a dictionary of the block data of the blob with Cellular Automata
+        blob = self.CA(struct_seed, self.max_size, self.density, self.cycles)
+        block_data = {}
+        for offset, block in blob.items():
+            # Convert the positions to real world position by adding the origin to the block position (offset)
+            block_pos = (origin[0] + offset[0], origin[1] + offset[1])
+            match self.can_generate(block_pos, block, chunk_pos, chunk_data):
+                case 1:
+                    block_data[block_pos] = block # Generate the block
+                case 2:
+                    return # Do not generate the entire structure
+                case 3:
+                    continue # Do not generate the block
+
+        return Structure(self.name, block_data)
 
 class Chunk(object):
     """The class responsible for updating and drawing chunks."""
@@ -117,55 +244,51 @@ class Chunk(object):
     def generate(self, x: int, y: int) -> dict:
         """Takes the chunk coordinates and returns a dictionary containing the block data inside the chunk"""
 
-        seed(x*CHUNK_SIZE+y*CHUNK_SIZE)
+        start = time.time()
+
+        seed(SEED + canter_pairing((x, y)))
         chunk_data = {}
         for y_pos in range(CHUNK_SIZE):
             for x_pos in range(CHUNK_SIZE):
-                target = (x * CHUNK_SIZE + x_pos, y * CHUNK_SIZE + y_pos)
-                block_name = ""
+                block_pos = (x * CHUNK_SIZE + x_pos, y * CHUNK_SIZE + y_pos)
 
-                # Cave noise map
-                cave_noise_map_coords = [target[0]/70, target[1]/70]
-                # Don't generate blocks if it satifies a certain range of values in the cave noise map, AKA a cave
-                cave_noise_map_value = cave_generate(cave_noise_map_coords)
+                # Generate each block
+                block_name = generate_block(block_pos[0], block_pos[1])
 
-                if not (92.7 < cave_noise_map_value < 100):
-                    # Generate terrain
-                    height = terrain_generate(target[0])
-                    if target[1] == height:
-                        block_name = "grass_block"
-                    elif height+1 <= target[1] < height+4:
-                        block_name = "dirt"
-                    elif target[1] >= height+4:
-                        block_name = "stone"
-                    if target[1] == height-1:
-                        if not (92.7 < cave_generate([target[0]/70, (target[1]+1)/70]) < 100):
-                            if randint(0, 2) == 0:
-                                block_name = "grass"
-                            if randint(0, 21) == 0:
-                                block_name = choices(["poppy", "dandelion"], weights=[1, 2])[0]
-                    if block_name != "":
-                        chunk_data[target] = block_name
+                if block_name != "":
+                    chunk_data[block_pos] = block_name
 
-        # Generate structures
-        generator = StructureGenerator("oak_tree", obstruction=False)
-        chunk_data = generate_structures(x, y, chunk_data, generator, (1, 2))
-        generator = StructureGenerator("tall_grass", obstruction=True)
-        chunk_data = generate_structures(x, y, chunk_data, generator, (4, 3))
+        if (x, y) in Structure.instances:
+            for structure in Structure.instances[(x, y)]:
+                for block_pos, block_name in structure.blocks_in_chunk[(x, y)].items():
+                    chunk_data[block_pos] = block_name
+        else:
+            if -1 <= y <= 1: # Surface generations
+                chunk_data = generate_structures(x, y, chunk_data, oak_tree_gen, (1, 2))
+                chunk_data = generate_structures(x, y, chunk_data, tall_grass_gen, (4, 3))
+            if y >= 0: # Everywhere underground
+                chunk_data = generate_structures(x, y, chunk_data, coal_ore_gen, (2, 15))
+                chunk_data = generate_structures(x, y, chunk_data, iron_ore_gen, (2, 18))
+            if y >= 5: # Lower than y-40
+                chunk_data = generate_structures(x, y, chunk_data, gold_ore_gen, (1, 16))
+            if y >= 7: # Lower than y-56
+                chunk_data = generate_structures(x, y, chunk_data, lapis_lazuli_ore_gen, (1, 22))
+            if y >= 10: # Lower than y-80
+                chunk_data = generate_structures(x, y, chunk_data, redstone_ore_gen, (2, 14))
+            if y >= 16: # Lower than y-128
+                chunk_data = generate_structures(x, y, chunk_data, diamond_ore_gen, (1, 32))
+            if y >= 20: # Lower than y-160
+                chunk_data = generate_structures(x, y, chunk_data, emerald_ore_gen, (1, 32))
+            if y >= 0: # Everywhere underground
+                chunk_data = generate_structures(x, y, chunk_data, granite_gen, (2, 14))
+                chunk_data = generate_structures(x, y, chunk_data, diorite_gen, (2, 14))
+                chunk_data = generate_structures(x, y, chunk_data, andesite_gen, (2, 14))
+
+        # print(time.time() - start)
+
         return chunk_data
 
-def terrain_generate(x: int) -> float:
-    """Takes the x position of a block and returns the height it has to be at"""
-    return -int(snoise.noise2(x*0.1, 0)*5)+5
-
-def cave_generate(coords: list) -> float:
-    """Takes the coordinates of a block and returns the noise map value for cave generation"""
-    noise_height = pnoise(coords)
-    noise_height = noise_height + 0.5 if noise_height > 0 else 0
-    noise_height = int(pow(noise_height * 255, 0.9))
-    return noise_height
-
-def get_structures(x: int, y: int, generator: StructureGenerator, chance: tuple) -> list:
+def get_structures(x: int, y: int, chunk_data: tuple, generator: StructureGenerator, chance: tuple) -> list:
     """Get structures inside the current chunk (x, y)
 
     Args:
@@ -178,21 +301,27 @@ def get_structures(x: int, y: int, generator: StructureGenerator, chance: tuple)
         list: a list containing the block data of the structures in the chunk
     """
     out = []
-    seed(SEED + x * CHUNK_SIZE + y * CHUNK_SIZE)
+    seed(SEED + canter_pairing((x, y)) + ascii_str_sum(generator.name))
     for _ in range(chance[0]):
         if randint(0, chance[1]) == 0:
-            block_x = x * CHUNK_SIZE + randrange(0, CHUNK_SIZE)
-            # Generate on the surface of the world
-            grass_y = terrain_generate(block_x)-1
+            start_x = x * CHUNK_SIZE + randrange(0, CHUNK_SIZE)
+            if generator.on_surface:
+                # Generate on the surface of the world
+                start_y = terrain_generate(start_x)-1
+                # If it is cut off by a cave, don't generate
+                if (92.7 < cave_generate([start_x/70, start_y/70]) < 100) or (92.7 < cave_generate([start_x/70, (start_y+1)/70]) < 100):
+                    return out
+            else:
+                start_y = y * CHUNK_SIZE + randrange(0, CHUNK_SIZE)
 
-            # If it is cut off by a cave, don't generate
-            if (92.7 < cave_generate([block_x/70, grass_y/70]) < 100) or (92.7 < cave_generate([block_x/70, (grass_y+1)/70]) < 100):
-                return out
             # Structures that are not in this chunk
-            if not 0 <= grass_y - y * CHUNK_SIZE < CHUNK_SIZE:
+            if not 0 <= start_y - y * CHUNK_SIZE < CHUNK_SIZE:
                 return out
 
-            out.append(generator.generate((block_x, grass_y)))
+            structure = generator.generate((start_x, start_y), (x, y), chunk_data)
+            if structure:
+                out.append(structure.block_data)
+
     return out
 
 def generate_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerator, chance: tuple) -> dict:
@@ -208,34 +337,54 @@ def generate_structures(x: int, y: int, chunk_data: dict, generator: StructureGe
     Returns:
         dict: the chunk data with the structure
     """
-    chunk_data_orig = chunk_data.copy()
     # Check all chunks around the current chunk within the size limit of the structure
     for ox in range(-generator.chunks_to_check[0], generator.chunks_to_check[0] + 1):
         for oy in range(-generator.chunks_to_check[1], generator.chunks_to_check[1] + 1):
             # Get the surrounding structures that might protrude into the current chunk
-            structs = get_structures(x + ox, y + oy, generator, chance)
+            structs = get_structures(x + ox, y + oy, chunk_data, generator, chance)
             for struct in structs:
                 for block, block_name in struct.items():
                     # If there are parts of that structure inside the current chunk, generate that part in this chunk
                     if 0 <= block[0]-x*CHUNK_SIZE < CHUNK_SIZE and 0 <= block[1]-y*CHUNK_SIZE < CHUNK_SIZE:
-                        if block in chunk_data:
-                            # Check if that position already has block and whether it can be overwritten by the structure
-                            # i.e. leaves can replace grass but not grass blocks
-                            if "overwriteable" in BLOCK_DATA[block_name]:
-                                if chunk_data[block] in BLOCK_DATA[block_name]["overwriteable"]:
-                                    chunk_data[block] = block_name
-                                else:
-                                    # Obstruction determines whether the struture can generate when there are non-overwriteable blocks in its way
-                                    if generator.obstruction:
-                                        return chunk_data_orig
-                            else:
-                                if not generator.obstruction:
-                                    chunk_data[block] = block_name
-                                else:
-                                    return chunk_data_orig
-                        else:
-                            chunk_data[block] = block_name
+                        chunk_data[block] = block_name
+
     return chunk_data
+
+def terrain_generate(x: int) -> float:
+    """Takes the x position of a block and returns the height it has to be at"""
+    return -int(snoise.noise2(x*0.1, 0)*5)+5
+
+def cave_generate(coords: list) -> float:
+    """Takes the coordinates of a block and returns the noise map value for cave generation"""
+    noise_height = pnoise(coords)
+    noise_height = noise_height + 0.5 if noise_height > 0 else 0
+    noise_height = int(pow(noise_height * 255, 0.9))
+    return noise_height
+
+def generate_block(x, y):
+    # Cave noise map
+    cave_noise_map_coords = [x/70, y/70]
+    # Don't generate blocks if it satifies a certain range of values in the cave noise map, AKA a cave
+    cave_noise_map_value = cave_generate(cave_noise_map_coords)
+
+    block_name = ""
+    if not (92.7 < cave_noise_map_value < 100):
+        # Generate terrain
+        height = terrain_generate(x)
+        if y == height:
+            block_name = "grass_block"
+        elif height+1 <= y < height+4:
+            block_name = "dirt"
+        elif y >= height+4:
+            block_name = "stone"
+        if y == height-1:
+            if not (92.7 < cave_generate([x/70, (y+1)/70]) < 100):
+                if randint(0, 2) == 0:
+                    block_name = "grass"
+                if randint(0, 21) == 0:
+                    block_name = choices(["poppy", "dandelion"], weights=[1, 2])[0]
+
+    return block_name
 
 def load_chunks(camera: Camera) -> list:
     """Generate, unload and delete chunks.
@@ -287,8 +436,8 @@ def load_structures() -> dict:
     Returns:
         dict: A dictionar containing structure information
     """
-    
-    # 103 lines of comments... maybe I went overboard xD
+
+    # 104 lines of comments... maybe I went overboard xD
     # I hope I explained the file format well :)
 
     # reference structure file (short_oak_tree.structure)
@@ -370,12 +519,13 @@ def load_structures() -> dict:
                             # blocks[(0, -4)] = "oak_leaves"
                             blocks[(x - origin[0], y - origin[1])] = legends[structure[y][x]]
 
+                # Path(struct).stem gets the stem of the file (short_oak_tree.structure -> shoroak_tree)
                 # This might be:
                 # structures["oak_tree"][short_oak_tree] = ((2, 4), {
                 #     (0, 4): "oak_leaves",
                 #     ect.
                 # })
-                structures[folder][struct[:-10]] = (origin, blocks)
+                structures[folder][Path(struct).stem] = (origin, blocks)
 
             else: # This block of code handles distribution.structure specifically
                 # Example distribution.structure
@@ -418,3 +568,16 @@ def load_structures() -> dict:
     return structures
 
 structures = load_structures()
+
+oak_tree_gen = StructureGenerator("oak_tree")
+tall_grass_gen = StructureGenerator("tall_grass", obstruction=True)
+granite_gen = BlobGenerator("granite", (10, 10), 5, 3, obstruction=True)
+diorite_gen = BlobGenerator("diorite", (10, 10), 5, 3, obstruction=True)
+andesite_gen = BlobGenerator("andesite", (10, 10), 5, 3, obstruction=True)
+coal_ore_gen = BlobGenerator("coal_ore", (8, 4), 4, 2)
+iron_ore_gen = BlobGenerator("iron_ore", (3, 4), 4, 1)
+gold_ore_gen = BlobGenerator("gold_ore", (3, 3), 4, 1)
+lapis_lazuli_ore_gen = BlobGenerator("lapis_lazuli_ore", (3, 3), 4, 1)
+redstone_ore_gen = BlobGenerator("redstone_ore", (3, 3), 4, 1)
+diamond_ore_gen = BlobGenerator("diamond_ore", (3, 3), 4, 1)
+emerald_ore_gen = BlobGenerator("emerald_ore", (2, 2), 1, 1)
