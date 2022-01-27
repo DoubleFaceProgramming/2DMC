@@ -16,7 +16,7 @@ SPACING = 24
 TERMINAL_VEL = 24
 BLOCK_SIZE = 64
 CHUNK_SIZE = 8
-SEED = -1797233725#-643111093#randint(-2147483648, 2147483647) # Seed for structure gen testing: -1797233725
+SEED = randint(-2147483648, 2147483647) # Seed for structure gen testing: -1797233725
 
 FPS = getattr(EnumDisplaySettings(EnumDisplayDevices().DeviceName, -1), "DisplayFrequency")
 VEC = Vector2
