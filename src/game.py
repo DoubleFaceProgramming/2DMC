@@ -83,14 +83,10 @@ class Game():
         for particle in Particle.instances:
             particle.draw(self.player.camera, screen)
 
-        self.player.draw(screen, mpos)
-
         if self.debug_bool:
             self.debug(self.screen, mpos)
 
-        self.player.inventory.draw(screen)
-        if not self.player.inventory.visible:
-            self.player.crosshair.draw(screen, mpos)
+        self.player.draw(screen, mpos)
 
     def debug(self, screen, mpos) -> None:
         # Generating some debug values and storing in a dict for easy access.

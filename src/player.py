@@ -70,6 +70,7 @@ class Player(pygame.sprite.Sprite):
         self.inventory = Inventory(self)
         self.crosshair = Crosshair(self, 1750)
 
+        self.inventory.add_item("tall_grass")
         self.inventory.add_item("grass_block")
         self.inventory.add_item("dirt")
         self.inventory.add_item("stone")
@@ -81,7 +82,7 @@ class Player(pygame.sprite.Sprite):
         self.inventory.add_item("glass")
         self.inventory.add_item("poppy")
         self.inventory.add_item("dandelion")
-        self.inventory.add_item("tall_grass")
+        # self.inventory.add_item("tall_grass")
         self.inventory.add_item("coal_ore")
         self.inventory.add_item("copper_ore")
         self.inventory.add_item("iron_ore")
@@ -158,6 +159,8 @@ class Player(pygame.sprite.Sprite):
         self.holding = self.inventory.hotbar.items[self.inventory.hotbar.selected].name
 
     def draw(self, screen: Surface, mpos: pygame.math.Vector2) -> None:
+        self.crosshair.draw(screen, mpos)
+
         self.leg2.rect = self.leg2.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
         screen.blit(self.leg2.image, self.leg2.rect.topleft)
 
@@ -175,6 +178,8 @@ class Player(pygame.sprite.Sprite):
 
         self.leg.rect = self.leg.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
         screen.blit(self.leg.image, self.leg.rect.topleft)
+
+        self.inventory.draw(screen)
 
     def debug(self, screen: Surface, mpos: pygame.math.Vector2) -> None:
         self.crosshair.debug(screen, mpos)
@@ -427,30 +432,41 @@ class Crosshair():
         self.old_color = [x + (((y - x) / self.changeover) * 100 * dt) for x, y in zip(self.old_color, self.new_color)]
 
     def draw(self, screen: pygame.Surface, mpos: pygame.math.Vector2) -> None:
+        if self.master.inventory.visible: return
+
         self.new_color = self.get_avg_color(screen, mpos) # I know this is cursed it's the easiest way ;-;
 
-        # Drawing a selection box around the block beneath the mouse (but 2px larger than the block)
+        # Drawing a selection box around the block beneath the mouse
         if block := self.block_at_pos(mpos):
             # NOTE: add a config for line selection when dev0.2 and controls are merged
 
             outlines = [block]
+            # Looping through all the neighbours of the block
             for neighbour in block.neighbors:
-                if block.neighbors[neighbour] in Block.instances: # if block is in neighbour counterparts
-                    if "counterparts" in BLOCK_DATA[(neighbouring_block := Block.instances[block.neighbors[neighbour]]).name]:
+                if block.neighbors[neighbour] in Block.instances:
+                    neighbouring_block = Block.instances[block.neighbors[neighbour]]
+                    # If the block is in neighbour counterparts
+                    if "counterparts" in BLOCK_DATA[neighbouring_block.name]:
                         if block.name in BLOCK_DATA[neighbouring_block.name]["counterparts"].values():
                             outlines.append(neighbouring_block)
-
-                    if "counterparts" in block.data:
+                    # If the neighbour is in the block's counterparts
+                    elif "counterparts" in block.data:
                         if neighbouring_block.name in BLOCK_DATA[block.name]["counterparts"].values():
                             outlines.append(neighbouring_block)
 
-            for block in outlines:
-                outline = pygame.mask.from_surface(block.image).outline()
-                pos = block.pos - self.master.camera.pos
-                for index, point in enumerate(outline):
-                    outline[index] = VEC(point) + pos
+            # Need to create a rect / series of lines that contains the the outline of every block and no inter-block borders
+            # Then blit this to the screen
 
-                pygame.draw.polygon(screen, (0, 0, 0), outline, 2)
+            # TODO: change this with the proper rect later
+            final = pygame.Rect(block.rect.left, block.rect.top, BLOCK_SIZE, BLOCK_SIZE)
+            for blockashbasabs in outlines:
+                test = blockashbasabs.rect.copy()
+                test.w = BLOCK_SIZE
+                test.h = BLOCK_SIZE
+                final.union_ip(test)
+
+            pygame.draw.rect(screen, (0, 0, 0), final, width=2)
+            # Rect(block.rect.left, block.rect.top, BLOCK_SIZE, BLOCK_SIZE)
 
         # The 2 boxes that make up the crosshair
         pygame.draw.rect(screen, self.old_color, (mpos[0]-2, mpos[1]-16, 4, 32))
@@ -458,8 +474,7 @@ class Crosshair():
 
     def debug(self, screen: Surface, mpos: pygame.math.Vector2) -> None:
         if not self.master.inventory.visible:
-            block = self.block_at_pos(mpos)
-            if block:
+            if self.block_at_pos(mpos):
                 if block_name := self.block_at_pos(mpos).name:
                     # Displays the name of the block below the mouse cursor next to the mouse
                     screen.blit(text(block_name.replace('_', ' ').title(), color=(255, 255, 255)), (mpos[0]+12, mpos[1]-36))
