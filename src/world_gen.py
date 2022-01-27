@@ -12,7 +12,6 @@ from src.constants import CHUNK_SIZE, BLOCK_SIZE, SEED, WIDTH, HEIGHT, CONFLICTI
 from src.block import Block, BLOCK_DATA
 from src.player import Camera
 from src.utils import ascii_str_sum, canter_pairing, pathof
-from src.chunk_thread import ChunkThread
 
 seed(SEED)
 snoise = OpenSimplex(seed=SEED)
@@ -229,9 +228,6 @@ class Chunk(object):
     def __init__(self, pos: tuple) -> None:
         self.__class__.instances[pos] = self
         self.pos = pos
-        # chunk_thread = ChunkThread(target=self.generate, args=(pos[0], pos[1]))
-        # chunk_thread.start()
-        # self.block_data = chunk_thread.join()
         self.block_data = self.generate(pos[0], pos[1])
         self.rect = Rect(0, 0, CHUNK_SIZE * BLOCK_SIZE, CHUNK_SIZE * BLOCK_SIZE)
 
