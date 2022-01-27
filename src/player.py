@@ -178,8 +178,8 @@ class Player(pygame.sprite.Sprite):
         self.leg.rect = self.leg.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
         screen.blit(self.leg.image, self.leg.rect.topleft)
 
-    def debug(self, screen: Surface, mpos: pygame.math.Vector2) -> None:
-        self.crosshair.debug(screen, mpos)
+    def debug(self, screen: Surface) -> None:
+        self.crosshair.debug(screen)
         pygame.draw.rect(screen, (255, 255, 255), self.rect, width=1)
         # Draw the bottom bar (used to calculate if the player is on the ground)
         pygame.draw.rect(screen, (255, 0, 0), self.bottom_bar, width=2)
@@ -394,7 +394,7 @@ class Player(pygame.sprite.Sprite):
             mpos (pygame.math.Vector2): The position of the mouse cursor, used to find the block the player is hovering over.
         """
 
-        if block_name := self.crosshair.block_at_pos(mpos).name:
+        if block_name := self.crosshair.block.name:
             old_slot = self.inventory.hotbar.items[self.inventory.hotbar.selected]  # Saving the original hotbar item
             if block_name in [item.name for item in self.inventory.items.values()]: # Checking if the desired item is in the inventory
                 # Finding the inventory position of the desired item
@@ -418,6 +418,10 @@ class Crosshair():
         self.old_color = pygame.Color(0, 0, 0)
         self.new_color = pygame.Color(0, 0, 0)
         self.changeover = changeover # Changeover defines the speed that the colour changes from old to new
+        self.mpos = VEC(pygame.mouse.get_pos())
+        self.block_pos = inttup((self.master.pos + (self.mpos - self.master.rect.topleft)) // BLOCK_SIZE)
+        self.block = None
+        self.block_selection = self.BlockSelection(self)
 
     def update(self, dt: float) -> None:
         if 127-30 < self.new_color.r < 127+30 and 127-30 < self.new_color.g < 127+30 and 127-30 < self.new_color.b < 127+30:
@@ -427,46 +431,28 @@ class Crosshair():
         # Modified version of this SO answer, thank you!
         # https://stackoverflow.com/a/51979708/17303382
         self.old_color = [x + (((y - x) / self.changeover) * 100 * dt) for x, y in zip(self.old_color, self.new_color)]
+        
+        self.mpos = VEC(pygame.mouse.get_pos())
+        self.block_pos = inttup((self.master.pos + (self.mpos - self.master.rect.topleft)) // BLOCK_SIZE)
+        if self.block_pos in Block.instances:
+            self.block = Block.instances[inttup(self.block_pos)]
+        else:
+            self.block = None
 
-    def draw(self, screen: pygame.Surface, mpos: pygame.math.Vector2) -> None:
-        self.new_color = self.get_avg_color(screen, mpos) # I know this is cursed it's the easiest way ;-;
-
-        # Drawing a selection box around the block beneath the mouse (but 2px larger than the block)
-        if block := self.block_at_pos(mpos):
-            # NOTE: add a config for line selection when dev0.2 and controls are merged
-
-            outlines = [block]
-            for neighbour in block.neighbors:
-                if block.neighbors[neighbour] in Block.instances: # if block is in neighbour counterparts
-                    if "counterparts" in BLOCK_DATA[(neighbouring_block := Block.instances[block.neighbors[neighbour]]).name]:
-                        if block.name in BLOCK_DATA[neighbouring_block.name]["counterparts"].values():
-                            outlines.append(neighbouring_block)
-
-                    if "counterparts" in block.data:
-                        if neighbouring_block.name in BLOCK_DATA[block.name]["counterparts"].values():
-                            outlines.append(neighbouring_block)
-
-            for block in outlines:
-                outline = pygame.mask.from_surface(block.image).outline()
-                pos = block.pos - self.master.camera.pos
-                for index, point in enumerate(outline):
-                    outline[index] = VEC(point) + pos
-
-                pygame.draw.polygon(screen, (0, 0, 0), outline, 2)
+    def draw(self, screen: pygame.Surface) -> None:
+        self.new_color = self.get_avg_color(screen) # I know this is cursed it's the easiest way ;-;
 
         # The 2 boxes that make up the crosshair
-        pygame.draw.rect(screen, self.old_color, (mpos[0]-2, mpos[1]-16, 4, 32))
-        pygame.draw.rect(screen, self.old_color, (mpos[0]-16, mpos[1]-2, 32, 4))
+        pygame.draw.rect(screen, self.old_color, (self.mpos[0]-2, self.mpos[1]-16, 4, 32))
+        pygame.draw.rect(screen, self.old_color, (self.mpos[0]-16, self.mpos[1]-2, 32, 4))
 
-    def debug(self, screen: Surface, mpos: pygame.math.Vector2) -> None:
+    def debug(self, screen: Surface) -> None:
         if not self.master.inventory.visible:
-            block = self.block_at_pos(mpos)
-            if block:
-                if block_name := self.block_at_pos(mpos).name:
-                    # Displays the name of the block below the mouse cursor next to the mouse
-                    screen.blit(text(block_name.replace('_', ' ').title(), color=(255, 255, 255)), (mpos[0]+12, mpos[1]-36))
+            if self.block:
+                # Displays the name of the block below the mouse cursor next to the mouse
+                screen.blit(text(self.block.name.replace('_', ' ').title(), color=(255, 255, 255)), (self.mpos[0]+12, self.mpos[1]-36))
 
-    def get_avg_color(self, screen: Surface, mpos: pygame.math.Vector2) -> pygame.Color:
+    def get_avg_color(self, screen: Surface) -> pygame.Color:
         """Gets the average colour of the screen at the crosshair using the position of the mouse and the game screen.
 
         Returns:
@@ -474,25 +460,25 @@ class Crosshair():
         """
 
         try:
-            surf = screen.subsurface((mpos[0]-16, mpos[1]-16, 32, 32))
+            surf = screen.subsurface((self.mpos[0]-16, self.mpos[1]-16, 32, 32))
             color = pygame.Color(pygame.transform.average_color(surf))
         except:
             try: # This try / except fixes a mouse OOB crash at game startup
-                color = screen.get_at(inttup(mpos))
+                color = screen.get_at(inttup(self.mpos))
             except:
                 color = pygame.Color(255, 255, 255)
 
         return color
-
-    def block_at_pos(self, pos: Vector2) -> Block | None:
-        """Gets the block at the position given using the pos given (should be in screen space)
-
-        Returns:
-            Block | None: Returns the block object of the block at the position given,
-                                or None if the block is not valid.
-        """
-        block_pos = inttup((self.master.pos + (pos - self.master.rect.topleft)) // BLOCK_SIZE)
-        if block_pos in Block.instances:
-            return Block.instances[inttup(block_pos)]
-        else:
-            return None
+        
+    class BlockSelection():
+        def __init__(self, crosshair):
+            self.crosshair = crosshair
+            
+        def update(self):
+            # Not needed as of yet
+            pass
+        
+        def draw(self, screen):
+            # Drawing a selection box around the block beneath the mouse (but 2px larger than the block)
+            if self.crosshair.block:
+                pygame.draw.rect(screen, (0, 0, 0), Rect((self.crosshair.block.rect.left - 2, self.crosshair.block.rect.top - 2, BLOCK_SIZE + 4, BLOCK_SIZE + 4)), 2)

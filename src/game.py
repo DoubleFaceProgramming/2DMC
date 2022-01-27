@@ -88,9 +88,11 @@ class Game():
         if self.debug_bool:
             self.debug(self.screen, mpos)
 
+        if not self.player.inventory.visible:
+            self.player.crosshair.block_selection.draw(screen)
         self.player.inventory.draw(screen)
         if not self.player.inventory.visible:
-            self.player.crosshair.draw(screen, mpos)
+            self.player.crosshair.draw(screen)
 
     def debug(self, screen, mpos) -> None:
         # Generating some debug values and storing in a dict for easy access.
@@ -109,7 +111,7 @@ class Game():
         }
 
         # Calling the relevant debug functions.
-        self.player.debug(screen, mpos)
+        self.player.debug(screen)
         for chunk in self.rendered_chunks:
             Chunk.instances[chunk].debug(screen)
 
