@@ -7,6 +7,7 @@ from os.path import join
 from pathlib import Path
 from os import listdir
 from math import ceil
+import time
 
 from src.constants import CHUNK_SIZE, BLOCK_SIZE, SEED, WIDTH, HEIGHT, CONFLICTING_STRUCTURES
 from src.block import Block, BLOCK_DATA
@@ -111,9 +112,17 @@ class StructureGenerator(object):
                     block_in_chunk = structure.block_data[block_pos]
                     break
             else:
-                block_in_chunk = generate_block(*block_pos)
+                if block_pos not in Chunk.generated_blocks:
+                    block_in_chunk = generate_block(*block_pos)
+                    Chunk.generated_blocks[block_pos] = block_in_chunk
+                else:
+                    block_in_chunk = Chunk.generated_blocks[block_pos]
         else:
-            block_in_chunk = generate_block(*block_pos)
+            if block_pos not in Chunk.generated_blocks:
+                block_in_chunk = generate_block(*block_pos)
+                Chunk.generated_blocks[block_pos] = block_in_chunk
+            else:
+                block_in_chunk = Chunk.generated_blocks[block_pos]
 
         if block_in_chunk:
             if "overwriteable" in BLOCK_DATA[block_name]:
@@ -138,6 +147,9 @@ class StructureGenerator(object):
             return_value = 3
         else:
             return_value = 1
+        # if block_pos == (1, 0):
+        #     print(block_name, block_in_chunk)
+        #     print(return_value)
         return return_value
 
 class BlobGenerator(StructureGenerator):
@@ -224,6 +236,7 @@ class BlobGenerator(StructureGenerator):
 class Chunk(object):
     """The class responsible for updating and drawing chunks."""
     instances = {}
+    generated_blocks = {}
 
     def __init__(self, pos: tuple) -> None:
         self.__class__.instances[pos] = self
@@ -247,15 +260,21 @@ class Chunk(object):
 
     def generate(self, x: int, y: int) -> dict:
         """Takes the chunk coordinates and returns a dictionary containing the block data inside the chunk"""
+        
+        # start = time.time()
 
-        seed(SEED + canter_pairing((x, y)))
+        # chunk_seed = SEED + canter_pairing((x, y))
         chunk_data = {}
         for y_pos in range(CHUNK_SIZE):
             for x_pos in range(CHUNK_SIZE):
                 block_pos = (x * CHUNK_SIZE + x_pos, y * CHUNK_SIZE + y_pos)
 
                 # Generate each block
-                block_name = generate_block(block_pos[0], block_pos[1])
+                if block_pos in self.__class__.generated_blocks:
+                    block_name = self.__class__.generated_blocks[block_pos]
+                else:
+                    block_name = generate_block(block_pos[0], block_pos[1])
+                    self.__class__.generated_blocks[block_pos] = block_name
 
                 if block_name != "":
                     chunk_data[block_pos] = block_name
@@ -285,6 +304,8 @@ class Chunk(object):
                 chunk_data = generate_structures(x, y, chunk_data, "granite", (2, 14))
                 chunk_data = generate_structures(x, y, chunk_data, "diorite", (2, 14))
                 chunk_data = generate_structures(x, y, chunk_data, "andesite", (2, 14))
+                
+        # print(time.time() - start)
 
         return chunk_data
 
@@ -340,8 +361,8 @@ def generate_structures(x: int, y: int, chunk_data: dict, name: str, chance: tup
     """
     generator = structure_generators[name]
     # Check all chunks around the current chunk within the size limit of the structure
-    for ox in range(-generator.chunks_to_check[0] + 1, generator.chunks_to_check[0]):
-        for oy in range(-generator.chunks_to_check[1] + 1, generator.chunks_to_check[1]):
+    for ox in range(-generator.chunks_to_check[0], generator.chunks_to_check[0] + 1):
+        for oy in range(-generator.chunks_to_check[1], generator.chunks_to_check[1] + 1):
             # Get the surrounding structures that might protrude into the current chunk
             structs = get_structures(x + ox, y + oy, chunk_data, generator, chance)
             for struct in structs:
@@ -364,6 +385,7 @@ def cave_generate(coords: list) -> float:
     return noise_height
 
 def generate_block(x, y):
+    seed(canter_pairing((x, y)))
     # Cave noise map
     cave_noise_map_coords = [x/70, y/70]
     # Don't generate blocks if it satifies a certain range of values in the cave noise map, AKA a cave
