@@ -1,14 +1,18 @@
 from sys import exit as sysexit
 from random import seed
-from math import cos, pi
+import datetime
+import cProfile
+import pstats
 import pygame
 import os
 from pygame.locals import  (
     MOUSEBUTTONDOWN, KEYDOWN,
     HWSURFACE, DOUBLEBUF,
-    K_e, K_F5,
+    K_e, K_F5, K_F9,
     QUIT,
 )
+
+from src.args import ArgParser
 from src.background import Background
 from src.player import *
 from src.particle import *
@@ -20,7 +24,7 @@ from src.world_gen import *
 class Game():
     """Class that handles events and function calls to other classes to run the game"""
 
-    def __init__(self) -> None:
+    def __init__(self, parser: ArgParser) -> None:
         pygame.init()
 
         os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (50, 50)
@@ -34,7 +38,9 @@ class Game():
         self.clock = pygame.time.Clock()
         self.rendered_chunks = []
         self.debug_bool = False
+        self.argparser = parser
         self.player = Player()
+        self.profile = False
         self.running = True
 
     def update(self, mpos) -> None:
@@ -61,6 +67,8 @@ class Game():
                 # Toggling debug mode and the player inventory
                 if event.key == K_F5:
                     self.debug_bool = not self.debug_bool
+                if event.key == K_F9:
+                    self.profile = "profile" in self.argparser.parsed
                 if event.key == K_e:
                     self.player.toggle_inventory()
 
@@ -121,13 +129,39 @@ class Game():
 
     def run(self) -> None:
         """Start the main loop of the game, which handles the calling of other functions."""
+
+        # Creating a variable that contains the filename of the profile file
+        # If there is no given filename, we use a formatted datetime, else
+        # we just use the given name
+        if "profile" in self.argparser.parsed:
+            if self.argparser.parsed["profile"]:
+                filename = self.argparser.parsed["profile"]
+            else:
+                filename = "profile-" + datetime.datetime.now().strftime("%d.%m %H.%M")
+
+            filename = PROFILE_DIR + filename + ".perf"
+
         while self.running:
-            mpos = VEC(pygame.mouse.get_pos())
+            if not self.profile:
+                mpos = VEC(pygame.mouse.get_pos())
 
-            self.update(mpos)
-            self.draw(self.screen, mpos)
+                self.update(mpos)
+                self.draw(self.screen, mpos)
 
-            pygame.display.flip()
+                pygame.display.flip()
+            else:
+                # Profiling
+                with cProfile.Profile() as profile:
+                    mpos = VEC(pygame.mouse.get_pos())
+
+                    self.update(mpos)
+                    self.draw(self.screen, mpos)
+
+                    pygame.display.flip()
+
+                stats = pstats.Stats(profile).sort_stats(pstats.SortKey.TIME)
+                stats.dump_stats(filename)
+                self.profile = False
 
         self.quit()
 
