@@ -325,7 +325,7 @@ def get_structures(x: int, y: int, chunk_data: tuple, generator: StructureGenera
                 # Generate on the surface of the world
                 start_y = terrain_generate(start_x)-1
                 # If it is cut off by a cave, don't generate
-                if (92.7 < cave_generate([start_x/70, start_y/70]) < 100) or (92.7 < cave_generate([start_x/70, (start_y+1)/70]) < 100):
+                if (92.7 < cave_generate((start_x/70, start_y/70)) < 100) or (92.7 < cave_generate((start_x/70, (start_y+1)/70)) < 100):
                     return out
             else:
                 start_y = y * CHUNK_SIZE + randrange(0, CHUNK_SIZE)
@@ -373,7 +373,7 @@ def terrain_generate(x: int) -> float:
     """Takes the x position of a block and returns the height it has to be at"""
     return -int(snoise.noise2array(np.array([x*0.1]), np.array([0]))*5)+5
 
-def cave_generate(coords: list) -> float:
+def cave_generate(coords: tuple) -> float:
     """Takes the coordinates of a block and returns the noise map value for cave generation"""
     noise_height = pnoise.noise2(coords[0], coords[1])
     noise_height = noise_height + 0.5 if noise_height > 0 else 0
@@ -383,7 +383,7 @@ def cave_generate(coords: list) -> float:
 def generate_block(x, y):
     seed(canter_pairing((x, y)))
     # Cave noise map
-    cave_noise_map_coords = [x/70, y/70]
+    cave_noise_map_coords = (x/70, y/70)
     # Don't generate blocks if it satifies a certain range of values in the cave noise map, AKA a cave
     cave_noise_map_value = cave_generate(cave_noise_map_coords)
 
@@ -398,7 +398,7 @@ def generate_block(x, y):
         elif y >= height+4:
             block_name = "stone"
         if y == height-1:
-            if not (92.7 < cave_generate([x/70, (y+1)/70]) < 100):
+            if not (92.7 < cave_generate((x/70, (y+1)/70)) < 100):
                 if randint(0, 2) == 0:
                     block_name = "grass"
                 if randint(0, 21) == 0:
