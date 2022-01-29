@@ -147,9 +147,6 @@ class StructureGenerator(object):
             return_value = 3
         else:
             return_value = 1
-        # if block_pos == (1, 0):
-        #     print(block_name, block_in_chunk)
-        #     print(return_value)
         return return_value
 
 class BlobGenerator(StructureGenerator):
@@ -263,7 +260,6 @@ class Chunk(object):
         
         # start = time.time()
 
-        # chunk_seed = SEED + canter_pairing((x, y))
         chunk_data = {}
         for y_pos in range(CHUNK_SIZE):
             for x_pos in range(CHUNK_SIZE):
