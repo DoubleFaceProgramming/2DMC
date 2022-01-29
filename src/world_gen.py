@@ -7,6 +7,8 @@ from os.path import join
 from pathlib import Path
 from os import listdir
 from math import ceil
+import numpy as np
+from functools import cache
 import cProfile
 import pstats
 
@@ -160,6 +162,7 @@ class BlobGenerator(StructureGenerator):
         self.cycles = cycles
         self.get_max_chunks()
 
+    @cache
     def CA(self, struct_seed: int, size: tuple, density: int, cycles: int) -> dict:
         """Function for generating a blob with the Cellular Automata algorithm
 
@@ -176,16 +179,12 @@ class BlobGenerator(StructureGenerator):
 
         is_empty = True
         while is_empty:
-            blob = []
+            blob = np.empty((size[1], size[0]))
 
             # Create a 2D list with density/11 filled with the block type (self.name)
             for y in range(size[1]):
-                blob.append([])
                 for x in range(size[0]):
-                    if randint(0, 10) < density:
-                        blob[y].append(" ")
-                    else:
-                        blob[y].append(self.name)
+                    blob[y, x] = not (randint(0, 10) < density)
 
             neighbors_offset = [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
 
@@ -195,21 +194,21 @@ class BlobGenerator(StructureGenerator):
                         neighbors = 0
                         for n in neighbors_offset:                    # Check every neighbor around the current block
                             try:                                      # Try and except for blocks around the edge of the list which lacks neighbors
-                                if blob[y+n[0]][x+n[1]] == self.name: # If the neighboring block exists (== self.name)
+                                if blob[y+n[0],x+n[1]]:               # If the neighboring block exists (== self.name)
                                     neighbors += 1                    # Increment the neighbor counter
                             except: pass
                         if neighbors <= 3:                            # If there are less than or equal to 3 neighboring blocks
-                            blob[y][x] = " "                          # That block disappears
+                            blob[y,x] = False                         # That block disappears
                         elif neighbors > 5:                           # If there are more than 5 neighboring blocks
-                            blob[y][x] = self.name                    # That block appears
+                            blob[y,x] = True                          # That block appears
 
             # Turn the list into a dictionary for structure generation
             blob_dict = {}
             for y, line in enumerate(blob):
                 for x, block in enumerate(line):
-                    if block != " ":
+                    if block:
                         is_empty = False
-                        blob_dict[(x, y)] = block
+                        blob_dict[(x, y)] = self.name
 
         return blob_dict
 
