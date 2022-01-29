@@ -1,6 +1,6 @@
 from random import randint, seed, choices, choice, randrange
 from pygame.draw import rect as drawrect
-from perlin_noise import PerlinNoise
+from vnoise import Noise
 from opensimplex import OpenSimplex
 from pygame import Rect, Surface
 from os.path import join
@@ -19,7 +19,7 @@ from src.utils import ascii_str_sum, canter_pairing, pathof
 
 seed(SEED)
 snoise = OpenSimplex(seed=SEED)
-pnoise = PerlinNoise(seed=SEED)
+pnoise = Noise(SEED)
 
 class Structure(object):
     instances = {}
@@ -374,7 +374,7 @@ def terrain_generate(x: int) -> float:
 
 def cave_generate(coords: list) -> float:
     """Takes the coordinates of a block and returns the noise map value for cave generation"""
-    noise_height = pnoise(coords)
+    noise_height = pnoise.noise2(coords[0], coords[1])
     noise_height = noise_height + 0.5 if noise_height > 0 else 0
     noise_height = int(pow(noise_height * 255, 0.9))
     return noise_height
@@ -426,7 +426,10 @@ def load_chunks(camera: Camera) -> list:
             rendered_chunks.append(chunk)
             # If the chunk has not yet been generated, create the chunk object
             if chunk not in Chunk.instances:
+                # with cProfile.Profile() as pr:
                 Chunk.instances[chunk] = Chunk(chunk)
+                # stats = pstats.Stats(pr).sort_stats(pstats.SortKey.TIME)
+                # stats.dump_stats(filename="profile.prof")
 
     unrendered_chunks = []
     # Check a bigger area around the camera to see if there are chunks that are still active but shouldn't be
