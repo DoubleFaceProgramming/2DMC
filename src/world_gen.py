@@ -9,8 +9,6 @@ from os import listdir
 from math import ceil
 import numpy as np
 from functools import cache
-import cProfile
-import pstats
 
 from src.constants import CHUNK_SIZE, BLOCK_SIZE, SEED, WIDTH, HEIGHT, CONFLICTING_STRUCTURES
 from src.block import Block, BLOCK_DATA
@@ -427,13 +425,6 @@ def load_chunks(camera: Camera) -> list:
             rendered_chunks.append(chunk)
             # If the chunk has not yet been generated, create the chunk object
             if chunk not in Chunk.instances:
-                # if chunk == (-4, 4):
-                #     print(chunk)
-                #     with cProfile.Profile() as pr:
-                #         Chunk.instances[chunk] = Chunk(chunk)
-                #     stats = pstats.Stats(pr).sort_stats(pstats.SortKey.TIME)
-                #     stats.dump_stats(filename="profile.prof")
-                # else:
                 Chunk.instances[chunk] = Chunk(chunk)
 
     unrendered_chunks = []

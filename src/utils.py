@@ -108,20 +108,19 @@ def ascii_str_sum(string: str) -> int:
     return sum([ord(letter) for letter in string])
 
 profile_bool = False
-def profile(function: type, *args):
+def profile(callable: type, *args: tuple):
     global profile_bool
-    if profile_bool: print(profile_bool)
     if profile_bool:
         profile_bool = False
         with cProfile.Profile() as profile:
-            returnval = function(*args)
+            returnval = callable(*args)
 
         statfile = Path(os.path.join(PROFILE_DIR, str(datetime.datetime.now().strftime("profile_%H-%M-%S"))))
         stats = pstats.Stats(profile).sort_stats(pstats.SortKey.TIME)
         if not (statfile_dirpath := statfile.parent).exists():
             statfile_dirpath.mkdir()
         stats.dump_stats(filename=str(statfile))
-        print("profiling")
+        stats.print_stats()
         return returnval
     else:
-        return function(*args)
+        return callable(*args)
