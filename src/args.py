@@ -9,7 +9,7 @@ class ArgParser:
         self.parsed = {}
         
         # self.parsed will contain all the CLAs as keys, and their arguements as values
-        # Values will be None is there is no arguement
+        # Values will be None if there is no arguement
         # (ex. python main.py --profile test, profile will be the key and test will be the value)
         for arg in self.args:
             if arg.startswith("--"):

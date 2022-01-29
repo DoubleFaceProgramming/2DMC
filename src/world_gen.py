@@ -7,6 +7,8 @@ from os.path import join
 from pathlib import Path
 from os import listdir
 from math import ceil
+import cProfile
+import pstats
 
 from src.constants import CHUNK_SIZE, BLOCK_SIZE, SEED, WIDTH, HEIGHT, CONFLICTING_STRUCTURES
 from src.block import Block, BLOCK_DATA
@@ -215,6 +217,7 @@ class BlobGenerator(StructureGenerator):
         struct_seed = SEED + canter_pairing(origin) + ascii_str_sum(self.name)
         # Create a dictionary of the block data of the blob with Cellular Automata
         blob = self.CA(struct_seed, self.max_size, self.density, self.cycles)
+
         block_data = {}
         for offset, block in blob.items():
             # Convert the positions to real world position by adding the origin to the block position (offset)
@@ -297,7 +300,7 @@ class Chunk(object):
                 chunk_data = generate_structures(x, y, chunk_data, "granite", (2, 14))
                 chunk_data = generate_structures(x, y, chunk_data, "diorite", (2, 14))
                 chunk_data = generate_structures(x, y, chunk_data, "andesite", (2, 14))
-                
+
         # print(time.time() - start)
 
         return chunk_data

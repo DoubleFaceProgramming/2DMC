@@ -70,28 +70,28 @@ class Player(pygame.sprite.Sprite):
         self.inventory = Inventory(self)
         self.crosshair = Crosshair(self, 1750)
 
-        self.inventory.add_item("grass_block")
-        self.inventory.add_item("dirt")
-        self.inventory.add_item("stone")
-        self.inventory.add_item("grass")
-        self.inventory.add_item("oak_log")
-        self.inventory.add_item("oak_leaves")
-        self.inventory.add_item("oak_planks")
-        self.inventory.add_item("cobblestone")
-        self.inventory.add_item("glass")
-        self.inventory.add_item("poppy")
-        self.inventory.add_item("dandelion")
-        self.inventory.add_item("tall_grass")
-        self.inventory.add_item("granite")
-        self.inventory.add_item("diorite")
-        self.inventory.add_item("andesite")
-        self.inventory.add_item("coal_ore")
-        self.inventory.add_item("iron_ore")
-        self.inventory.add_item("gold_ore")
-        self.inventory.add_item("lapis_lazuli_ore")
-        self.inventory.add_item("redstone_ore")
-        self.inventory.add_item("diamond_ore")
-        self.inventory.add_item("emerald_ore")
+        self.inventory += "grass_block"
+        self.inventory += "dirt"
+        self.inventory += "stone"
+        self.inventory += "grass"
+        self.inventory += "oak_log"
+        self.inventory += "oak_leaves"
+        self.inventory += "oak_planks"
+        self.inventory += "cobblestone"
+        self.inventory += "glass"
+        self.inventory += "poppy"
+        self.inventory += "dandelion"
+        self.inventory += "tall_grass"
+        self.inventory += "granite"
+        self.inventory += "diorite"
+        self.inventory += "andesite"
+        self.inventory += "coal_ore"
+        self.inventory += "iron_ore"
+        self.inventory += "gold_ore"
+        self.inventory += "lapis_lazuli_ore"
+        self.inventory += "redstone_ore"
+        self.inventory += "diamond_ore"
+        self.inventory += "emerald_ore"
 
     def update(self, blocks: dict, m_state: int, dt: float) -> None:
         self.camera.update(dt)
@@ -384,7 +384,7 @@ class Player(pygame.sprite.Sprite):
         pygame.mouse.set_visible(self.inventory.visible)
         if not self.inventory.visible:
             if self.inventory.selected: # If an item was being hovered when the inventory was closed:
-                self.inventory.add_item(self.inventory.selected.name) # Add the item
+                self.inventory += self.inventory.selected.name # Add the item
                 self.inventory.selected = None
 
     def pick_block(self, mpos: pygame.math.Vector2) -> None:
@@ -408,7 +408,7 @@ class Player(pygame.sprite.Sprite):
             else:
                 self.inventory.set_slot((self.inventory.hotbar.selected, 0), block_name) # Set the hotbar slot to the desired block
                 if len(self.inventory.items) < self.inventory.max_items:                 # Add the old item to the inventory if there is enough space
-                    self.inventory.add_item(old_slot.name)
+                    self.inventory += old_slot.name
 
 class Crosshair():
     """The class responsible for the drawing and updating of the crosshair"""
