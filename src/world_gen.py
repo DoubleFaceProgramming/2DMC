@@ -1,12 +1,16 @@
 from random import randint, seed, choices, choice, randrange
 from pygame.draw import rect as drawrect
-from perlin_noise import PerlinNoise
+from vnoise import Noise
 from opensimplex import OpenSimplex
 from pygame import Rect, Surface
 from os.path import join
 from pathlib import Path
 from os import listdir
 from math import ceil
+import numpy as np
+from functools import cache
+import cProfile
+import pstats
 
 from src.constants import CHUNK_SIZE, BLOCK_SIZE, SEED, WIDTH, HEIGHT, CONFLICTING_STRUCTURES
 from src.block import Block, BLOCK_DATA
@@ -15,7 +19,7 @@ from src.utils import ascii_str_sum, canter_pairing, pathof
 
 seed(SEED)
 snoise = OpenSimplex(seed=SEED)
-pnoise = PerlinNoise(seed=SEED)
+pnoise = Noise(SEED)
 
 class Structure(object):
     instances = {}
@@ -146,9 +150,6 @@ class StructureGenerator(object):
             return_value = 3
         else:
             return_value = 1
-        # if block_pos == (1, 0):
-        #     print(block_name, block_in_chunk)
-        #     print(return_value)
         return return_value
 
 class BlobGenerator(StructureGenerator):
@@ -161,6 +162,7 @@ class BlobGenerator(StructureGenerator):
         self.cycles = cycles
         self.get_max_chunks()
 
+    @cache
     def CA(self, struct_seed: int, size: tuple, density: int, cycles: int) -> dict:
         """Function for generating a blob with the Cellular Automata algorithm
 
@@ -177,16 +179,12 @@ class BlobGenerator(StructureGenerator):
 
         is_empty = True
         while is_empty:
-            blob = []
+            blob = np.empty((size[1], size[0]))
 
             # Create a 2D list with density/11 filled with the block type (self.name)
             for y in range(size[1]):
-                blob.append([])
                 for x in range(size[0]):
-                    if randint(0, 10) < density:
-                        blob[y].append(" ")
-                    else:
-                        blob[y].append(self.name)
+                    blob[y, x] = not (randint(0, 10) < density)
 
             neighbors_offset = [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
 
@@ -196,21 +194,21 @@ class BlobGenerator(StructureGenerator):
                         neighbors = 0
                         for n in neighbors_offset:                    # Check every neighbor around the current block
                             try:                                      # Try and except for blocks around the edge of the list which lacks neighbors
-                                if blob[y+n[0]][x+n[1]] == self.name: # If the neighboring block exists (== self.name)
+                                if blob[y+n[0],x+n[1]]:               # If the neighboring block exists (== self.name)
                                     neighbors += 1                    # Increment the neighbor counter
                             except: pass
                         if neighbors <= 3:                            # If there are less than or equal to 3 neighboring blocks
-                            blob[y][x] = " "                          # That block disappears
+                            blob[y,x] = False                         # That block disappears
                         elif neighbors > 5:                           # If there are more than 5 neighboring blocks
-                            blob[y][x] = self.name                    # That block appears
+                            blob[y,x] = True                          # That block appears
 
             # Turn the list into a dictionary for structure generation
             blob_dict = {}
             for y, line in enumerate(blob):
                 for x, block in enumerate(line):
-                    if block != " ":
+                    if block:
                         is_empty = False
-                        blob_dict[(x, y)] = block
+                        blob_dict[(x, y)] = self.name
 
         return blob_dict
 
@@ -218,6 +216,7 @@ class BlobGenerator(StructureGenerator):
         struct_seed = SEED + canter_pairing(origin) + ascii_str_sum(self.name)
         # Create a dictionary of the block data of the blob with Cellular Automata
         blob = self.CA(struct_seed, self.max_size, self.density, self.cycles)
+
         block_data = {}
         for offset, block in blob.items():
             # Convert the positions to real world position by adding the origin to the block position (offset)
@@ -260,7 +259,6 @@ class Chunk(object):
     def generate(self, x: int, y: int) -> dict:
         """Takes the chunk coordinates and returns a dictionary containing the block data inside the chunk"""
 
-        # chunk_seed = SEED + canter_pairing((x, y))
         chunk_data = {}
         for y_pos in range(CHUNK_SIZE):
             for x_pos in range(CHUNK_SIZE):
@@ -301,7 +299,7 @@ class Chunk(object):
                 chunk_data = generate_structures(x, y, chunk_data, "granite", (2, 14))
                 chunk_data = generate_structures(x, y, chunk_data, "diorite", (2, 14))
                 chunk_data = generate_structures(x, y, chunk_data, "andesite", (2, 14))
-                
+
         # print(time.time() - start)
 
         return chunk_data
@@ -327,7 +325,7 @@ def get_structures(x: int, y: int, chunk_data: tuple, generator: StructureGenera
                 # Generate on the surface of the world
                 start_y = terrain_generate(start_x)-1
                 # If it is cut off by a cave, don't generate
-                if (92.7 < cave_generate([start_x/70, start_y/70]) < 100) or (92.7 < cave_generate([start_x/70, (start_y+1)/70]) < 100):
+                if (92.7 < cave_generate((start_x/70, start_y/70)) < 100) or (92.7 < cave_generate((start_x/70, (start_y+1)/70)) < 100):
                     return out
             else:
                 start_y = y * CHUNK_SIZE + randrange(0, CHUNK_SIZE)
@@ -370,13 +368,14 @@ def generate_structures(x: int, y: int, chunk_data: dict, name: str, chance: tup
 
     return chunk_data
 
+@cache
 def terrain_generate(x: int) -> float:
     """Takes the x position of a block and returns the height it has to be at"""
-    return -int(snoise.noise2(x*0.1, 0)*5)+5
+    return -int(snoise.noise2array(np.array([x*0.1]), np.array([0]))*5)+5
 
-def cave_generate(coords: list) -> float:
+def cave_generate(coords: tuple) -> float:
     """Takes the coordinates of a block and returns the noise map value for cave generation"""
-    noise_height = pnoise(coords)
+    noise_height = pnoise.noise2(coords[0], coords[1])
     noise_height = noise_height + 0.5 if noise_height > 0 else 0
     noise_height = int(pow(noise_height * 255, 0.9))
     return noise_height
@@ -384,7 +383,7 @@ def cave_generate(coords: list) -> float:
 def generate_block(x, y):
     seed(canter_pairing((x, y)))
     # Cave noise map
-    cave_noise_map_coords = [x/70, y/70]
+    cave_noise_map_coords = (x/70, y/70)
     # Don't generate blocks if it satifies a certain range of values in the cave noise map, AKA a cave
     cave_noise_map_value = cave_generate(cave_noise_map_coords)
 
@@ -399,7 +398,7 @@ def generate_block(x, y):
         elif y >= height+4:
             block_name = "stone"
         if y == height-1:
-            if not (92.7 < cave_generate([x/70, (y+1)/70]) < 100):
+            if not (92.7 < cave_generate((x/70, (y+1)/70)) < 100):
                 if randint(0, 2) == 0:
                     block_name = "grass"
                 if randint(0, 21) == 0:
@@ -428,6 +427,13 @@ def load_chunks(camera: Camera) -> list:
             rendered_chunks.append(chunk)
             # If the chunk has not yet been generated, create the chunk object
             if chunk not in Chunk.instances:
+                # if chunk == (-4, 4):
+                #     print(chunk)
+                #     with cProfile.Profile() as pr:
+                #         Chunk.instances[chunk] = Chunk(chunk)
+                #     stats = pstats.Stats(pr).sort_stats(pstats.SortKey.TIME)
+                #     stats.dump_stats(filename="profile.prof")
+                # else:
                 Chunk.instances[chunk] = Chunk(chunk)
 
     unrendered_chunks = []

@@ -18,7 +18,7 @@ BLOCK_SIZE = 64
 CHUNK_SIZE = 8
 SEED = randint(-2147483648, 2147483647) # Seed for structure gen testing: -1797233725
 
-FPS = getattr(EnumDisplaySettings(EnumDisplayDevices().DeviceName, -1), "DisplayFrequency")
+FPS = 1000
 VEC = Vector2
 
 BUNDLE_DIR = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))

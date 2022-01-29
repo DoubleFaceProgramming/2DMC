@@ -14,6 +14,7 @@ class Item(object):
         self.name = name
         self.count = 1
         self.nbt = {}
+        # NOTE: Add -= and += support for item count decrement and increment
 
 class InventoryFullException(Exception):
     def __init__(self, item: Item, message="The inventory was full when trying to add item: ") -> None:
@@ -43,6 +44,10 @@ class Inventory(object):
         self.hover_surf.set_alpha(100)
         self.transparent_background = pygame.Surface((WIDTH, HEIGHT)).convert_alpha()
         self.transparent_background.fill((0, 0, 0, 125))
+
+    def __iadd__(self, other):
+        self.add_item(other)
+        return self
 
     def update(self, m_state: int) -> None:
         if self.visible:
@@ -152,7 +157,7 @@ class Inventory(object):
 
         del self.items[slot]
 
-    def add_item(self, item: str) -> None:
+    def add_item(self, item: str | Item) -> None:
         """Append the item to the first empty slot
 
         Args:
@@ -162,14 +167,21 @@ class Inventory(object):
             InventoryFullException: Raised if there is no room in the inventory.
         """
 
-        item_obj = Item(item)
+        match item:
+            case str(item):
+                item = Item(item)
+            case Item(item):
+                pass
+            case _:
+                raise TypeError("Item must be of type 'str' or 'Item'")
+
         for y in range(4):
             for x in range(9):
                 if not (x, y) in self.items:
-                    self.items[(x, y)] = item_obj
+                    self.items[(x, y)] = item
                     return
 
-        raise InventoryFullException(item_obj)
+        raise InventoryFullException(item)
 
 class Hotbar(object):
     """Class that draws, updates and provides functionality for the hotbar."""

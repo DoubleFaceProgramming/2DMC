@@ -124,6 +124,20 @@ class Game():
     def run(self) -> None:
         """Start the main loop of the game, which handles the calling of other functions."""
 
+<<<<<<< HEAD
+=======
+        # Creating a variable that contains the filename of the profile file
+        # If there is no given filename, we use a formatted datetime, else
+        # we just use the given name
+        if "profile" in self.argparser.parsed:
+            if self.argparser.parsed["profile"]:
+                filename = self.argparser.parsed["profile"]
+            else:
+                filename = "profile-" + datetime.datetime.now().strftime("%d.%m.%y-%H.%M.%S")
+
+            filename = os.path.join(PROFILE_DIR, filename + ".perf")
+
+>>>>>>> 55d9f04178e6be6a67c4270b2c170dbdb3a758bf
         while self.running:
             mpos = VEC(pygame.mouse.get_pos())
 
