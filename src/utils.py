@@ -2,7 +2,12 @@ from pygame.draw import rect as drawrect
 from pygame.locals import SRCALPHA
 from pygame.surface import Surface
 from pygame.math import Vector2
+from pathlib import Path
 from pygame import Rect
+import cProfile
+import datetime
+import cProfile
+import pstats
 import os
 
 from src.constants import *
@@ -101,3 +106,22 @@ def canter_pairing(tup: tuple) -> int:
 def ascii_str_sum(string: str) -> int:
     """Gets the sum of the ASCII values of all the letters in a string"""
     return sum([ord(letter) for letter in string])
+
+profile_bool = False
+def profile(function: type, *args):
+    global profile_bool
+    if profile_bool: print(profile_bool)
+    if profile_bool:
+        profile_bool = False
+        with cProfile.Profile() as profile:
+            returnval = function(*args)
+
+        statfile = Path(os.path.join(PROFILE_DIR, str(datetime.datetime.now().strftime("profile_%H-%M-%S"))))
+        stats = pstats.Stats(profile).sort_stats(pstats.SortKey.TIME)
+        if not (statfile_dirpath := statfile.parent).exists():
+            statfile_dirpath.mkdir()
+        stats.dump_stats(filename=str(statfile))
+        print("profiling")
+        return returnval
+    else:
+        return function(*args)
