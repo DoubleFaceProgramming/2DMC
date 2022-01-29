@@ -3,10 +3,10 @@ import pygame
 import json
 import os
 
+from src.images import block_textures
+from src.utils import pathof, inttup
 from src.particle import Particle
 from src.constants import *
-from src.images import *
-from src.utils import *
 
 # Load json block data into a dictionary
 BLOCK_DATA = {}

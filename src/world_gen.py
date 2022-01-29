@@ -1,19 +1,19 @@
-from random import randint, seed, choices, choice, randrange
+from random import randint, seed, choices, randrange
 from pygame.draw import rect as drawrect
-from vnoise import Noise
 from opensimplex import OpenSimplex
 from pygame import Rect, Surface
+from functools import cache
 from os.path import join
 from pathlib import Path
+from vnoise import Noise
 from os import listdir
 from math import ceil
 import numpy as np
-from functools import cache
 
 from src.constants import CHUNK_SIZE, BLOCK_SIZE, SEED, WIDTH, HEIGHT, CONFLICTING_STRUCTURES
+from src.utils import ascii_str_sum, canter_pairing, pathof
 from src.block import Block, BLOCK_DATA
 from src.player import Camera
-from src.utils import ascii_str_sum, canter_pairing, pathof
 
 seed(SEED)
 snoise = OpenSimplex(seed=SEED)

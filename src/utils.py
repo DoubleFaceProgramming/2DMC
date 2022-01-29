@@ -4,6 +4,7 @@ from pygame.surface import Surface
 from pygame.math import Vector2
 from pathlib import Path
 from pygame import Rect
+from typing import Any
 import cProfile
 import datetime
 import cProfile
@@ -21,7 +22,7 @@ def pathof(file: str) -> str:
     Returns:
         str: The bundled - exe compatible file path
     """
-    
+
     abspath = os.path.abspath(os.path.join(BUNDLE_DIR, file))
     if not os.path.exists(abspath):
         abspath = file

@@ -2,6 +2,7 @@ from sys import exit as sysexit
 from random import seed
 import pygame
 import os
+
 from pygame.locals import  (
     MOUSEBUTTONDOWN, KEYDOWN,
     HWSURFACE, DOUBLEBUF,

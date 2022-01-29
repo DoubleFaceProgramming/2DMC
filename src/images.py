@@ -1,9 +1,9 @@
-import pygame
 from pygame.locals import SRCALPHA, HWSURFACE, DOUBLEBUF
+import pygame
 import os
 
-from src.constants import *
 from src.utils import pathof
+from src.constants import *
 from pathlib import Path
 
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (50, 50)

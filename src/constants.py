@@ -1,7 +1,6 @@
-from random import randint
-from win32api import EnumDisplayDevices, EnumDisplaySettings
 from pygame.font import Font, init
 from pygame.math import Vector2
+from random import randint
 import sys
 import os
 

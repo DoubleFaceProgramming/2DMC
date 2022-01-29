@@ -1,10 +1,10 @@
-import pygame
-from pygame import Surface
 from pygame.constants import K_0, K_1, K_9
+from pygame import Surface
+import pygame
 import time
 
+from src.utils import inttup, create_text_box, smol_text
 from src.constants import *
-from src.utils import *
 from src.images import *
 
 class Item(object):

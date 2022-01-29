@@ -1,13 +1,13 @@
-import pygame
-from pygame import Surface
 from pygame.constants import K_a, K_d, K_w
 from math import ceil, cos, floor
+from pygame import Surface, Rect
+import pygame
 
+from src.block import Block, BLOCK_DATA, remove_block, is_placeable, set_block, inttup
+from src.utils import block_collide, text
 from src.inventory import Inventory
 from src.constants import *
-from src.utils import *
 from src.images import *
-from src.block import *
 
 class Camera(pygame.sprite.Sprite):
     """Class that represents the camera"""

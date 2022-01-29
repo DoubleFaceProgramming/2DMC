@@ -1,9 +1,9 @@
-import pygame
 from pygame import Surface
+import pygame
 import time
 
+from src.utils import inttup
 from src.constants import *
-from src.utils import *
 
 class Particle(pygame.sprite.Sprite):
     """Class that handles the management, updation and drawing of particles."""
