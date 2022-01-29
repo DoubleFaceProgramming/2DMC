@@ -137,9 +137,9 @@ class Game():
             if self.argparser.parsed["profile"]:
                 filename = self.argparser.parsed["profile"]
             else:
-                filename = "profile-" + datetime.datetime.now().strftime("%d.%m %H.%M")
+                filename = "profile-" + datetime.datetime.now().strftime("%d.%m.%y-%H.%M.%S")
 
-            filename = PROFILE_DIR + filename + ".perf"
+            filename = os.path.join(PROFILE_DIR, filename + ".perf")
 
         while self.running:
             if not self.profile:
