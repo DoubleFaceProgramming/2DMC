@@ -25,10 +25,11 @@ BUNDLE_DIR = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__))
 REGULAR_FONT_LOC = os.path.abspath(os.path.join(BUNDLE_DIR, "assets/fonts/regular.ttf"))
 if not os.path.exists(REGULAR_FONT_LOC):
     REGULAR_FONT_LOC = os.path.abspath(os.path.join(BUNDLE_DIR, "../assets/fonts/regular.ttf"))
+PROFILE_DIR = "build\profiles\\"
 FONT24 = Font(REGULAR_FONT_LOC, 24)
 FONT20 = Font(REGULAR_FONT_LOC, 20)
 
 CONFLICTING_STRUCTURES = {
-    ("oak_tree", ): ["tall_grass"], 
+    ("oak_tree", ): ["tall_grass"],
     ("granite", "diorite", "andesite"): ["coal_ore", "iron_ore", "lapis_lazuli_ore", "gold_ore", "redstone_ore", "diamond_ore", "emerald_ore"]
 }

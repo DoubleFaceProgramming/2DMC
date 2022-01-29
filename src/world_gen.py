@@ -7,7 +7,6 @@ from os.path import join
 from pathlib import Path
 from os import listdir
 from math import ceil
-import time
 
 from src.constants import CHUNK_SIZE, BLOCK_SIZE, SEED, WIDTH, HEIGHT, CONFLICTING_STRUCTURES
 from src.block import Block, BLOCK_DATA
@@ -257,8 +256,6 @@ class Chunk(object):
 
     def generate(self, x: int, y: int) -> dict:
         """Takes the chunk coordinates and returns a dictionary containing the block data inside the chunk"""
-        
-        # start = time.time()
 
         chunk_data = {}
         for y_pos in range(CHUNK_SIZE):
@@ -415,6 +412,7 @@ def load_chunks(camera: Camera) -> list:
     Returns:
         list: The list of rendered chunks.
     """
+
     rendered_chunks = []
     # Load the chunks that show up on the screen
     for y in range(HEIGHT // (CHUNK_SIZE * BLOCK_SIZE) + 2):
