@@ -368,9 +368,10 @@ def generate_structures(x: int, y: int, chunk_data: dict, name: str, chance: tup
 
     return chunk_data
 
+@cache
 def terrain_generate(x: int) -> float:
     """Takes the x position of a block and returns the height it has to be at"""
-    return -int(snoise.noise2(x*0.1, 0)*5)+5
+    return -int(snoise.noise2array(np.array([x*0.1]), np.array([0]))*5)+5
 
 def cave_generate(coords: list) -> float:
     """Takes the coordinates of a block and returns the noise map value for cave generation"""
@@ -426,10 +427,7 @@ def load_chunks(camera: Camera) -> list:
             rendered_chunks.append(chunk)
             # If the chunk has not yet been generated, create the chunk object
             if chunk not in Chunk.instances:
-                # with cProfile.Profile() as pr:
                 Chunk.instances[chunk] = Chunk(chunk)
-                # stats = pstats.Stats(pr).sort_stats(pstats.SortKey.TIME)
-                # stats.dump_stats(filename="profile.prof")
 
     unrendered_chunks = []
     # Check a bigger area around the camera to see if there are chunks that are still active but shouldn't be
