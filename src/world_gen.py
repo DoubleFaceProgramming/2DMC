@@ -57,8 +57,8 @@ class StructureGenerator(object):
             if file != "distribution":
                 self.BLOCK_DATA[file] = structures[self.name][file]
                 # Append the max size of all the different possible variations
-                max_sizes.append((max(x for x, y in self.BLOCK_DATA[file][1]) - min(x for x, y in self.BLOCK_DATA[file][1]) + 1,
-                                  max(y for x, y in self.BLOCK_DATA[file][1]) - min(y for x, y in self.BLOCK_DATA[file][1]) + 1))
+                max_sizes.append((max(x for x, _ in self.BLOCK_DATA[file][1]) - min(x for x, _ in self.BLOCK_DATA[file][1]) + 1,
+                                  max(y for _, y in self.BLOCK_DATA[file][1]) - min(y for _, y in self.BLOCK_DATA[file][1]) + 1))
         # Get the biggest one
         self.max_size = max(max_sizes)
 
@@ -124,7 +124,7 @@ class StructureGenerator(object):
             )
         """
         # If the block is inside the chunk the structure originated from
-        if 0 <= block_pos[0]-chunk_pos[0]*CHUNK_SIZE < CHUNK_SIZE and 0 <= block_pos[1]-chunk_pos[1]*CHUNK_SIZE < CHUNK_SIZE:
+        if 0 <= block_pos[0] - chunk_pos[0] * CHUNK_SIZE < CHUNK_SIZE and 0 <= block_pos[1] - chunk_pos[1] * CHUNK_SIZE < CHUNK_SIZE:
             if block_pos in chunk_data:
                 block_in_chunk = chunk_data[block_pos] # Get the block name of the target position in the chunk
             else:
@@ -220,7 +220,7 @@ class BlobGenerator(StructureGenerator):
                         neighbors = 0
                         for n in neighbors_offset:                    # Check every neighbor around the current block
                             try:                                      # Try and except for blocks around the edge of the list which lacks neighbors
-                                if blob[y+n[0], x+n[1]]:              # If the neighboring block exists
+                                if blob[y + n[0], x + n[1]]:              # If the neighboring block exists
                                     neighbors += 1                    # Increment the neighbor counter
                             except: pass
                         if neighbors <= 3:                            # If there are less than or equal to 3 neighboring blocks
@@ -357,13 +357,13 @@ def get_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerat
     out = []
     seed(SEED + canter_pairing((x, y)) + ascii_str_sum(generator.name))
     for _ in range(chance[0]):
-        if randint(0, chance[1]) == 0:
+        if not randint(0, chance[1]):
             start_x = x * CHUNK_SIZE + randrange(0, CHUNK_SIZE)
             if generator.on_surface:
                 # Generate on the surface of the world
-                start_y = terrain_generate(start_x)-1
+                start_y = terrain_generate(start_x)[1] - 1
                 # If it is cut off by a cave, don't generate
-                if (92.7 < cave_generate((start_x/70, start_y/70)) < 100) or (92.7 < cave_generate((start_x/70, (start_y+1)/70)) < 100):
+                if (92.7 < cave_generate((start_x / 70, start_y / 70)) < 100) or (92.7 < cave_generate((start_x / 70, (start_y + 1) / 70)) < 100):
                     return out
             else:
                 start_y = y * CHUNK_SIZE + randrange(0, CHUNK_SIZE)
@@ -402,16 +402,17 @@ def generate_structures(x: int, y: int, chunk_data: dict, name: str, chance: tup
             for struct in structs:
                 for block, block_name in struct.block_data.items():
                     # If there are parts of that structure inside the current chunk, generate that part in this chunk
-                    if 0 <= block[0]-x*CHUNK_SIZE < CHUNK_SIZE and 0 <= block[1]-y*CHUNK_SIZE < CHUNK_SIZE:
+                    if 0 <= block[0] - x * CHUNK_SIZE < CHUNK_SIZE and 0 <= block[1] - y * CHUNK_SIZE < CHUNK_SIZE:
                         chunk_data[block] = block_name
 
     return chunk_data
 
 # Since simplex noise here is generated with a function making use of numpy arrays, cache improves performance
 @cache
-def terrain_generate(x: int) -> float:
+def terrain_generate(x: int) -> tuple[float, float]:
     """Takes the x position of a block and returns the height it has to be at"""
-    return -int(snoise.noise2array(np.array([x*0.1]), np.array([0]))*5)+5
+    simplex_noise_height = snoise.noise2array(np.array([x * 0.1]), np.array([0]))
+    return simplex_noise_height, -int(simplex_noise_height * 5) + 5
 
 def cave_generate(coords: tuple) -> float:
     """Takes the coordinates of a block and returns the noise map value for cave generation"""
@@ -420,47 +421,67 @@ def cave_generate(coords: tuple) -> float:
     noise_height = int(pow(noise_height * 255, 0.9))
     return noise_height
 
+def blended_blocks_generate(y: int, block: str, blend_y: int, block2: str = "") -> str:
+    """Returns a block based on a 5 block blend of two blocks
+
+    Args:
+        y (int): The y of the block
+        block (str): The first block to blend from
+        blend_y (int): The y at where the blend should happen
+        block2 (str, optional): The second block to blend to. Defaults to "".
+
+    Returns:
+        str: The name of the block that should be generated
+    """
+
+    block_name = ""
+    if y >= blend_y - 5:   # If the block is within 5 blocks of the blend level:
+        match blend_y - y: # Match on the block's level above the blend level
+            case 1 | 2:    # If the block is 1 / 2 blocks above blend level, ect.
+                block_name = choices([block, block2], [70, 30])[0]
+            case 3:
+                block_name = choices([block, block2], [50, 50])[0]
+            case 4:
+                block_name = choices([block, block2], [30, 70])[0]
+            case _:              # If the block is within 5 blocks of the blend level but not one
+                if y >= blend_y: # of the above it will be either layer 5 or below
+                    block_name = block
+
+    return block_name
+
 def generate_block(x: int, y: int) -> str:
     """Gets the name of the block that would generate (apart from structures) at the given location"""
-    seed(canter_pairing((x, y)))
+
+    seed(SEED + canter_pairing((x, y)))
     block_name = ""
 
     # Generating bedrock
-    if y >= MAX_Y - 5: # If the block is within 5 blocks of bedrock level:
-        match MAX_Y - y: # Match on the block's level above bedrock
-            case 1 | 2: # If the block is 1 or 2 blocks above bedrock, ect.
-                block_name = choices(["bedrock", ""], [70, 30])[0]
-            case 3:
-                block_name = choices(["bedrock", ""], [50, 50])[0]
-            case 4:
-                block_name = choices(["bedrock", ""], [30, 70])[0]
-            case _: # If the block is within 5 blocks of bedrock but not one
-                if y >= MAX_Y: # of the above it will be either layer 5 or below
-                    block_name = "bedrock"
+    block_name = blended_blocks_generate(y, "bedrock", MAX_Y)
 
     # If the block has been chosen (ie. is bedrock) return, else generate it
     if block_name:
         return block_name
 
     # Cave noise map
-    cave_noise_map_coords = (x/70, y/70)
+    cave_noise_map_coords = (x / 70, y / 70)
     # Don't generate blocks if it satifies a certain range of values in the cave noise map, AKA a cave
     cave_noise_map_value = cave_generate(cave_noise_map_coords)
 
     if not (92.7 < cave_noise_map_value < 100):
         # Generate terrain
         height = terrain_generate(x)
-        if y == height:
+        dirt_height = -int(height[0] * 3.2) + 10
+        if y == height[1]:
             block_name = "grass_block"
-        elif height+1 <= y < height+4:
+        elif height[1] + 1 <= y < dirt_height:
             block_name = "dirt"
-        elif y >= height+4:
+        elif y >= dirt_height:
             block_name = "stone"
-        if y == height-1:
-            if not (92.7 < cave_generate((x/70, (y+1)/70)) < 100):
-                if randint(0, 2) == 0:
+        if y == height[1] - 1:
+            if not (92.7 < cave_generate((x / 70, (y + 1) / 70)) < 100):
+                if not randint(0, 2):
                     block_name = "grass"
-                if randint(0, 21) == 0:
+                if not randint(0, 21):
                     block_name = choices(["poppy", "dandelion"], weights=[1, 2])[0]
 
     return block_name
