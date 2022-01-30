@@ -73,9 +73,16 @@ class StructureGenerator(object):
 
     def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict) -> Structure | None:
         """Generates chunk data that includes a structure at the given origin
+
+        Args:
+            origin (tuple): The position of the block where the structure is going to start generating from
+            chunk_pos (tuple): The original chunk position of the structure
+            chunk_data (dict): The block data of the chunk the structure is originally in
+
         Returns:
             dict: A dictionary containing the block data of the structure.
         """
+
         seed(SEED + canter_pairing(origin) + ascii_str_sum(self.name)) # Seeding random-ness
         file = choices(self.distribution["files"], weights=self.distribution["weights"])[0] # Picking a random file using the files and weights generated in load_structures()
         mirror = bool(randint(0, 1)) # Bool whether the structure should be flipped or not.
@@ -101,23 +108,40 @@ class StructureGenerator(object):
         return Structure(self.name, block_data)
 
     def can_generate(self, block_pos: tuple, block_name: str, chunk_pos: tuple, chunk_data: dict) -> int:
+        """
+
+        Args:
+            block_pos (tuple): the position of the block to generate
+            block_name (str): the name of the block to generate
+            chunk_pos (tuple): the position of the chunk that the structure originated from
+            chunk_data (dict): the block data of the chunk that the structure originated from
+
+        Returns:
+            int: (
+                1 means valid generation
+                2 means invalid and the entire structure should not generate
+                3 means invalid and only this specific block should not generate
+            )
+        """
+        # If the block is inside the chunk the structure originated from
         if 0 <= block_pos[0]-chunk_pos[0]*CHUNK_SIZE < CHUNK_SIZE and 0 <= block_pos[1]-chunk_pos[1]*CHUNK_SIZE < CHUNK_SIZE:
             if block_pos in chunk_data:
-                block_in_chunk = chunk_data[block_pos]
+                block_in_chunk = chunk_data[block_pos] # Get the block name of the target position in the chunk
             else:
-                block_in_chunk = ""
+                block_in_chunk = "" # If the block does not exist in the chunk, set it to an empty string
 
+        # real_chunk_pos is the actual chunk position of the current block, not the chunk the structure originates from
         if (real_chunk_pos := (block_pos[0] // CHUNK_SIZE, block_pos[1] // CHUNK_SIZE)) in Structure.instances:
-            for structure in Structure.instances[real_chunk_pos]:
-                if block_pos in structure.block_data:
-                    block_in_chunk = structure.block_data[block_pos]
+            for structure in Structure.instances[real_chunk_pos]:       # Check for structures that have already been pre-generated
+                if block_pos in structure.block_data:                   # If the current block overlaps a block in the structure
+                    block_in_chunk = structure.block_data[block_pos]    # Set the block in chunk to that block in the structure
                     break
-            else:
-                if block_pos not in Chunk.generated_blocks:
-                    block_in_chunk = generate_block(*block_pos)
-                    Chunk.generated_blocks[block_pos] = block_in_chunk
+            else:                                                       # If it did not find a structure that has been pre-generated
+                if block_pos not in Chunk.generated_blocks:             # If the block have not been generated anywhere else
+                    block_in_chunk = generate_block(*block_pos)         # Generate it
+                    Chunk.generated_blocks[block_pos] = block_in_chunk  # Add the generated block to the list so that it 
                 else:
-                    block_in_chunk = Chunk.generated_blocks[block_pos]
+                    block_in_chunk = Chunk.generated_blocks[block_pos]  
         else:
             if block_pos not in Chunk.generated_blocks:
                 block_in_chunk = generate_block(*block_pos)
@@ -128,27 +152,26 @@ class StructureGenerator(object):
         if block_in_chunk:
             if "overwriteable" in BLOCK_DATA[block_name]:
                 if block_in_chunk in BLOCK_DATA[block_name]["overwriteable"]:
-                    return_value = 1
+                    return 1
                 elif self.obstruction:
-                    return_value = 2
+                    return 2
                 else:
-                    return_value = 3
+                    return 3
             elif "can_only_overwrite" in BLOCK_DATA[block_name]:
                 if block_in_chunk in BLOCK_DATA[block_name]["can_only_overwrite"]:
-                    return_value = 1
+                    return 1
                 elif self.obstruction:
-                    return_value = 2
+                    return 2
                 else:
-                    return_value = 3
+                    return 3
             elif self.obstruction:
-                return_value = 2
+                return 2
             else:
-                return_value = 1
+                return 1
         elif "can_only_overwrite" in BLOCK_DATA[block_name]:
-            return_value = 3
+            return 3
         else:
-            return_value = 1
-        return return_value
+            return 1
 
 class BlobGenerator(StructureGenerator):
     def __init__(self, name, max_size, density, cycles, obstruction=False):

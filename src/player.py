@@ -387,12 +387,8 @@ class Player(pygame.sprite.Sprite):
                 self.inventory += self.inventory.selected.name # Add the item
                 self.inventory.selected = None
 
-    def pick_block(self, mpos: pygame.math.Vector2) -> None:
-        """Pick the block at the mouse position, with all the functionality in 3D Minecraft.
-
-        Args:
-            mpos (pygame.math.Vector2): The position of the mouse cursor, used to find the block the player is hovering over.
-        """
+    def pick_block(self) -> None:
+        """Pick the block at the mouse position, with all the functionality in 3D Minecraft."""
 
         if block_name := self.crosshair.block.name:
             old_slot = self.inventory.hotbar.items[self.inventory.hotbar.selected]  # Saving the original hotbar item
@@ -431,7 +427,7 @@ class Crosshair():
         # Modified version of this SO answer, thank you!
         # https://stackoverflow.com/a/51979708/17303382
         self.old_color = [x + (((y - x) / self.changeover) * 100 * dt) for x, y in zip(self.old_color, self.new_color)]
-        
+
         self.mpos = VEC(pygame.mouse.get_pos())
         self.block_pos = inttup((self.master.pos + (self.mpos - self.master.rect.topleft)) // BLOCK_SIZE)
         if self.block_pos in Block.instances:
@@ -469,15 +465,15 @@ class Crosshair():
                 color = pygame.Color(255, 255, 255)
 
         return color
-        
+
     class BlockSelection():
         def __init__(self, crosshair):
             self.crosshair = crosshair
-            
+
         def update(self):
             # Not needed as of yet
             pass
-        
+
         def draw(self, screen):
             # Drawing a selection box around the block beneath the mouse (but 2px larger than the block)
             if self.crosshair.block:

@@ -27,6 +27,7 @@ class Game():
         os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (50, 50)
         pygame.display.set_caption("2D Minecraft")
         pygame.mouse.set_visible(False)
+        pygame.event.set_allowed([MOUSEBUTTONDOWN, KEYDOWN, QUIT])
 
         seed(SEED)
 
@@ -54,7 +55,7 @@ class Game():
                     if event.button == 1:
                         self.player.break_block(Chunk.instances, mpos)
                     elif event.button == 2:
-                        self.player.pick_block(mpos)
+                        self.player.pick_block()
                     elif event.button == 3:
                         self.player.place_block(Chunk.instances, mpos)
 
@@ -122,15 +123,18 @@ class Game():
         for line, name in enumerate(debug_values):
             screen.blit(text(f"{name}: {debug_values[name]}"), (6, SPACING * line))
 
+    def tick(self, mpos):
+        """Ticks the game loop (makes profiling a bit easier)"""
+
+        self.update(mpos)
+        self.draw(self.screen, mpos)
+
     def run(self) -> None:
         """Start the main loop of the game, which handles the calling of other functions."""
 
         while self.running:
             mpos = VEC(pygame.mouse.get_pos())
-
-            self.update(mpos)
-            self.draw(self.screen, mpos)
-
+            self.tick(mpos)
             pygame.display.flip()
 
         self.quit()

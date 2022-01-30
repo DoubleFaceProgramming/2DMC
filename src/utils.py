@@ -109,19 +109,29 @@ def ascii_str_sum(string: str) -> int:
     return sum([ord(letter) for letter in string])
 
 profile_bool = False
-def profile(callable: type, *args: tuple):
-    global profile_bool
-    if profile_bool:
-        profile_bool = False
-        with cProfile.Profile() as profile:
-            returnval = callable(*args)
+def profile(callable: type, *args: tuple) -> Any:
+    """Profiles the given callable and saves + prints the results
 
-        statfile = Path(os.path.join(PROFILE_DIR, str(datetime.datetime.now().strftime("profile_%H-%M-%S"))))
-        stats = pstats.Stats(profile).sort_stats(pstats.SortKey.TIME)
+    Args:
+        callable (type): A callabale type (function, constructor, ect)
+
+    Returns:
+        [Any]: The result of calling the callable
+    """
+
+    global profile_bool
+    if profile_bool: # Profile_bool stops the user from being able to hold down the profile key
+        profile_bool = False
+        with cProfile.Profile() as profile: # Profiling the contents of the with block
+            returnval = callable(*args)     # Calling the callable with the args
+
+        # Naming the profile file in the format "profile_{hour}-{minute}-{second}.prof"
+        statfile = Path(os.path.join(PROFILE_DIR, str(datetime.datetime.now().strftime("profile_%H-%M-%S")) + ".prof"))
         if not (statfile_dirpath := statfile.parent).exists():
-            statfile_dirpath.mkdir()
-        stats.dump_stats(filename=str(statfile))
-        stats.print_stats()
+            statfile_dirpath.mkdir() # Creating the dirpath of the statfile (ex. "build/profiles") if they do not exist
+        stats = pstats.Stats(profile).sort_stats(pstats.SortKey.TIME) # Sorting the stats from highest time to lowest
+        stats.dump_stats(filename=str(statfile)) # Saving the stats to a profile file
+        stats.print_stats()                      # Printing the stats
         return returnval
-    else:
+    else: # Return the output of the callable
         return callable(*args)
