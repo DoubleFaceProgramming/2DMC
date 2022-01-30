@@ -418,16 +418,19 @@ class Crosshair():
         self.block_pos = inttup((self.master.pos + (self.mpos - self.master.rect.topleft)) // BLOCK_SIZE)
         self.block = None
         self.block_selection = self.BlockSelection(self)
+        self.grey = {*range(127 - 30, 127 + 30 + 1)} # A set that contains value from 97 to 157
 
     def update(self, dt: float) -> None:
-        if 127-30 < self.new_color.r < 127+30 and 127-30 < self.new_color.g < 127+30 and 127-30 < self.new_color.b < 127+30:
+        if self.new_color.r in self.grey and self.new_color.g in self.grey and self.new_color.b in self.grey:
             self.new_color = pygame.Color(255, 255, 255) # Checks if the colour is grey, and makes it white if it is
+
         self.new_color = pygame.Color(255, 255, 255) - self.new_color # Inverting the colour
 
         # Modified version of this SO answer, thank you!
         # https://stackoverflow.com/a/51979708/17303382
         self.old_color = [x + (((y - x) / self.changeover) * 100 * dt) for x, y in zip(self.old_color, self.new_color)]
 
+        # Calculating the block beneath the mouse cursor
         self.mpos = VEC(pygame.mouse.get_pos())
         self.block_pos = inttup((self.master.pos + (self.mpos - self.master.rect.topleft)) // BLOCK_SIZE)
         if self.block_pos in Block.instances:
@@ -439,14 +442,14 @@ class Crosshair():
         self.new_color = self.get_avg_color(screen) # I know this is cursed it's the easiest way ;-;
 
         # The 2 boxes that make up the crosshair
-        pygame.draw.rect(screen, self.old_color, (self.mpos[0]-2, self.mpos[1]-16, 4, 32))
-        pygame.draw.rect(screen, self.old_color, (self.mpos[0]-16, self.mpos[1]-2, 32, 4))
+        pygame.draw.rect(screen, self.old_color, (self.mpos[0] - 2, self.mpos[1] - 16, 4, 32))
+        pygame.draw.rect(screen, self.old_color, (self.mpos[0] - 16, self.mpos[1] - 2, 32, 4))
 
     def debug(self, screen: Surface) -> None:
         if not self.master.inventory.visible:
             if self.block:
                 # Displays the name of the block below the mouse cursor next to the mouse
-                screen.blit(text(self.block.name.replace('_', ' ').title(), color=(255, 255, 255)), (self.mpos[0]+12, self.mpos[1]-36))
+                screen.blit(text(self.block.name.replace('_', ' ').title(), color=(255, 255, 255)), (self.mpos[0] + 12, self.mpos[1] - 36))
 
     def get_avg_color(self, screen: Surface) -> pygame.Color:
         """Gets the average colour of the screen at the crosshair using the position of the mouse and the game screen.
@@ -456,7 +459,7 @@ class Crosshair():
         """
 
         try:
-            surf = screen.subsurface((self.mpos[0]-16, self.mpos[1]-16, 32, 32))
+            surf = screen.subsurface((self.mpos[0] - 16, self.mpos[1] - 16, 32, 32))
             color = pygame.Color(pygame.transform.average_color(surf))
         except:
             try: # This try / except fixes a mouse OOB crash at game startup
