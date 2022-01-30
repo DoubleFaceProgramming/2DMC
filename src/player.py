@@ -7,7 +7,7 @@ import pygame
 from src.block import Block, BLOCK_DATA, remove_block, is_placeable, set_block, inttup
 from src.utils import block_collide, text
 from src.inventory import Inventory
-from src.constants import SCR_DIM, SLIDE, GRAVITY, TERMINAL_VEL, CHUNK_SIZE
+from src.constants import MAX_Y, SCR_DIM, SLIDE, GRAVITY, TERMINAL_VEL, CHUNK_SIZE
 from src.images import *
 
 class Camera(pygame.sprite.Sprite):
@@ -335,50 +335,51 @@ class Player(pygame.sprite.Sprite):
         if self.holding:
             # Get the coordinates and the neighbors of the block the crosshair is hovering over
             block_pos = inttup((self.pos + (mpos - self.rect.topleft)) // BLOCK_SIZE)
-            neighbors = {
-                "0 -1": inttup((block_pos[0], block_pos[1] - 1)),
-                "0 1": inttup((block_pos[0], block_pos[1] + 1)),
-                "-1 0": inttup((block_pos[0] - 1, block_pos[1])),
-                "1 0": inttup((block_pos[0] + 1, block_pos[1]))
-            }
-            # If a block has a counterpart (i.e. tall grass)
-            if "counterparts" in BLOCK_DATA[self.holding]:
-                counterparts = BLOCK_DATA[self.holding]["counterparts"]
-                for counterpart in counterparts:
-                    # Get the position of where counterpart would be and ITS neighbors
-                    c_pos = VEC(block_pos)+VEC(inttup(counterpart.split(" ")))
-                    c_neighbors = {
-                        "0 -1": inttup((c_pos.x, c_pos.y - 1)),
-                        "0 1": inttup((c_pos.x, c_pos.y + 1)),
-                        "-1 0": inttup((c_pos.x - 1, c_pos.y)),
-                        "1 0": inttup((c_pos.x + 1, c_pos.y))
-                    }
-                    # If the counterpart cannot be placed, break the entire loop and don't even place the original block
-                    if not is_placeable(self, c_pos, BLOCK_DATA[counterparts[counterpart]], c_neighbors, second_block_pos=block_pos):
-                        break
-                else: # If the for loop executed successfully without "break", continue on with placing the block
-                    # Some "sec_block_pos" weirdness << descriptive commenting /j
-                    # Note: DaNub forgot how this works so deal with it
-                    # Note: trevor CBA to figure out how it works so deal with it
+            if block_pos[1] < MAX_Y: # If the block is above the max y (there is bedrock there but why not /shrug)
+                neighbors = {
+                    "0 -1": inttup((block_pos[0], block_pos[1] - 1)),
+                    "0 1": inttup((block_pos[0], block_pos[1] + 1)),
+                    "-1 0": inttup((block_pos[0] - 1, block_pos[1])),
+                    "1 0": inttup((block_pos[0] + 1, block_pos[1]))
+                }
+                # If a block has a counterpart (i.e. tall grass)
+                if "counterparts" in BLOCK_DATA[self.holding]:
+                    counterparts = BLOCK_DATA[self.holding]["counterparts"]
                     for counterpart in counterparts:
-                        if not is_placeable(self, block_pos, BLOCK_DATA[self.holding], neighbors, second_block_pos=c_pos):
+                        # Get the position of where counterpart would be and ITS neighbors
+                        c_pos = VEC(block_pos)+VEC(inttup(counterpart.split(" ")))
+                        c_neighbors = {
+                            "0 -1": inttup((c_pos.x, c_pos.y - 1)),
+                            "0 1": inttup((c_pos.x, c_pos.y + 1)),
+                            "-1 0": inttup((c_pos.x - 1, c_pos.y)),
+                            "1 0": inttup((c_pos.x + 1, c_pos.y))
+                        }
+                        # If the counterpart cannot be placed, break the entire loop and don't even place the original block
+                        if not is_placeable(self, c_pos, BLOCK_DATA[counterparts[counterpart]], c_neighbors, second_block_pos=block_pos):
                             break
-                    else:
-                        set_block(chunks, block_pos, self.holding, neighbors)
+                    else: # If the for loop executed successfully without "break", continue on with placing the block
+                        # Some "sec_block_pos" weirdness << descriptive commenting /j
+                        # Note: DaNub forgot how this works so deal with it
+                        # Note: trevor CBA to figure out how it works so deal with it
                         for counterpart in counterparts:
-                            # Get the position of where counterpart would be and ITS neighbors
-                            c_pos = VEC(block_pos) + VEC(inttup(counterpart.split(" ")))
-                            c_neighbors = {
-                                "0 -1": inttup((c_pos.x, c_pos.y - 1)),
-                                "0 1": inttup((c_pos.x, c_pos.y + 1)),
-                                "-1 0": inttup((c_pos.x - 1, c_pos.y)),
-                                "1 0": inttup((c_pos.x + 1, c_pos.y))
-                            }
-                            set_block(chunks, VEC(block_pos)+VEC(inttup(counterpart.split(" "))), counterparts[counterpart], c_neighbors)
-            else:
-                # If the block does not have counterparts, place it if it can be placed
-                if is_placeable(self, block_pos, BLOCK_DATA[self.holding], neighbors):
-                    set_block(chunks, block_pos, self.holding, neighbors)
+                            if not is_placeable(self, block_pos, BLOCK_DATA[self.holding], neighbors, second_block_pos=c_pos):
+                                break
+                        else:
+                            set_block(chunks, block_pos, self.holding, neighbors)
+                            for counterpart in counterparts:
+                                # Get the position of where counterpart would be and ITS neighbors
+                                c_pos = VEC(block_pos) + VEC(inttup(counterpart.split(" ")))
+                                c_neighbors = {
+                                    "0 -1": inttup((c_pos.x, c_pos.y - 1)),
+                                    "0 1": inttup((c_pos.x, c_pos.y + 1)),
+                                    "-1 0": inttup((c_pos.x - 1, c_pos.y)),
+                                    "1 0": inttup((c_pos.x + 1, c_pos.y))
+                                }
+                                set_block(chunks, VEC(block_pos)+VEC(inttup(counterpart.split(" "))), counterparts[counterpart], c_neighbors)
+                else:
+                    # If the block does not have counterparts, place it if it can be placed
+                    if is_placeable(self, block_pos, BLOCK_DATA[self.holding], neighbors):
+                        set_block(chunks, block_pos, self.holding, neighbors)
 
     def toggle_inventory(self) -> None:
         """Toggle the players inventory on and off."""
