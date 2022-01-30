@@ -58,7 +58,7 @@ class StructureGenerator(object):
                 self.BLOCK_DATA[file] = structures[self.name][file]
                 # Append the max size of all the different possible variations
                 max_sizes.append((max(x for x, y in self.BLOCK_DATA[file][1]) - min(x for x, y in self.BLOCK_DATA[file][1]) + 1,
-                            max(y for x, y in self.BLOCK_DATA[file][1]) - min(y for x, y in self.BLOCK_DATA[file][1]) + 1))
+                                  max(y for x, y in self.BLOCK_DATA[file][1]) - min(y for x, y in self.BLOCK_DATA[file][1]) + 1))
         # Get the biggest one
         self.max_size = max(max_sizes)
 
@@ -80,7 +80,7 @@ class StructureGenerator(object):
             chunk_data (dict): The block data of the chunk the structure is originally in
 
         Returns:
-            dict: A dictionary containing the block data of the structure.
+            Structure | None: A Structure object with the resulting block data
         """
 
         seed(SEED + canter_pairing(origin) + ascii_str_sum(self.name)) # Seeding random-ness
@@ -89,11 +89,11 @@ class StructureGenerator(object):
         block_data = {}
 
         for offset, block in self.BLOCK_DATA[file][1].items():
-            if mirror: block_pos = (origin[0] + offset[0], origin[1] + offset[1])
+            if mirror: block_pos = (origin[0] + offset[0], origin[1] + offset[1]) # Mirror the structure if mirror is true
             else: block_pos = (origin[0] - offset[0], origin[1] + offset[1])
-            if "," in block:
+            if "," in block:  # If the block type is a random weighted choice between multiple blocks
                 block_name = choices([i.split("=")[0] for i in block.split(",")],
-                             weights=[int(i.split("=")[1]) for i in block.split(",")])[0]
+                                     weights=[int(i.split("=")[1]) for i in block.split(",")])[0]
             else:
                 block_name = block
 
@@ -139,24 +139,27 @@ class StructureGenerator(object):
             else:                                                       # If it did not find a structure that has been pre-generated
                 if block_pos not in Chunk.generated_blocks:             # If the block have not been generated anywhere else
                     block_in_chunk = generate_block(*block_pos)         # Generate it
-                    Chunk.generated_blocks[block_pos] = block_in_chunk  # Add the generated block to the list so that it 
-                else:
-                    block_in_chunk = Chunk.generated_blocks[block_pos]  
-        else:
-            if block_pos not in Chunk.generated_blocks:
+                    Chunk.generated_blocks[block_pos] = block_in_chunk  # Add the generated block to the list so that it
+                else:                                                   # If the block has already been generated before
+                    block_in_chunk = Chunk.generated_blocks[block_pos]  # Grab the block
+        else:                                                           # If the structure in a chunk have not been generated
+            if block_pos not in Chunk.generated_blocks:                 # Do what it did above and generate or grab the block
                 block_in_chunk = generate_block(*block_pos)
                 Chunk.generated_blocks[block_pos] = block_in_chunk
             else:
                 block_in_chunk = Chunk.generated_blocks[block_pos]
 
+        # Some tests to check if the block can replace the block it's generating on and if not, whether the entire structure can generate
         if block_in_chunk:
+            # Overwriteable means which blocks the block can replace
             if "overwriteable" in BLOCK_DATA[block_name]:
                 if block_in_chunk in BLOCK_DATA[block_name]["overwriteable"]:
                     return 1
-                elif self.obstruction:
+                elif self.obstruction:  # If obstruction is true it means that the entire structure should not generate if one block cannot generate
                     return 2
                 else:
                     return 3
+            # Can only overwrite is the same as overwriteable but it also cannot replace air
             elif "can_only_overwrite" in BLOCK_DATA[block_name]:
                 if block_in_chunk in BLOCK_DATA[block_name]["can_only_overwrite"]:
                     return 1
@@ -168,6 +171,7 @@ class StructureGenerator(object):
                 return 2
             else:
                 return 1
+        # If the block does not exist (air), and the block can't overwrite air
         elif "can_only_overwrite" in BLOCK_DATA[block_name]:
             return 3
         else:
@@ -183,13 +187,14 @@ class BlobGenerator(StructureGenerator):
         self.cycles = cycles
         self.get_max_chunks()
 
+    # Cache speeds up numpy array calculations
     @cache
     def CA(self, struct_seed: int, size: tuple, density: int, cycles: int) -> dict:
         """Function for generating a blob with the Cellular Automata algorithm
 
         Args:
             struct_seed (int): the unique seed for this blob, this chunk, this seed
-            size (int): size of the grid in which to generate the blob
+            size (tuple): size of the grid in which to generate the blob
             density (int): how dense is the starting grid in the CA (Cellular Automata) algorithm
             cycles (int): how many CA (Cellular Automata) iterations to go through
 
@@ -199,10 +204,10 @@ class BlobGenerator(StructureGenerator):
         seed(struct_seed)
 
         is_empty = True
-        while is_empty:
-            blob = np.empty((size[1], size[0]))
+        while is_empty: # If after the algorithm the array is still empty, redo it
+            blob = np.empty((size[1], size[0])) # Empty numpy array with specified dimensions
 
-            # Create a 2D list with density/11 filled with the block type (self.name)
+            # Populate density/11 of the array
             for y in range(size[1]):
                 for x in range(size[0]):
                     blob[y, x] = not (randint(0, 10) < density)
@@ -215,13 +220,13 @@ class BlobGenerator(StructureGenerator):
                         neighbors = 0
                         for n in neighbors_offset:                    # Check every neighbor around the current block
                             try:                                      # Try and except for blocks around the edge of the list which lacks neighbors
-                                if blob[y+n[0],x+n[1]]:               # If the neighboring block exists (== self.name)
+                                if blob[y+n[0], x+n[1]]:              # If the neighboring block exists
                                     neighbors += 1                    # Increment the neighbor counter
                             except: pass
                         if neighbors <= 3:                            # If there are less than or equal to 3 neighboring blocks
-                            blob[y,x] = False                         # That block disappears
+                            blob[y, x] = False                        # That block disappears
                         elif neighbors > 5:                           # If there are more than 5 neighboring blocks
-                            blob[y,x] = True                          # That block appears
+                            blob[y, x] = True                         # That block appears
 
             # Turn the list into a dictionary for structure generation
             blob_dict = {}
@@ -234,6 +239,17 @@ class BlobGenerator(StructureGenerator):
         return blob_dict
 
     def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict) -> Structure | None:
+        """Generates chunk data that includes a structure at the given origin
+
+        Args:
+            origin (tuple): The position of the block where the structure is going to start generating from
+            chunk_pos (tuple): The original chunk position of the structure
+            chunk_data (dict): The block data of the chunk the structure is originally in
+
+        Returns:
+            Structure | None: A Structure object with the resulting block data
+        """
+
         struct_seed = SEED + canter_pairing(origin) + ascii_str_sum(self.name)
         # Create a dictionary of the block data of the blob with Cellular Automata
         blob = self.CA(struct_seed, self.max_size, self.density, self.cycles)
@@ -295,6 +311,7 @@ class Chunk(object):
                 if block_name != "":
                     chunk_data[block_pos] = block_name
 
+        # If the structure has already been pre-generated and saved in another chunk, don't generate it again
         if (x, y) in Structure.instances:
             for structure in Structure.instances[(x, y)]:
                 for block_pos, block_name in structure.blocks_in_chunk[(x, y)].items():
@@ -321,22 +338,22 @@ class Chunk(object):
                 chunk_data = generate_structures(x, y, chunk_data, "diorite", (2, 14))
                 chunk_data = generate_structures(x, y, chunk_data, "andesite", (2, 14))
 
-        # print(time.time() - start)
-
         return chunk_data
 
-def get_structures(x: int, y: int, chunk_data: tuple, generator: StructureGenerator, chance: tuple) -> list:
+def get_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerator, chance: tuple) -> list:
     """Get structures inside the current chunk (x, y)
 
     Args:
         x (int): chunk position x
         y (int): chunk position y
-        generator (StructureGenerator): structure object to generate
+        chunk_data (dict): dictionary containing the block data of the current chunk
+        generator (StructureGenerator): structure generator object to use to generate
         chance (tuple): the odds of the structure generating, (number-of-structure-possible-per-chunk, odds-off-the-structure-generating-per-block-in-chunk)
 
     Returns:
-        list: a list containing the block data of the structures in the chunk
+        list: a list containing the block data of each of the structures in the chunk
     """
+
     out = []
     seed(SEED + canter_pairing((x, y)) + ascii_str_sum(generator.name))
     for _ in range(chance[0]):
@@ -368,13 +385,14 @@ def generate_structures(x: int, y: int, chunk_data: dict, name: str, chance: tup
     Args:
         x (int): chunk position x
         y (int): chunk position y
-        chunk_data (dict): original chunk data
-        generator (StructureGenerator): the structure object to generate
+        chunk_data (dict): block data of the current chunk
+        generator (StructureGenerator): the structure generator object to use to generate
         chance (tuple): the odds of the structure generating, (number-of-structure-possible-per-chunk, odds-of-a-chunk-containing-the-structure)
 
     Returns:
         dict: the chunk data with the structure
     """
+
     generator = structure_generators[name]
     # Check all chunks around the current chunk within the size limit of the structure
     for ox in range(-generator.chunks_to_check[0], generator.chunks_to_check[0] + 1):
@@ -389,6 +407,7 @@ def generate_structures(x: int, y: int, chunk_data: dict, name: str, chance: tup
 
     return chunk_data
 
+# Since simplex noise here is generated with a function making use of numpy arrays, cache improves performance
 @cache
 def terrain_generate(x: int) -> float:
     """Takes the x position of a block and returns the height it has to be at"""
@@ -401,8 +420,10 @@ def cave_generate(coords: tuple) -> float:
     noise_height = int(pow(noise_height * 255, 0.9))
     return noise_height
 
-def generate_block(x, y):
+def generate_block(x: int, y: int) -> str:
+    """Gets the name of the block that would generate (apart from structures) at the given location"""
     seed(canter_pairing((x, y)))
+    
     # Cave noise map
     cave_noise_map_coords = (x/70, y/70)
     # Don't generate blocks if it satifies a certain range of values in the cave noise map, AKA a cave
