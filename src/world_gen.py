@@ -610,7 +610,6 @@ def load_structures() -> dict:
                             # which would be passed and there would be no entry in the blocks list.
                             # However if there is an entry in the legend the else block will be run.
                             legends[structure[y][x]]
-
                         except: pass
                         else:
                             # Makes an entry in blocks.
