@@ -1,9 +1,10 @@
 from pygame import Surface
+from random import randint
 import pygame
 import time
 
+from src.constants import VEC, BLOCK_SIZE, GRAVITY
 from src.utils import inttup
-from src.constants import *
 
 class Particle(pygame.sprite.Sprite):
     """Class that handles the management, updation and drawing of particles."""

@@ -10,7 +10,7 @@ from os import listdir
 from math import ceil
 import numpy as np
 
-from src.constants import CHUNK_SIZE, BLOCK_SIZE, SEED, WIDTH, HEIGHT, CONFLICTING_STRUCTURES
+from src.constants import CHUNK_SIZE, BLOCK_SIZE, SEED, WIDTH, HEIGHT, CONFLICTING_STRUCTURES, MAX_Y
 from src.utils import ascii_str_sum, canter_pairing, pathof
 from src.block import Block, BLOCK_DATA
 from src.player import Camera

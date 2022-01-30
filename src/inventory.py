@@ -3,9 +3,9 @@ from pygame import Surface
 import pygame
 import time
 
+from src.images import inventory_img, block_textures, hotbar_img, hotbar_selection_img
 from src.utils import inttup, create_text_box, smol_text
-from src.constants import *
-from src.images import *
+from src.constants import WIDTH, HEIGHT, SCR_DIM, VEC
 
 class Item(object):
     """Micro-class that stores metadata about items."""

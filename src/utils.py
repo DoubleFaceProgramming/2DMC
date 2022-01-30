@@ -5,13 +5,12 @@ from pygame.math import Vector2
 from pathlib import Path
 from pygame import Rect
 from typing import Any
-import cProfile
 import datetime
 import cProfile
 import pstats
 import os
 
-from src.constants import *
+from src.constants import BUNDLE_DIR, VEC, FONT20, FONT24, BLOCK_SIZE, PROFILE_DIR
 
 def pathof(file: str) -> str:
     """Gets the path to the given file that will work with exes.

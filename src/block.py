@@ -1,12 +1,13 @@
+from random import randint
 from pathlib import Path
 import pygame
 import json
 import os
 
+from src.constants import VEC, BLOCK_SIZE, CHUNK_SIZE
 from src.images import block_textures
 from src.utils import pathof, inttup
 from src.particle import Particle
-from src.constants import *
 
 # Load json block data into a dictionary
 BLOCK_DATA = {}

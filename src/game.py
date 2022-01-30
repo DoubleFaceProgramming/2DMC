@@ -10,12 +10,12 @@ from pygame.locals import  (
     QUIT,
 )
 
+from src.constants import SEED, WIDTH, HEIGHT, FPS, SCR_DIM, VEC, CHUNK_SIZE, BLOCK_SIZE, SPACING
 from src.world_gen import Chunk, Block, load_chunks
 from src.background import Background
 from src.utils import inttup, text
 from src.particle import Particle
 from src.player import Player
-from src.constants import *
 import src.utils as utils
 
 class Game():
