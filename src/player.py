@@ -38,7 +38,7 @@ class Player(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.size = VEC(0.225 * BLOCK_SIZE, 1.8 * BLOCK_SIZE)
         self.width, self.height = self.size.x, self.size.y
-        self.start_pos = VEC(0, 1023) * BLOCK_SIZE # Far lands: 9007199254740993 (aka 2^53)
+        self.start_pos = VEC(0, 3) * BLOCK_SIZE # Far lands: 9007199254740993 (aka 2^53)
         self.pos = VEC(self.start_pos)
         self.coords = self.pos // BLOCK_SIZE
         self.acc = VEC(0, 0)

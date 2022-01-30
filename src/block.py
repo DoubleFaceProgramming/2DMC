@@ -5,9 +5,9 @@ import json
 import os
 
 from src.constants import VEC, BLOCK_SIZE, CHUNK_SIZE
+from src.particle import BlockParticle
 from src.images import block_textures
 from src.utils import pathof, inttup
-from src.particle import Particle
 
 # Load json block data into a dictionary
 BLOCK_DATA = {}
@@ -62,7 +62,7 @@ def remove_block(chunks: dict, pos: tuple, data: dict, neighbors: dict) -> None:
     pos = inttup(pos)
     # Create a random number of particles
     for _ in range(randint(18, 26)):
-        Particle("block", VEC(pos) * BLOCK_SIZE + VEC(randint(0, BLOCK_SIZE), randint(0, BLOCK_SIZE)), master=Block.instances[pos])
+        BlockParticle(VEC(pos) * BLOCK_SIZE + VEC(randint(0, BLOCK_SIZE), randint(0, BLOCK_SIZE)), Block.instances, master=Block.instances[pos])
     chunk = (pos[0] // CHUNK_SIZE, pos[1] // CHUNK_SIZE)
     # If the block is layered, instead of removing the block completely, change that block to the next layer
     if "next_layer" in data:

@@ -5,8 +5,8 @@ import os
 
 from pygame.locals import  (
     MOUSEBUTTONDOWN, KEYDOWN,
+    K_e, K_F5, K_F9, K_F2,
     HWSURFACE, DOUBLEBUF,
-    K_e, K_F5, K_F9,
     QUIT,
 )
 
@@ -14,7 +14,7 @@ from src.constants import SEED, WIDTH, HEIGHT, FPS, SCR_DIM, VEC, CHUNK_SIZE, BL
 from src.world_gen import Chunk, Block, load_chunks
 from src.background import Background
 from src.utils import inttup, text
-from src.particle import Particle
+from src.particle import Particle, VoidFogParticle
 from src.player import Player
 import src.utils as utils
 
@@ -67,13 +67,15 @@ class Game():
                     utils.profile_bool = True
                 if event.key == K_e:
                     self.player.toggle_inventory()
+                if event.key == K_F2:
+                    VoidFogParticle(self.player.pos)
 
         # Calling relevant update functions.
         self.background.update(self.player.coords.y)
         self.rendered_chunks = load_chunks(self.player.camera)
         self.player.update(Block.instances, mouse_state, dt)
         for particle in Particle.instances:
-            particle.update(Block.instances, dt)
+            particle.update(dt)
         for chunk in self.rendered_chunks:
             Chunk.instances[chunk].update(self.player.camera)
 
