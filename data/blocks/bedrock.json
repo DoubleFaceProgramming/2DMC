@@ -2,5 +2,6 @@
     "name": "bedrock",
     "collision_box": "full",
     "bounding_box": "full",
-    "support": false
+    "support": false,
+    "unbreakable": true
 }

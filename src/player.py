@@ -316,7 +316,10 @@ class Player(pygame.sprite.Sprite):
 
         # If the block exists:
         if block_pos in Block.instances:
-            # Remove it
+            if "unbreakable" in BLOCK_DATA[Block.instances[block_pos].name]: # And the block does not have the unbreakable tag:
+                if BLOCK_DATA[Block.instances[block_pos].name]["unbreakable"]:
+                    return
+            # Remove it!
             remove_block(chunks, block_pos, Block.instances[block_pos].data, neighbors)
 
     # Please, dear god, never look at this function.
