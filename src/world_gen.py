@@ -423,13 +423,30 @@ def cave_generate(coords: tuple) -> float:
 def generate_block(x: int, y: int) -> str:
     """Gets the name of the block that would generate (apart from structures) at the given location"""
     seed(canter_pairing((x, y)))
-    
+    block_name = ""
+
+    # Generating bedrock
+    if y >= MAX_Y - 5: # If the block is within 5 blocks of bedrock level:
+        match MAX_Y - y: # Match on the block's level above bedrock
+            case 1 | 2: # If the block is 1 or 2 blocks above bedrock, ect.
+                block_name = choices(["bedrock", ""], [70, 30])[0]
+            case 3:
+                block_name = choices(["bedrock", ""], [50, 50])[0]
+            case 4:
+                block_name = choices(["bedrock", ""], [30, 70])[0]
+            case _: # If the block is within 5 blocks of bedrock but not one
+                if y >= MAX_Y: # of the above it will be either layer 5 or below
+                    block_name = "bedrock"
+
+    # If the block has been chosen (ie. is bedrock) return, else generate it
+    if block_name:
+        return block_name
+
     # Cave noise map
     cave_noise_map_coords = (x/70, y/70)
     # Don't generate blocks if it satifies a certain range of values in the cave noise map, AKA a cave
     cave_noise_map_value = cave_generate(cave_noise_map_coords)
 
-    block_name = ""
     if not (92.7 < cave_noise_map_value < 100):
         # Generate terrain
         height = terrain_generate(x)

@@ -15,7 +15,10 @@ SPACING = 24
 TERMINAL_VEL = 24
 BLOCK_SIZE = 64
 CHUNK_SIZE = 8
-SEED = randint(-2147483648, 2147483647) # Seed for structure gen testing: -1797233725
+
+# Seed for structure gen testing: -1797233725
+# Seed for low world gen (loads at 1056) testing: 1561761502
+SEED = randint(-2147483648, 2147483647)
 
 FPS = 1000
 VEC = Vector2
