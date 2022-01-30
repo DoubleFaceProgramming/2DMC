@@ -71,7 +71,7 @@ class PhysicsParticle(Particle):
         self.vel.x *= 0.93
 
 class BlockParticle(PhysicsParticle):
-    def __init__(self, pos: tuple, block: dict, master=None) -> None:
+    def __init__(self, pos: tuple, blocks: dict, master=None) -> None:
         self.master = master
         self.size = randint(6, 8)
 
@@ -80,16 +80,16 @@ class BlockParticle(PhysicsParticle):
         color = self.master.image.get_at((randint(0, BLOCK_SIZE-1), randint(0, BLOCK_SIZE-1)))
         self.image.fill(color)
 
-        self.vel = VEC(randint(-35, 35) / 10, randint(-30, 5) / 10)
         self.survive_time = randint(4, 8) / 10
-        super().__init__(pos, self.survive_time, self.image, master=master)
+        super().__init__(pos, self.survive_time, self.image, blocks, master=master)
+        self.vel = VEC(randint(-35, 35) / 10, randint(-30, 5) / 10)
 
         if color == (255, 255, 255):
             self.__class__.instances.remove(self)
             self.kill()
 
-    def update(self, dt: float, blocks: dict = {}):
-        super().update(dt, blocks)
+    def update(self, dt: float):
+        super().update(dt)
 
 class EnvironmentalParticle(Particle):
     def __init__(self, pos: tuple, survive_time: float, image: Surface, vel: tuple, master=None) -> None:
