@@ -3,7 +3,7 @@ from random import randint
 import pygame
 import time
 
-from src.constants import VEC, BLOCK_SIZE, GRAVITY
+from src.constants import VEC, BLOCK_SIZE, GRAVITY, WIDTH, HEIGHT
 from src.utils import inttup
 
 class Particle(pygame.sprite.Sprite):
@@ -26,7 +26,6 @@ class Particle(pygame.sprite.Sprite):
     def update(self, dt: float) -> None:
         # If the particle's lifetime is greater than its intended lifetime, commit die
         if time.time() - self.start_time > self.survive_time:
-            self.__class__.instances.remove(self)
             self.kill()
 
         self.pos += self.vel * dt
@@ -35,9 +34,14 @@ class Particle(pygame.sprite.Sprite):
     def draw(self, camera, screen: Surface):
         screen.blit(self.image, (self.pos-camera.pos-VEC(self.image.get_size())/2))
 
+    def kill(self) -> None:
+        super().kill()
+        self.__class__.instances.remove(self)
+
 class PhysicsParticle(Particle):
-    def __init__(self, pos: tuple, survive_time: float, image: Surface, blocks: dict, master=None) -> None:
+    def __init__(self, pos: tuple, vel: tuple, survive_time: float, image: Surface, blocks: dict, master=None) -> None:
         self.blocks = blocks
+        self.vel = vel
         super().__init__(pos, survive_time, image, master)
 
     def update(self, dt: float) -> None:
@@ -70,8 +74,18 @@ class PhysicsParticle(Particle):
         # X-velocity gets decreased over time
         self.vel.x *= 0.93
 
+class EnvironmentalParticle(Particle):
+    def __init__(self, pos: tuple, vel: tuple, survive_time: float, image: Surface, master=None) -> None:
+        super().__init__(pos, survive_time, image, master)
+        self.vel = VEC(vel)
+
+    def update(self, dt: float):
+        super().update(dt)
+        # if not (0 < self.pos[0] < WIDTH and 0 < self.pos[1] < HEIGHT):
+        #     self.kill()
+
 class BlockParticle(PhysicsParticle):
-    def __init__(self, pos: tuple, block: dict, master=None) -> None:
+    def __init__(self, pos: tuple, blocks: dict, master=None) -> None:
         self.master = master
         self.size = randint(6, 8)
 
@@ -80,25 +94,15 @@ class BlockParticle(PhysicsParticle):
         color = self.master.image.get_at((randint(0, BLOCK_SIZE-1), randint(0, BLOCK_SIZE-1)))
         self.image.fill(color)
 
-        self.vel = VEC(randint(-35, 35) / 10, randint(-30, 5) / 10)
         self.survive_time = randint(4, 8) / 10
-        super().__init__(pos, self.survive_time, self.image, master=master)
+        super().__init__(pos, (randint(-35, 35) / 10, randint(-30, 5) / 10), self.survive_time, self.image, blocks, master=master)
 
         if color == (255, 255, 255):
-            self.__class__.instances.remove(self)
             self.kill()
-
-    def update(self, dt: float, blocks: dict = {}):
-        super().update(dt, blocks)
-
-class EnvironmentalParticle(Particle):
-    def __init__(self, pos: tuple, survive_time: float, image: Surface, vel: tuple, master=None) -> None:
-        super().__init__(pos, survive_time, image, master)
-        self.vel = VEC(vel)
 
 class VoidFogParticle(EnvironmentalParticle):
     max_speed = 30
-    
+
     def __init__(self, pos: tuple) -> None:
         self.survive_time = randint(6, 10) / 10
         self.pos = pos
@@ -106,4 +110,4 @@ class VoidFogParticle(EnvironmentalParticle):
         self.image = pygame.Surface((self.size, self.size))
         self.image.fill(Color((randint(50, 100), ) * 3))
         self.vel = VEC(randint(-(ms := self.__class__.max_speed), ms) / 10, randint(-ms, ms) / 10)
-        super().__init__(pos, self.survive_time, self.image, self.vel)
+        super().__init__(pos, self.vel, self.survive_time, self.image, self.vel)

@@ -71,7 +71,7 @@ class Game():
                     VoidFogParticle(self.player.pos)
 
         # Calling relevant update functions.
-        self.background.update(self.player.coords.y)
+        self.background.update(self.player.coords.y, dt)
         self.rendered_chunks = load_chunks(self.player.camera)
         self.player.update(Block.instances, mouse_state, dt)
         for particle in Particle.instances:
@@ -81,7 +81,7 @@ class Game():
 
     def draw(self, screen, mpos) -> None:
         # Clears the frame + also drawing the sky
-        self.background.draw(screen)
+        self.background.draw(screen, self.player.camera)
 
         # Calling relevant draw functions.
         for chunk in self.rendered_chunks:
