@@ -67,8 +67,6 @@ class Game():
                     utils.profile_bool = True
                 if event.key == K_e:
                     self.player.toggle_inventory()
-                if event.key == K_F2:
-                    VoidFogParticle(self.player.pos)
 
         # Calling relevant update functions.
         self.background.update(self.player.coords.y)
