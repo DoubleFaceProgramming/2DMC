@@ -1,0 +1,15 @@
+{
+    "attempts_per_chunk": 1,
+    "ranges": [
+        {
+            "range": [32, 64],
+            "rarity": 22,
+            "rslope": 1
+        },
+        {
+            "range": [64, 96],
+            "rarity": 22,
+            "rslope": -1
+        }
+    ]
+}
