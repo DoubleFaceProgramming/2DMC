@@ -318,26 +318,29 @@ class Chunk(object):
                     chunk_data[block_pos] = block_name
         else:
             MAX_Y_CHUNK = MAX_Y // 2 // CHUNK_SIZE
+            deepslate = "deepslate_" if y >= MAX_Y_CHUNK else ""
             if -1 <= y <= 1: # Surface generations
                 chunk_data = generate_structures(x, y, chunk_data, "oak_tree", (1, 2))
                 chunk_data = generate_structures(x, y, chunk_data, "tall_grass", (4, 3))
-            if MAX_Y_CHUNK > y >= 0: # Everywhere underground above y-512
-                chunk_data = generate_structures(x, y, chunk_data, "coal_ore", (2, 15))
-                chunk_data = generate_structures(x, y, chunk_data, "iron_ore", (2, 18))
-            if MAX_Y_CHUNK > y >= 5: # Lower than y-40 above y-512
-                chunk_data = generate_structures(x, y, chunk_data, "gold_ore", (1, 16))
-            if MAX_Y_CHUNK > y >= 7: # Lower than y-56 above y-512
-                chunk_data = generate_structures(x, y, chunk_data, "lapis_lazuli_ore", (1, 22))
-            if MAX_Y_CHUNK > y >= 10: # Lower than y-80 above y-512
-                chunk_data = generate_structures(x, y, chunk_data, "redstone_ore", (2, 14))
-            if MAX_Y_CHUNK > y >= 16: # Lower than y-128 above y-512
-                chunk_data = generate_structures(x, y, chunk_data, "diamond_ore", (1, 32))
-            if MAX_Y_CHUNK > y >= 20: # Lower than y-160 above y-512
-                chunk_data = generate_structures(x, y, chunk_data, "emerald_ore", (1, 32))
+            if y >= 0: # Everywhere underground above y-512
+                chunk_data = generate_structures(x, y, chunk_data, deepslate + "coal_ore", (2, 15))
+                chunk_data = generate_structures(x, y, chunk_data, deepslate + "iron_ore", (2, 18))
+            if y >= 5: # Lower than y-40 above y-512
+                chunk_data = generate_structures(x, y, chunk_data, deepslate + "gold_ore", (1, 16))
+            if y >= 7: # Lower than y-56 above y-512
+                chunk_data = generate_structures(x, y, chunk_data, deepslate + "lapis_ore", (1, 22))
+            if y >= 10: # Lower than y-80 above y-512
+                chunk_data = generate_structures(x, y, chunk_data, deepslate + "redstone_ore", (2, 14))
+            if y >= 16: # Lower than y-128 above y-512
+                chunk_data = generate_structures(x, y, chunk_data, deepslate + "diamond_ore", (1, 32))
+            if y >= 20: # Lower than y-160 above y-512
+                chunk_data = generate_structures(x, y, chunk_data, deepslate + "emerald_ore", (1, 32))
             if MAX_Y_CHUNK > y >= 0: # Everywhere underground above y-512
                 chunk_data = generate_structures(x, y, chunk_data, "granite", (2, 14))
                 chunk_data = generate_structures(x, y, chunk_data, "diorite", (2, 14))
                 chunk_data = generate_structures(x, y, chunk_data, "andesite", (2, 14))
+            elif y >= MAX_Y_CHUNK:
+                chunk_data = generate_structures(x, y, chunk_data, "tuff", (2, 8))
 
         return chunk_data
 
@@ -463,6 +466,7 @@ def generate_block(x: int, y: int) -> str:
     if block_name:
         return block_name
 
+    # Generate the layer of blended deepslate underneath stone
     block_name = blended_blocks_generate(y, "deepslate", MAX_Y // 2, block2="stone")
 
     # Cave noise map
@@ -471,8 +475,9 @@ def generate_block(x: int, y: int) -> str:
     cave_noise_map_value = cave_generate(cave_noise_map_coords)
 
     if not (92.7 < cave_noise_map_value < 100):
-        # Generate terrain
+        # Height of the terrain
         height = terrain_generate(x)
+        # The lowest height of dirt
         dirt_height = -int(height[0] * 3.2) + 10
         if y == height[1]:
             block_name = "grass_block"
@@ -681,7 +686,8 @@ major_structure_generators = {
     "oak_tree": StructureGenerator("oak_tree"),
     "granite": BlobGenerator("granite", (10, 10), 5, 3, obstruction=True),
     "diorite": BlobGenerator("diorite", (10, 10), 5, 3, obstruction=True),
-    "andesite": BlobGenerator("andesite", (10, 10), 5, 3, obstruction=True)
+    "andesite": BlobGenerator("andesite", (10, 10), 5, 3, obstruction=True),
+    "tuff": BlobGenerator("tuff", (10, 10), 5, 3, obstruction=True)
 }
 # Minor structures means structure that have smaller chunk spans therefore needs to increase it's chunk span to match the major structures
 minor_structure_generators = {
@@ -689,9 +695,16 @@ minor_structure_generators = {
     "coal_ore": BlobGenerator("coal_ore", (8, 4), 4, 2),
     "iron_ore": BlobGenerator("iron_ore", (3, 4), 4, 1),
     "gold_ore": BlobGenerator("gold_ore", (3, 3), 4, 1),
-    "lapis_lazuli_ore": BlobGenerator("lapis_lazuli_ore", (3, 3), 4, 1),
+    "lapis_ore": BlobGenerator("lapis_ore", (3, 3), 4, 1),
     "redstone_ore": BlobGenerator("redstone_ore", (3, 3), 4, 1),
     "diamond_ore": BlobGenerator("diamond_ore", (3, 3), 4, 1),
-    "emerald_ore": BlobGenerator("emerald_ore", (2, 2), 1, 1)
+    "emerald_ore": BlobGenerator("emerald_ore", (2, 2), 1, 1),
+    "deepslate_coal_ore": BlobGenerator("deepslate_coal_ore", (8, 4), 4, 2),
+    "deepslate_iron_ore": BlobGenerator("deepslate_iron_ore", (3, 4), 4, 1),
+    "deepslate_gold_ore": BlobGenerator("deepslate_gold_ore", (3, 3), 4, 1),
+    "deepslate_lapis_ore": BlobGenerator("deepslate_lapis_ore", (3, 3), 4, 1),
+    "deepslate_redstone_ore": BlobGenerator("deepslate_redstone_ore", (3, 3), 4, 1),
+    "deepslate_diamond_ore": BlobGenerator("deepslate_diamond_ore", (3, 3), 4, 1),
+    "deepslate_emerald_ore": BlobGenerator("deepslate_emerald_ore", (2, 2), 1, 1),
 }
 structure_generators = {**major_structure_generators, **minor_structure_generators}

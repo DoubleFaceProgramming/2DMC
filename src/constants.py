@@ -33,5 +33,6 @@ FONT20 = Font(REGULAR_FONT_LOC, 20)
 
 CONFLICTING_STRUCTURES = {
     ("oak_tree", ): ["tall_grass"],
-    ("granite", "diorite", "andesite"): ["coal_ore", "iron_ore", "lapis_lazuli_ore", "gold_ore", "redstone_ore", "diamond_ore", "emerald_ore"]
+    ("granite", "diorite", "andesite"): ["coal_ore", "iron_ore", "lapis_ore", "gold_ore", "redstone_ore", "diamond_ore", "emerald_ore"],
+    ("tuff", ): ["deepslate_coal_ore", "deepslate_iron_ore", "deepslate_lapis_ore", "deepslate_gold_ore", "deepslate_redstone_ore", "deepslate_diamond_ore", "deepslate_emerald_ore"]
 }

@@ -89,7 +89,7 @@ class Player(pygame.sprite.Sprite):
         self.inventory += "coal_ore"
         self.inventory += "iron_ore"
         self.inventory += "gold_ore"
-        self.inventory += "lapis_lazuli_ore"
+        self.inventory += "lapis_ore"
         self.inventory += "redstone_ore"
         self.inventory += "diamond_ore"
         self.inventory += "emerald_ore"
