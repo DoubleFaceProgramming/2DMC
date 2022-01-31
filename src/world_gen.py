@@ -317,8 +317,10 @@ class Chunk(object):
                 for block_pos, block_name in structure.blocks_in_chunk[(x, y)].items():
                     chunk_data[block_pos] = block_name
         else:
-            MAX_Y_CHUNK = MAX_Y // 2 // CHUNK_SIZE
-            deepslate = "deepslate_" if y >= MAX_Y_CHUNK else ""
+            HALF_MAX_Y_CHUNK = MAX_Y // 2 // CHUNK_SIZE
+            deepslate = "deepslate_" if y >= HALF_MAX_Y_CHUNK - 1 else ""
+            if y == HALF_MAX_Y_CHUNK - 1:
+                deepslate = "deepslate_" if randint(0, 1) else ""
             if -1 <= y <= 1: # Surface generations
                 chunk_data = generate_structures(x, y, chunk_data, "oak_tree", (1, 2))
                 chunk_data = generate_structures(x, y, chunk_data, "tall_grass", (4, 3))
@@ -335,11 +337,11 @@ class Chunk(object):
                 chunk_data = generate_structures(x, y, chunk_data, deepslate + "diamond_ore", (1, 32))
             if y >= 20: # Lower than y-160 above y-512
                 chunk_data = generate_structures(x, y, chunk_data, deepslate + "emerald_ore", (1, 32))
-            if MAX_Y_CHUNK > y >= 0: # Everywhere underground above y-512
+            if HALF_MAX_Y_CHUNK > y >= 0: # Everywhere underground above y-512
                 chunk_data = generate_structures(x, y, chunk_data, "granite", (2, 14))
                 chunk_data = generate_structures(x, y, chunk_data, "diorite", (2, 14))
                 chunk_data = generate_structures(x, y, chunk_data, "andesite", (2, 14))
-            elif y >= MAX_Y_CHUNK:
+            elif y >= HALF_MAX_Y_CHUNK:
                 chunk_data = generate_structures(x, y, chunk_data, "tuff", (2, 8))
 
         return chunk_data
