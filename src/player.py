@@ -93,6 +93,8 @@ class Player(pygame.sprite.Sprite):
         self.inventory += "redstone_ore"
         self.inventory += "diamond_ore"
         self.inventory += "emerald_ore"
+        self.inventory += "deepslate"
+        self.inventory += "cobbled_deepslate"
 
     def update(self, blocks: dict, m_state: int, dt: float) -> None:
         self.camera.update(dt)

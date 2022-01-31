@@ -317,23 +317,24 @@ class Chunk(object):
                 for block_pos, block_name in structure.blocks_in_chunk[(x, y)].items():
                     chunk_data[block_pos] = block_name
         else:
+            MAX_Y_CHUNK = MAX_Y // 2 // CHUNK_SIZE
             if -1 <= y <= 1: # Surface generations
                 chunk_data = generate_structures(x, y, chunk_data, "oak_tree", (1, 2))
                 chunk_data = generate_structures(x, y, chunk_data, "tall_grass", (4, 3))
-            if y >= 0: # Everywhere underground
+            if MAX_Y_CHUNK > y >= 0: # Everywhere underground above y-512
                 chunk_data = generate_structures(x, y, chunk_data, "coal_ore", (2, 15))
                 chunk_data = generate_structures(x, y, chunk_data, "iron_ore", (2, 18))
-            if y >= 5: # Lower than y-40
+            if MAX_Y_CHUNK > y >= 5: # Lower than y-40 above y-512
                 chunk_data = generate_structures(x, y, chunk_data, "gold_ore", (1, 16))
-            if y >= 7: # Lower than y-56
+            if MAX_Y_CHUNK > y >= 7: # Lower than y-56 above y-512
                 chunk_data = generate_structures(x, y, chunk_data, "lapis_lazuli_ore", (1, 22))
-            if y >= 10: # Lower than y-80
+            if MAX_Y_CHUNK > y >= 10: # Lower than y-80 above y-512
                 chunk_data = generate_structures(x, y, chunk_data, "redstone_ore", (2, 14))
-            if y >= 16: # Lower than y-128
+            if MAX_Y_CHUNK > y >= 16: # Lower than y-128 above y-512
                 chunk_data = generate_structures(x, y, chunk_data, "diamond_ore", (1, 32))
-            if y >= 20: # Lower than y-160
+            if MAX_Y_CHUNK > y >= 20: # Lower than y-160 above y-512
                 chunk_data = generate_structures(x, y, chunk_data, "emerald_ore", (1, 32))
-            if y >= 0: # Everywhere underground
+            if MAX_Y_CHUNK > y >= 0: # Everywhere underground above y-512
                 chunk_data = generate_structures(x, y, chunk_data, "granite", (2, 14))
                 chunk_data = generate_structures(x, y, chunk_data, "diorite", (2, 14))
                 chunk_data = generate_structures(x, y, chunk_data, "andesite", (2, 14))
@@ -410,7 +411,7 @@ def generate_structures(x: int, y: int, chunk_data: dict, name: str, chance: tup
 # Since simplex noise here is generated with a function making use of numpy arrays, cache improves performance
 @cache
 def terrain_generate(x: int) -> tuple[float, float]:
-    """Takes the x position of a block and returns the height it has to be at"""
+    """Takes the x position of a block and returns the result of the simplex noise and also the height it has to generate at"""
     simplex_noise_height = snoise.noise2array(np.array([x * 0.1]), np.array([0]))
     return simplex_noise_height, -int(simplex_noise_height * 5) + 5
 
@@ -462,6 +463,8 @@ def generate_block(x: int, y: int) -> str:
     if block_name:
         return block_name
 
+    block_name = blended_blocks_generate(y, "deepslate", MAX_Y // 2, block2="stone")
+
     # Cave noise map
     cave_noise_map_coords = (x / 70, y / 70)
     # Don't generate blocks if it satifies a certain range of values in the cave noise map, AKA a cave
@@ -475,14 +478,18 @@ def generate_block(x: int, y: int) -> str:
             block_name = "grass_block"
         elif height[1] + 1 <= y < dirt_height:
             block_name = "dirt"
-        elif y >= dirt_height:
+        elif MAX_Y // 2 - 4 > y >= dirt_height:
             block_name = "stone"
+        elif y >= MAX_Y // 2:
+            block_name = "deepslate"
         if y == height[1] - 1:
             if not (92.7 < cave_generate((x / 70, (y + 1) / 70)) < 100):
                 if not randint(0, 2):
                     block_name = "grass"
                 if not randint(0, 21):
                     block_name = choices(["poppy", "dandelion"], weights=[1, 2])[0]
+    else:
+        block_name = ""
 
     return block_name
 
