@@ -369,7 +369,7 @@ def get_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerat
                 # Generate on the surface of the world
                 start_y = terrain_generate(start_x)[1] - 1
                 # If it is cut off by a cave, don't generate
-                if (92.7 < cave_generate((start_x / 70, start_y / 70)) < 100) or (92.7 < cave_generate((start_x / 70, (start_y + 1) / 70)) < 100):
+                if (92.7 < cave_generate((start_x / 70, start_y / 70)) < 103) or (92.7 < cave_generate((start_x / 70, (start_y + 1) / 70)) < 103):
                     return out
             else:
                 start_y = y * CHUNK_SIZE + randrange(0, CHUNK_SIZE)
@@ -476,7 +476,7 @@ def generate_block(x: int, y: int) -> str:
     # Don't generate blocks if it satifies a certain range of values in the cave noise map, AKA a cave
     cave_noise_map_value = cave_generate(cave_noise_map_coords)
 
-    if not (92.7 < cave_noise_map_value < 100):
+    if not (92.7 < cave_noise_map_value < 103):
         # Height of the terrain
         height = terrain_generate(x)
         # The lowest height of dirt
@@ -490,7 +490,7 @@ def generate_block(x: int, y: int) -> str:
         elif y >= MAX_Y // 2:
             block_name = "deepslate"
         if y == height[1] - 1:
-            if not (92.7 < cave_generate((x / 70, (y + 1) / 70)) < 100):
+            if not (92.7 < cave_generate((x / 70, (y + 1) / 70)) < 103):
                 if not randint(0, 2):
                     block_name = "grass"
                 if not randint(0, 21):
