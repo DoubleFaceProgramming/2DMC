@@ -317,31 +317,32 @@ class Chunk(object):
                 for block_pos, block_name in structure.blocks_in_chunk[(x, y)].items():
                     chunk_data[block_pos] = block_name
         else:
-            HALF_MAX_Y_CHUNK = MAX_Y // 2 // CHUNK_SIZE
+            MAX_Y_CHUNK = MAX_Y // CHUNK_SIZE
+            HALF_MAX_Y_CHUNK = MAX_Y_CHUNK // 2
             deepslate = "deepslate_" if y >= HALF_MAX_Y_CHUNK - 1 else ""
             if y == HALF_MAX_Y_CHUNK - 1:
                 deepslate = "deepslate_" if randint(0, 1) else ""
             if -1 <= y <= 1: # Surface generations
                 chunk_data = generate_structures(x, y, chunk_data, "oak_tree", (1, 2))
                 chunk_data = generate_structures(x, y, chunk_data, "tall_grass", (4, 3))
-            if y >= 0: # Everywhere underground above y-512
+            if MAX_Y_CHUNK >= y >= 0: # Everywhere underground above y-512
                 chunk_data = generate_structures(x, y, chunk_data, deepslate + "coal_ore", (2, 15))
                 chunk_data = generate_structures(x, y, chunk_data, deepslate + "iron_ore", (2, 18))
-            if y >= 5: # Lower than y-40 above y-512
+            if MAX_Y_CHUNK >= y >= 5: # Lower than y-40 above y-512
                 chunk_data = generate_structures(x, y, chunk_data, deepslate + "gold_ore", (1, 16))
-            if y >= 7: # Lower than y-56 above y-512
+            if MAX_Y_CHUNK >= y >= 7: # Lower than y-56 above y-512
                 chunk_data = generate_structures(x, y, chunk_data, deepslate + "lapis_ore", (1, 22))
-            if y >= 10: # Lower than y-80 above y-512
+            if MAX_Y_CHUNK >= y >= 10: # Lower than y-80 above y-512
                 chunk_data = generate_structures(x, y, chunk_data, deepslate + "redstone_ore", (2, 14))
-            if y >= 16: # Lower than y-128 above y-512
+            if MAX_Y_CHUNK >= y >= 16: # Lower than y-128 above y-512
                 chunk_data = generate_structures(x, y, chunk_data, deepslate + "diamond_ore", (1, 32))
-            if y >= 20: # Lower than y-160 above y-512
+            if MAX_Y_CHUNK >= y >= 20: # Lower than y-160 above y-512
                 chunk_data = generate_structures(x, y, chunk_data, deepslate + "emerald_ore", (1, 32))
             if HALF_MAX_Y_CHUNK > y >= 0: # Everywhere underground above y-512
                 chunk_data = generate_structures(x, y, chunk_data, "granite", (2, 14))
                 chunk_data = generate_structures(x, y, chunk_data, "diorite", (2, 14))
                 chunk_data = generate_structures(x, y, chunk_data, "andesite", (2, 14))
-            elif y >= HALF_MAX_Y_CHUNK:
+            elif MAX_Y_CHUNK >= y >= HALF_MAX_Y_CHUNK:
                 chunk_data = generate_structures(x, y, chunk_data, "tuff", (2, 8))
 
         return chunk_data
