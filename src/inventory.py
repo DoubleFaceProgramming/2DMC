@@ -3,7 +3,7 @@ from pygame import Surface
 import pygame
 import time
 
-from src.images import inventory_img, block_textures, hotbar_img, hotbar_selection_img
+from src.images import inventory_img, BLOCK_TEXTURES, hotbar_img, hotbar_selection_img
 from src.utils import inttup, create_text_box, smol_text
 from src.constants import WIDTH, HEIGHT, SCR_DIM, VEC
 
@@ -97,7 +97,7 @@ class Inventory(object):
 
             # Display the item images in the correct slots
             for slot in self.items:
-                item_img = pygame.transform.scale(block_textures[self.items[slot].name], self.slot_size)
+                item_img = pygame.transform.scale(BLOCK_TEXTURES[self.items[slot].name], self.slot_size)
                 if slot[1]:
                     screen.blit(item_img, self.slot_start+VEC(slot[0]*(self.slot_size[0]+5), (slot[1]-1)*(self.slot_size[1]+5)))
                 else:
@@ -114,7 +114,7 @@ class Inventory(object):
 
             # Display the item that is picked up but slightly smaller by a factor of 0.9
             if self.selected:
-                screen.blit(pygame.transform.scale(block_textures[self.selected.name], inttup(VEC(self.slot_size)*0.9)), VEC(pygame.mouse.get_pos())-VEC(self.slot_size)*0.45)
+                screen.blit(pygame.transform.scale(BLOCK_TEXTURES[self.selected.name], inttup(VEC(self.slot_size)*0.9)), VEC(pygame.mouse.get_pos())-VEC(self.slot_size)*0.45)
 
             # Draw the textbox of the item that is being hovered over
             if self.hovering in self.items:
@@ -234,7 +234,7 @@ class Hotbar(object):
 
         # Drawing the item texture onto the hotbar slot
         for slot in self.items:
-            item_img = pygame.transform.scale(block_textures[self.items[slot].name], self.slot_size)
+            item_img = pygame.transform.scale(BLOCK_TEXTURES[self.items[slot].name], self.slot_size)
             screen.blit(item_img, self.slot_start + VEC(8, 0) + VEC(slot * (self.slot_size[0] + 10), 8))
 
         # If it has been 3 seconds since self.fade_timer has been reset:

@@ -4,15 +4,11 @@ import pygame
 import json
 import os
 
-from src.constants import VEC, BLOCK_SIZE, CHUNK_SIZE
+from src.constants import VEC, BLOCK_SIZE, CHUNK_SIZE, BLOCK_DATA
 from src.particle import BlockParticle
-from src.images import block_textures
-from src.utils import pathof, inttup
-
-# Load json block data into a dictionary
-BLOCK_DATA = {}
-for file in os.listdir(pathof("data/blocks/")):
-    BLOCK_DATA[Path(file).stem] = json.loads(open(os.path.join(pathof("data/blocks/"), file), "r").read())
+from src.images import BLOCK_TEXTURES
+from src.utils import inttup
+from build.exe_comp import pathof
 
 class Block(pygame.sprite.Sprite):
     """Class that handles the managaing, updating and drawing of blocks."""
@@ -32,7 +28,7 @@ class Block(pygame.sprite.Sprite):
             "-1 0": inttup((self.coords.x-1, self.coords.y)),
             "1 0": inttup((self.coords.x+1, self.coords.y))
         }
-        self.image = block_textures[self.name]
+        self.image = BLOCK_TEXTURES[self.name]
 
         # Different hitbox types (currently only two)
         if self.data["collision_box"] == "full":

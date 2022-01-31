@@ -27,7 +27,7 @@ Co-contributor: onlyTr3v0r, thank you for supporting this project!
 
 Thank you to Griffpatch for the original creation of Paper Minecraft!
 
-Structure generation code is based heavily on this answer from Megalng: <https://stackoverflow.com/questions/67557147/how-to-generate-trees-or-other-structures-over-chunks-in-a-2d-minecraft-like-game>
+Structure generation code is based heavily on this answer from Megalng: <https://stackoverflow.com/questions/67557147/how-to-generate-trees-or-other-STRUCTURES-over-chunks-in-a-2d-minecraft-like-game>
 
 Got ideas from this answer from Rabbid76 in solving a weird glitch (solved now): <https://stackoverflow.com/questions/67419774/falling-left-and-right-inconsistencies-in-pygame-platformer>
 

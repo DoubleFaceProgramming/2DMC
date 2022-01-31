@@ -10,22 +10,8 @@ import cProfile
 import pstats
 import os
 
-from src.constants import BUNDLE_DIR, VEC, FONT20, FONT24, BLOCK_SIZE, PROFILE_DIR
-
-def pathof(file: str) -> str:
-    """Gets the path to the given file that will work with exes.
-
-    Args:
-        file (str): The original path to go to
-
-    Returns:
-        str: The bundled - exe compatible file path
-    """
-
-    abspath = os.path.abspath(os.path.join(BUNDLE_DIR, file))
-    if not os.path.exists(abspath):
-        abspath = file
-    return abspath
+from src.constants import VEC, FONT20, FONT24, BLOCK_SIZE, PROFILE_DIR
+from build.exe_comp import BUNDLE_DIR
 
 def intv(vector: Vector2) -> Vector2:
     """Returns vector where x and y are integers"""

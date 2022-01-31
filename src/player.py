@@ -4,10 +4,10 @@ from pygame import Surface, Rect
 from pygame.math import Vector2
 import pygame
 
-from src.block import Block, BLOCK_DATA, remove_block, is_placeable, set_block, inttup
+from src.block import Block, remove_block, is_placeable, set_block, inttup
 from src.utils import block_collide, text
 from src.inventory import Inventory
-from src.constants import MAX_Y, SCR_DIM, SLIDE, GRAVITY, TERMINAL_VEL, CHUNK_SIZE
+from src.constants import MAX_Y, SCR_DIM, SLIDE, GRAVITY, TERMINAL_VEL, CHUNK_SIZE, BLOCK_DATA
 from src.images import *
 
 class Camera(pygame.sprite.Sprite):

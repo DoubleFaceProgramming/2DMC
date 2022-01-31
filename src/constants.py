@@ -1,8 +1,9 @@
 from pygame.font import Font, init
 from pygame.math import Vector2
 from random import randint
-import sys
-import os
+
+from src.parsing import load_block_data, load_structures
+import build.exe_comp as exe
 
 init()
 
@@ -23,13 +24,13 @@ SEED = randint(-2147483648, 2147483647)
 FPS = 1000
 VEC = Vector2
 
-BUNDLE_DIR = getattr(sys, '_MEIPASS', os.path.abspath(os.path.dirname(__file__)))
-REGULAR_FONT_LOC = os.path.abspath(os.path.join(BUNDLE_DIR, "assets/fonts/regular.ttf"))
-if not os.path.exists(REGULAR_FONT_LOC):
-    REGULAR_FONT_LOC = os.path.abspath(os.path.join(BUNDLE_DIR, "../assets/fonts/regular.ttf"))
-PROFILE_DIR = "build\profiles\\"
+REGULAR_FONT_LOC = exe.pathof("assets/fonts/regular.ttf")
+PROFILE_DIR = exe.pathof("build\\profiles\\")
 FONT24 = Font(REGULAR_FONT_LOC, 24)
 FONT20 = Font(REGULAR_FONT_LOC, 20)
+
+BLOCK_DATA = load_block_data()
+STRUCTURES = load_structures()
 
 CONFLICTING_STRUCTURES = {
     ("oak_tree", ): ["tall_grass"],

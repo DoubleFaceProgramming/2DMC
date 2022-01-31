@@ -4,7 +4,7 @@ import pygame
 import os
 
 from src.constants import VEC, BLOCK_SIZE
-from src.utils import pathof
+from build.exe_comp import pathof
 
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (50, 50)
 pygame.init()
@@ -44,10 +44,9 @@ hotbar_img = pygame.transform.scale(hotbar_img, (int(hotbar_img.get_width()*2.5)
 hotbar_selection_img = pygame.image.load(pathof("assets/textures/gui/hotbar_selection.png")).convert_alpha()
 hotbar_selection_img = pygame.transform.scale(hotbar_selection_img, (int(hotbar_selection_img.get_width()*2.5), int(hotbar_selection_img.get_height()*2.5)))
 
-# Load block textures
-block_textures = {}
+BLOCK_TEXTURES = {}
 for img in os.listdir(pathof("assets/textures/blocks/")):
-    block_textures[Path(img).stem] = pygame.image.load(os.path.join(pathof("assets/textures/blocks/"), img)).convert()
-for image in block_textures:
-    block_textures[image] = pygame.transform.scale(block_textures[image], (BLOCK_SIZE, BLOCK_SIZE))
-    block_textures[image].set_colorkey((255, 255, 255))
+    BLOCK_TEXTURES[Path(img).stem] = pygame.image.load(os.path.join(pathof("assets/textures/blocks/"), img)).convert()
+for image in BLOCK_TEXTURES:
+    BLOCK_TEXTURES[image] = pygame.transform.scale(BLOCK_TEXTURES[image], (BLOCK_SIZE, BLOCK_SIZE))
+    BLOCK_TEXTURES[image].set_colorkey((255, 255, 255))

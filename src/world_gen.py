@@ -10,10 +10,11 @@ from os import listdir
 from math import ceil
 import numpy as np
 
-from src.constants import CHUNK_SIZE, BLOCK_SIZE, SEED, WIDTH, HEIGHT, CONFLICTING_STRUCTURES, MAX_Y
-from src.utils import ascii_str_sum, canter_pairing, pathof
-from src.block import Block, BLOCK_DATA
+from src.constants import CHUNK_SIZE, BLOCK_SIZE, SEED, WIDTH, HEIGHT, CONFLICTING_STRUCTURES, MAX_Y, STRUCTURES, BLOCK_DATA
+from src.utils import ascii_str_sum, canter_pairing
+from src.block import Block
 from src.player import Camera
+from build.exe_comp import pathof
 
 seed(SEED)
 snoise = OpenSimplex(seed=SEED)
@@ -38,13 +39,13 @@ class Structure(object):
             self.blocks_in_chunk[chunk][block_pos] = block_name
 
 class StructureGenerator(object):
-    """Class that handles the generation of structures"""
+    """Class that handles the generation of STRUCTURES"""
     def __init__(self, name, obstruction=False):
         self.name = name
         self.on_surface = True
         self.obstruction = obstruction
-        self.files = structures[name]
-        self.distribution = structures[name]["distribution"]
+        self.files = STRUCTURES[name]
+        self.distribution = STRUCTURES[name]["distribution"]
         self.BLOCK_DATA = {}
 
         self.get_max_size()
@@ -55,7 +56,7 @@ class StructureGenerator(object):
         max_sizes = []
         for file in self.files:
             if file != "distribution":
-                self.BLOCK_DATA[file] = structures[self.name][file]
+                self.BLOCK_DATA[file] = STRUCTURES[self.name][file]
                 # Append the max size of all the different possible variations
                 max_sizes.append((max(x for x, _ in self.BLOCK_DATA[file][1]) - min(x for x, _ in self.BLOCK_DATA[file][1]) + 1,
                                   max(y for _, y in self.BLOCK_DATA[file][1]) - min(y for _, y in self.BLOCK_DATA[file][1]) + 1))
@@ -84,7 +85,7 @@ class StructureGenerator(object):
         """
 
         seed(SEED + canter_pairing(origin) + ascii_str_sum(self.name)) # Seeding random-ness
-        file = choices(self.distribution["files"], weights=self.distribution["weights"])[0] # Picking a random file using the files and weights generated in load_structures()
+        file = choices(self.distribution["files"], weights=self.distribution["weights"])[0] # Picking a random file using the files and weights generated in load_STRUCTURES()
         mirror = bool(randint(0, 1)) # Bool whether the structure should be flipped or not.
         block_data = {}
 
@@ -132,7 +133,7 @@ class StructureGenerator(object):
 
         # real_chunk_pos is the actual chunk position of the current block, not the chunk the structure originates from
         if (real_chunk_pos := (block_pos[0] // CHUNK_SIZE, block_pos[1] // CHUNK_SIZE)) in Structure.instances:
-            for structure in Structure.instances[real_chunk_pos]:       # Check for structures that have already been pre-generated
+            for structure in Structure.instances[real_chunk_pos]:       # Check for STRUCTURES that have already been pre-generated
                 if block_pos in structure.block_data:                   # If the current block overlaps a block in the structure
                     block_in_chunk = structure.block_data[block_pos]    # Set the block in chunk to that block in the structure
                     break
@@ -320,32 +321,32 @@ class Chunk(object):
             MAX_Y_CHUNK = MAX_Y // CHUNK_SIZE
             HALF_MAX_Y_CHUNK = MAX_Y_CHUNK // 2
             if -1 <= y <= 1: # Surface generations
-                chunk_data = generate_structures(x, y, chunk_data, "oak_tree", (1, 2))
-                chunk_data = generate_structures(x, y, chunk_data, "tall_grass", (4, 3))
+                chunk_data = generate_STRUCTURES(x, y, chunk_data, "oak_tree", (1, 2))
+                chunk_data = generate_STRUCTURES(x, y, chunk_data, "tall_grass", (4, 3))
             if MAX_Y_CHUNK >= y >= 0: # Everywhere underground above y-512
-                chunk_data = generate_structures(x, y, chunk_data, "coal_ore", (2, 15))
-                chunk_data = generate_structures(x, y, chunk_data, "iron_ore", (2, 18))
+                chunk_data = generate_STRUCTURES(x, y, chunk_data, "coal_ore", (2, 15))
+                chunk_data = generate_STRUCTURES(x, y, chunk_data, "iron_ore", (2, 18))
             if MAX_Y_CHUNK >= y >= 5: # Lower than y-40 above y-512
-                chunk_data = generate_structures(x, y, chunk_data, "gold_ore", (1, 16))
+                chunk_data = generate_STRUCTURES(x, y, chunk_data, "gold_ore", (1, 16))
             if MAX_Y_CHUNK >= y >= 7: # Lower than y-56 above y-512
-                chunk_data = generate_structures(x, y, chunk_data, "lapis_ore", (1, 22))
+                chunk_data = generate_STRUCTURES(x, y, chunk_data, "lapis_ore", (1, 22))
             if MAX_Y_CHUNK >= y >= 10: # Lower than y-80 above y-512
-                chunk_data = generate_structures(x, y, chunk_data, "redstone_ore", (2, 14))
+                chunk_data = generate_STRUCTURES(x, y, chunk_data, "redstone_ore", (2, 14))
             if MAX_Y_CHUNK >= y >= 16: # Lower than y-128 above y-512
-                chunk_data = generate_structures(x, y, chunk_data, "diamond_ore", (1, 32))
+                chunk_data = generate_STRUCTURES(x, y, chunk_data, "diamond_ore", (1, 32))
             if MAX_Y_CHUNK >= y >= 20: # Lower than y-160 above y-512
-                chunk_data = generate_structures(x, y, chunk_data, "emerald_ore", (1, 32))
+                chunk_data = generate_STRUCTURES(x, y, chunk_data, "emerald_ore", (1, 32))
             if HALF_MAX_Y_CHUNK > y >= 0: # Everywhere underground above y-512
-                chunk_data = generate_structures(x, y, chunk_data, "granite", (2, 14))
-                chunk_data = generate_structures(x, y, chunk_data, "diorite", (2, 14))
-                chunk_data = generate_structures(x, y, chunk_data, "andesite", (2, 14))
+                chunk_data = generate_STRUCTURES(x, y, chunk_data, "granite", (2, 14))
+                chunk_data = generate_STRUCTURES(x, y, chunk_data, "diorite", (2, 14))
+                chunk_data = generate_STRUCTURES(x, y, chunk_data, "andesite", (2, 14))
             elif MAX_Y_CHUNK >= y >= HALF_MAX_Y_CHUNK:
-                chunk_data = generate_structures(x, y, chunk_data, "tuff", (2, 8))
+                chunk_data = generate_STRUCTURES(x, y, chunk_data, "tuff", (2, 8))
 
         return chunk_data
 
-def get_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerator, chance: tuple) -> list:
-    """Get structures inside the current chunk (x, y)
+def get_STRUCTURES(x: int, y: int, chunk_data: dict, generator: StructureGenerator, chance: tuple) -> list:
+    """Get STRUCTURES inside the current chunk (x, y)
 
     Args:
         x (int): chunk position x
@@ -355,7 +356,7 @@ def get_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerat
         chance (tuple): the odds of the structure generating, (number-of-structure-possible-per-chunk, odds-off-the-structure-generating-per-block-in-chunk)
 
     Returns:
-        list: a list containing the block data of each of the structures in the chunk
+        list: a list containing the block data of each of the STRUCTURES in the chunk
     """
 
     out = []
@@ -383,8 +384,8 @@ def get_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerat
 
     return out
 
-def generate_structures(x: int, y: int, chunk_data: dict, name: str, chance: tuple) -> dict:
-    """Check the surrounding chunks for structures that generates in the current chunk (x, y), and then returns the chunk data with the structure
+def generate_STRUCTURES(x: int, y: int, chunk_data: dict, name: str, chance: tuple) -> dict:
+    """Check the surrounding chunks for STRUCTURES that generates in the current chunk (x, y), and then returns the chunk data with the structure
 
     Args:
         x (int): chunk position x
@@ -401,8 +402,8 @@ def generate_structures(x: int, y: int, chunk_data: dict, name: str, chance: tup
     # Check all chunks around the current chunk within the size limit of the structure
     for ox in range(-generator.chunks_to_check[0], generator.chunks_to_check[0] + 1):
         for oy in range(-generator.chunks_to_check[1], generator.chunks_to_check[1] + 1):
-            # Get the surrounding structures that might protrude into the current chunk
-            structs = get_structures(x + ox, y + oy, chunk_data, generator, chance)
+            # Get the surrounding STRUCTURES that might protrude into the current chunk
+            structs = get_STRUCTURES(x + ox, y + oy, chunk_data, generator, chance)
             for struct in structs:
                 for block, block_name in struct.block_data.items():
                     # If there are parts of that structure inside the current chunk, generate that part in this chunk
@@ -454,7 +455,7 @@ def blended_blocks_generate(y: int, block: str, blend_y: int, block2: str = "") 
     return block_name
 
 def generate_block(x: int, y: int) -> str:
-    """Gets the name of the block that would generate (apart from structures) at the given location"""
+    """Gets the name of the block that would generate (apart from STRUCTURES) at the given location"""
 
     seed(SEED + canter_pairing((x, y)))
     block_name = ""
@@ -543,145 +544,7 @@ def load_chunks(camera: Camera) -> list:
 
     return rendered_chunks
 
-def load_structures() -> dict:
-    """Load the structure data files into a dictionary.
-
-    Returns:
-        dict: A dictionar containing structure information
-    """
-
-    # 104 lines of comments... maybe I went overboard xD
-    # I hope I explained the file format well :)
-
-    # reference structure file (short_oak_tree.structure)
-    #
-    # ---------------------------------------------------
-    # 1:oak_log
-    # 2:oak_leaves
-    # 3:dirt
-    # 4:leafed_oak_log
-    # structure:
-    #  222
-    #  242
-    # 22422
-    # 22422
-    #   1
-    #   3
-    # origin:
-    # 2 4
-    # ---------------------------------------------------
-
-    # Folder references the folder containing the .structure and distribution files.
-    # (Using pathof for exe compatibility)
-    structures = dict()
-    for folder in listdir(pathof("data/structures/")):
-        structures[folder] = dict()
-        for struct in listdir(join(pathof("data/structures/"), folder)): # Struct is a file in the aforementioned directory.
-            if struct != "distribution.structure": # Any regular .structure file
-                # A list containing each line of the .structure
-                data = open(pathof(f"data/structures/{folder}/{struct}"), "r").readlines()
-
-                split = data.index("structure:\n") # The line # of the end of the legend and beginning of the pattern
-                split2 = data.index("origin:\n") # The line # of the end of the pattern and beginning of the origin
-
-                legends = {legend.split(":")[0]: legend.split(":")[1] for legend in [legend[:-1] for legend in data[:split]]}
-                # legend[:-1] is used to get rid of the newline character (\n or \r\n depending on the platform)
-                # It results in:
-                # ['1:oak_log', '2:oak_leaves', '3:dirt', '4:leafed_oak_log']
-                # The left side of the colon is the number, the right side is the name
-                # Resulting in: {
-                #    1:"oak_log",
-                #    2:"oak_leaves"
-                # }, ect.
-
-                structure = [line[:-1] for line in data[(split + 1):split2]]
-                # data[(split + 1):split1] returns a list containing the pattern
-                # ie.
-                #  222
-                #  242
-                # 22422
-                # ect.
-                # Again, line[:-1] removes the newline character.
-
-                origin = (int((origin_line := data[-1].split(' '))[0]), int(origin_line[1]))
-                # data[-1] would be '2 4' in the example
-                # Origin line is a *list* that would contain ["2", "4"] as *strings*
-                # We turn that list into a tuple that contains integers.
-
-                blocks = dict()
-                for y in range(len(structure)):
-                    for x in range(len(structure[y])):
-                        # This loops through co-ordinates representing characters in the structures section
-                        try:
-                            # Checks if there is an entry in the legend for the number
-                            # If x was 2 and y was 0, you could read this as:
-                            # -> legends[structure[2][0]]
-                            # -> legends[2] (If you look at the example and go 2 across and 0 down it would be 2)
-                            # -> "oak_leaves"
-                            # This value is not used, but it would throw a KeyError if there is no entry in the legend
-                            # which would be passed and there would be no entry in the blocks list.
-                            # However if there is an entry in the legend the else block will be run.
-                            legends[structure[y][x]]
-                        except: pass
-                        else:
-                            # Makes an entry in blocks.
-                            # The key is the position of the block subtracted from the origin and
-                            # the value is the entry in the legend at the current co-ordinates.
-                            # ex. with the x = 2 and y = 0 example above
-                            # blocks[(0, -4)] = "oak_leaves"
-                            blocks[(x - origin[0], y - origin[1])] = legends[structure[y][x]]
-
-                # Path(struct).stem gets the stem of the file (short_oak_tree.structure -> shoroak_tree)
-                # This might be:
-                # structures["oak_tree"][short_oak_tree] = ((2, 4), {
-                #     (0, 4): "oak_leaves",
-                #     ect.
-                # })
-                structures[folder][Path(struct).stem] = (origin, blocks)
-
-            else: # This block of code handles distribution.structure specifically
-                # Example distribution.structure
-                # ---------------------
-                # regular_oak_tree 57%
-                # medium_oak_tree 18%
-                # short_oak_tree 10%
-                # large_oak_tree 8%
-                # balloon_oak_tree 7%
-                # ---------------------
-
-                # A list containing each line of distribution.structure
-                distribution = open(pathof(f"data/structures/{folder}/distribution.structure"), "r").readlines()
-
-                # This can be read as:
-                # For every line in the distribution, remove the last 2 characters,
-                # split it on ' ' and turn the second element of the returned list into an integer.
-                # Then adds this integer to a list.
-                # Removing the last 2 characters removes the new line character and the percent symbol.
-                # Splitting on ' ' might give ["regular_oak_tree", "57"], so an integer of the second element
-                # would be 57.
-                # The resulting list would be [57, 18, 10, 8, 7]
-                weights = [int(line[:-2].split(' ')[1]) for line in distribution]
-
-                # This does essentially the same thing as the previous comprehension,
-                # it loops through each line and splits on ' ', but this time we take
-                # the first element: ex. "regualar_oak_tree".
-                # The resulting list would be:
-                # [regular_oak_tree, medium_oak_tree, short_oak_tree, large_oak_tree, balloon_oak_tree]
-                files = [line[:-2].split(' ')[0] for line in distribution]
-
-                # We then add this to the structures dictionary. ex.
-                # structures[oak_tree][distribution] = {
-                #    "weights": [57, 18, 10, 8, 7],
-                #    "files": [regular_oak_tree, medium_oak_tree, short_oak_tree, large_oak_tree, balloon_oak_tree],
-                # }
-                structures[folder]["distribution"] = {"weights": weights, "files": files}
-
-    # We then return the final structures dictionary.
-    return structures
-
-structures = load_structures()
-
-# Major structure means structures that have bigger chunk spans than the rest of its conflicting structures
+# Major structure means STRUCTURES that have bigger chunk spans than the rest of its conflicting STRUCTURES
 major_structure_generators = {
     "oak_tree": StructureGenerator("oak_tree"),
     "granite": BlobGenerator("granite", (10, 10), 5, 3, obstruction=True),
@@ -689,7 +552,7 @@ major_structure_generators = {
     "andesite": BlobGenerator("andesite", (10, 10), 5, 3, obstruction=True),
     "tuff": BlobGenerator("tuff", (10, 10), 5, 3, obstruction=True)
 }
-# Minor structures means structure that have smaller chunk spans therefore needs to increase it's chunk span to match the major structures
+# Minor STRUCTURES means structure that have smaller chunk spans therefore needs to increase it's chunk span to match the major STRUCTURES
 minor_structure_generators = {
     "tall_grass": StructureGenerator("tall_grass", obstruction=True),
     "coal_ore": BlobGenerator("coal_ore", (8, 4), 4, 2),
