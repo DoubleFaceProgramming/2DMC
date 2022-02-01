@@ -4,12 +4,12 @@
         {
             "range": [56, 88],
             "rarity": 20,
-            "rslope": 1
+            "slope": 1
         },
         {
             "range": [64, 96],
             "rarity": 18,
-            "rslope": -1
+            "slope": -1
         }
     ]
 }

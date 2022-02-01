@@ -2,7 +2,7 @@ from pygame.font import Font, init
 from pygame.math import Vector2
 from random import randint
 
-from src.parsing import load_block_data, load_structures
+from src.parsing import load_block_data, load_ore_distribution, load_structures
 import build.exe_comp as exe
 
 init()
@@ -31,6 +31,8 @@ FONT20 = Font(REGULAR_FONT_LOC, 20)
 
 BLOCK_DATA = load_block_data()
 STRUCTURES = load_structures()
+ORE_DISTRIBUTION = load_ore_distribution()
+print(ORE_DISTRIBUTION)
 
 CONFLICTING_STRUCTURES = {
     ("oak_tree", ): ["tall_grass"],

@@ -8,14 +8,17 @@ from build.exe_comp import pathof
 def load_block_data() -> dict:
     # Load json block data into a dictionary
     block_data = {}
-    for file in listdir("data/blocks/"):
-        block_data[Path(file).stem] = json.loads(open(join("data/blocks/", file), "r").read())
+    for file in listdir(pathof("data/blocks/")):
+        block_data[Path(file).stem] = json.loads(open(pathof(join("data/blocks/", file)), "r").read())
 
     return block_data
 
 def load_ore_distribution() -> dict:
-    # WIP
-    pass
+    ore_distribution = {}
+    for file in listdir(pathof("data/ore_distribution/")):
+        ore_distribution[Path(file).stem] = json.loads(open(pathof(join("data/ore_distribution/", file)), "r").read())
+    
+    return ore_distribution
 
 def load_structures() -> dict:
     """Load the structure data files into a dictionary.

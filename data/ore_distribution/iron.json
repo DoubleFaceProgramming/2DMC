@@ -4,7 +4,7 @@
         {
             "range": [8, 72],
             "rarity": 14,
-            "rslope": -1
+            "slope": -1
         }
     ]
 }
