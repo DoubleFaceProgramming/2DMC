@@ -190,10 +190,11 @@ class BlobGenerator(StructureGenerator):
 
     # Cache speeds up numpy array calculations
     @cache
-    def CA(self, size: tuple, density: int, cycles: int) -> dict:
+    def CA(self, struct_seed: int, size: tuple, density: int, cycles: int) -> dict:
         """Function for generating a blob with the Cellular Automata algorithm
 
         Args:
+            struct_seed (int): the unique seed for this blob, this chunk, this seed
             size (tuple): size of the grid in which to generate the blob
             density (int): how dense is the starting grid in the CA (Cellular Automata) algorithm
             cycles (int): how many CA (Cellular Automata) iterations to go through
@@ -201,6 +202,7 @@ class BlobGenerator(StructureGenerator):
         Returns:
             dict: A dict containing the block information of the blob
         """
+        seed(struct_seed)
 
         is_empty = True
         while is_empty: # If after the algorithm the array is still empty, redo it
@@ -249,9 +251,9 @@ class BlobGenerator(StructureGenerator):
             Structure | None: A Structure object with the resulting block data
         """
 
-        seed(SEED + canter_pairing(origin) + ascii_str_sum(self.name))
+        struct_seed = SEED + canter_pairing(origin) + ascii_str_sum(self.name)
         # Create a dictionary of the block data of the blob with Cellular Automata
-        blob = self.CA(self.max_size, self.density, self.cycles)
+        blob = self.CA(struct_seed, self.max_size, self.density, self.cycles)
 
         block_data = {}
         for offset, block in blob.items():
