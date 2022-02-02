@@ -1,4 +1,4 @@
-from random import randint, seed, choices, randrange
+from random import randint, seed, choices
 from pygame.draw import rect as drawrect
 from opensimplex import OpenSimplex
 from pygame import Rect, Surface
@@ -10,8 +10,8 @@ from os import listdir
 from math import ceil
 import numpy as np
 
-from src.constants import CHUNK_SIZE, BLOCK_SIZE, SEED, WIDTH, HEIGHT, CONFLICTING_STRUCTURES, MAX_Y, STRUCTURES, BLOCK_DATA
-from src.utils import ascii_str_sum, canter_pairing
+from src.constants import CHUNK_SIZE, BLOCK_SIZE, ORE_DISTRIBUTION, SEED, WIDTH, HEIGHT, CONFLICTING_STRUCTURES, MAX_Y, STRUCTURES, BLOCK_DATA
+from src.utils import ascii_str_sum, canter_pairing, rand_bool
 from src.block import Block
 from src.player import Camera
 from build.exe_comp import pathof
@@ -39,7 +39,7 @@ class Structure(object):
             self.blocks_in_chunk[chunk][block_pos] = block_name
 
 class StructureGenerator(object):
-    """Class that handles the generation of STRUCTURES"""
+    """Class that handles the generation of structures"""
     def __init__(self, name, obstruction=False):
         self.name = name
         self.on_surface = True
@@ -86,7 +86,7 @@ class StructureGenerator(object):
 
         seed(SEED + canter_pairing(origin) + ascii_str_sum(self.name)) # Seeding random-ness
         file = choices(self.distribution["files"], weights=self.distribution["weights"])[0] # Picking a random file using the files and weights generated in load_STRUCTURES()
-        mirror = bool(randint(0, 1)) # Bool whether the structure should be flipped or not.
+        mirror = rand_bool(0.5) # Bool whether the structure should be flipped or not.
         block_data = {}
 
         for offset, block in self.BLOCK_DATA[file][1].items():
@@ -211,7 +211,7 @@ class BlobGenerator(StructureGenerator):
             # Populate density/11 of the array
             for y in range(size[1]):
                 for x in range(size[0]):
-                    blob[y, x] = not (randint(0, 10) < density)
+                    blob[y, x] = rand_bool(density / 10)
 
             neighbors_offset = [(-1, -1), (0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0)]
 
@@ -318,52 +318,50 @@ class Chunk(object):
                 for block_pos, block_name in structure.blocks_in_chunk[(x, y)].items():
                     chunk_data[block_pos] = block_name
         else:
-            MAX_Y_CHUNK = MAX_Y // CHUNK_SIZE
-            HALF_MAX_Y_CHUNK = MAX_Y_CHUNK // 2
             if -1 <= y <= 1: # Surface generations
-                chunk_data = generate_STRUCTURES(x, y, chunk_data, "oak_tree", (1, 2))
-                chunk_data = generate_STRUCTURES(x, y, chunk_data, "tall_grass", (4, 3))
-            if MAX_Y_CHUNK >= y >= 0: # Everywhere underground above y-512
-                chunk_data = generate_STRUCTURES(x, y, chunk_data, "coal_ore", (2, 15))
-                chunk_data = generate_STRUCTURES(x, y, chunk_data, "iron_ore", (2, 18))
-            if MAX_Y_CHUNK >= y >= 5: # Lower than y-40 above y-512
-                chunk_data = generate_STRUCTURES(x, y, chunk_data, "gold_ore", (1, 16))
-            if MAX_Y_CHUNK >= y >= 7: # Lower than y-56 above y-512
-                chunk_data = generate_STRUCTURES(x, y, chunk_data, "lapis_ore", (1, 22))
-            if MAX_Y_CHUNK >= y >= 10: # Lower than y-80 above y-512
-                chunk_data = generate_STRUCTURES(x, y, chunk_data, "redstone_ore", (2, 14))
-            if MAX_Y_CHUNK >= y >= 16: # Lower than y-128 above y-512
-                chunk_data = generate_STRUCTURES(x, y, chunk_data, "diamond_ore", (1, 32))
-            if MAX_Y_CHUNK >= y >= 20: # Lower than y-160 above y-512
-                chunk_data = generate_STRUCTURES(x, y, chunk_data, "emerald_ore", (1, 32))
-            if HALF_MAX_Y_CHUNK > y >= 0: # Everywhere underground above y-512
-                chunk_data = generate_STRUCTURES(x, y, chunk_data, "granite", (2, 14))
-                chunk_data = generate_STRUCTURES(x, y, chunk_data, "diorite", (2, 14))
-                chunk_data = generate_STRUCTURES(x, y, chunk_data, "andesite", (2, 14))
-            elif MAX_Y_CHUNK >= y >= HALF_MAX_Y_CHUNK:
-                chunk_data = generate_STRUCTURES(x, y, chunk_data, "tuff", (2, 8))
+                chunk_data = generate_structures(x, y, chunk_data, "oak_tree", 1, chance=33)
+                chunk_data = generate_structures(x, y, chunk_data, "tall_grass", 4, chance=25)
+            for ore, data in ORE_DISTRIBUTION.items():
+                for section in data["sections"]:
+                    if section["range"][0] <= y < section["range"][1]:
+                        chunk_data = generate_structures(x, y, chunk_data, ore + "_ore", data["attempts_per_chunk"], dist=section)
+                        break
+            if MAX_Y // CHUNK_SIZE // 2 > y >= 0: # Everywhere underground above y-512
+                chunk_data = generate_structures(x, y, chunk_data, "granite", 2, chance=14)
+                chunk_data = generate_structures(x, y, chunk_data, "diorite", 2, chance=14)
+                chunk_data = generate_structures(x, y, chunk_data, "andesite", 2, chance=14)
+            elif MAX_Y // CHUNK_SIZE >= y >= MAX_Y // CHUNK_SIZE // 2:
+                chunk_data = generate_structures(x, y, chunk_data, "tuff", 2, chance=20)
 
         return chunk_data
 
-def get_STRUCTURES(x: int, y: int, chunk_data: dict, generator: StructureGenerator, chance: tuple) -> list:
-    """Get STRUCTURES inside the current chunk (x, y)
+def get_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerator, attempts: int, chance: int | None, dist: dict) -> list:
+    """Get structures inside the current chunk (x, y)
 
     Args:
         x (int): chunk position x
         y (int): chunk position y
         chunk_data (dict): dictionary containing the block data of the current chunk
         generator (StructureGenerator): structure generator object to use to generate
-        chance (tuple): the odds of the structure generating, (number-of-structure-possible-per-chunk, odds-off-the-structure-generating-per-block-in-chunk)
+        attempts (int): how many times it is going to attempt to generate per chunk
+        chance (int or None): the chance of the structure generating per attempt
+        dist (dict): the distribution dictionary containing: the range of the slope, the maximum rarity, and the direction of the slope
 
     Returns:
-        list: a list containing the block data of each of the STRUCTURES in the chunk
+        list: a list containing the block data of each of the structures in the chunk
     """
 
     out = []
     seed(SEED + canter_pairing((x, y)) + ascii_str_sum(generator.name))
-    for _ in range(chance[0]):
-        if not randint(0, chance[1]):
-            start_x = x * CHUNK_SIZE + randrange(0, CHUNK_SIZE)
+    if chance == None: # Has to be ""== None" because chance can also be 0
+        upper = dist["range"][0]
+        lower = dist["range"][1]
+        slope = dist["slope"]
+        rarity = dist["rarity"]
+        chance = (((y - upper) if slope == 1 else (lower - y)) / (lower - upper) * rarity) if slope else rarity
+    for _ in range(attempts):
+        if rand_bool(chance / 100):
+            start_x = x * CHUNK_SIZE + randint(0, CHUNK_SIZE)
             if generator.on_surface:
                 # Generate on the surface of the world
                 start_y = terrain_generate(start_x)[1] - 1
@@ -371,7 +369,7 @@ def get_STRUCTURES(x: int, y: int, chunk_data: dict, generator: StructureGenerat
                 if (92.7 < cave_generate((start_x / 70, start_y / 70)) < 103) or (92.7 < cave_generate((start_x / 70, (start_y + 1) / 70)) < 103):
                     return out
             else:
-                start_y = y * CHUNK_SIZE + randrange(0, CHUNK_SIZE)
+                start_y = y * CHUNK_SIZE + randint(0, CHUNK_SIZE)
 
             # Structures that are not in this chunk
             if not 0 <= start_y - y * CHUNK_SIZE < CHUNK_SIZE:
@@ -384,15 +382,17 @@ def get_STRUCTURES(x: int, y: int, chunk_data: dict, generator: StructureGenerat
 
     return out
 
-def generate_STRUCTURES(x: int, y: int, chunk_data: dict, name: str, chance: tuple) -> dict:
-    """Check the surrounding chunks for STRUCTURES that generates in the current chunk (x, y), and then returns the chunk data with the structure
+def generate_structures(x: int, y: int, chunk_data: dict, name: str, attempts: int, chance: int | None = None, dist: dict = {}) -> dict:
+    """Check the surrounding chunks for structures that generates in the current chunk (x, y), and then returns the chunk data with the structure
 
     Args:
         x (int): chunk position x
         y (int): chunk position y
         chunk_data (dict): block data of the current chunk
         generator (StructureGenerator): the structure generator object to use to generate
-        chance (tuple): the odds of the structure generating, (number-of-structure-possible-per-chunk, odds-of-a-chunk-containing-the-structure)
+        attempts (int): how many times it is going to attempt to generate per chunk
+        chance (int or None, optional): the chance of the structure generating per attempt
+        dist (dict, optional): the distribution dictionary containing: the range of the slope, the maximum rarity, and the direction of the slope
 
     Returns:
         dict: the chunk data with the structure
@@ -403,7 +403,7 @@ def generate_STRUCTURES(x: int, y: int, chunk_data: dict, name: str, chance: tup
     for ox in range(-generator.chunks_to_check[0], generator.chunks_to_check[0] + 1):
         for oy in range(-generator.chunks_to_check[1], generator.chunks_to_check[1] + 1):
             # Get the surrounding STRUCTURES that might protrude into the current chunk
-            structs = get_STRUCTURES(x + ox, y + oy, chunk_data, generator, chance)
+            structs = get_structures(x + ox, y + oy, chunk_data, generator, attempts, chance, dist)
             for struct in structs:
                 for block, block_name in struct.block_data.items():
                     # If there are parts of that structure inside the current chunk, generate that part in this chunk
@@ -455,7 +455,7 @@ def blended_blocks_generate(y: int, block: str, blend_y: int, block2: str = "") 
     return block_name
 
 def generate_block(x: int, y: int) -> str:
-    """Gets the name of the block that would generate (apart from STRUCTURES) at the given location"""
+    """Gets the name of the block that would generate (apart from structures) at the given location"""
 
     seed(SEED + canter_pairing((x, y)))
     block_name = ""
@@ -490,9 +490,9 @@ def generate_block(x: int, y: int) -> str:
             block_name = "deepslate"
         if y == height[1] - 1:
             if not (92.7 < cave_generate((x / 70, (y + 1) / 70)) < 103):
-                if not randint(0, 2):
+                if rand_bool(1 / 3):
                     block_name = "grass"
-                if not randint(0, 21):
+                if rand_bool(1 / 21):
                     block_name = choices(["poppy", "dandelion"], weights=[1, 2])[0]
     else:
         block_name = ""
@@ -544,7 +544,7 @@ def load_chunks(camera: Camera) -> list:
 
     return rendered_chunks
 
-# Major structure means STRUCTURES that have bigger chunk spans than the rest of its conflicting STRUCTURES
+# Major structure means structures that have bigger chunk spans than the rest of its conflicting STRUCTURES
 major_structure_generators = {
     "oak_tree": StructureGenerator("oak_tree"),
     "granite": BlobGenerator("granite", (10, 10), 5, 3, obstruction=True),
@@ -552,7 +552,7 @@ major_structure_generators = {
     "andesite": BlobGenerator("andesite", (10, 10), 5, 3, obstruction=True),
     "tuff": BlobGenerator("tuff", (10, 10), 5, 3, obstruction=True)
 }
-# Minor STRUCTURES means structure that have smaller chunk spans therefore needs to increase it's chunk span to match the major STRUCTURES
+# Minor structures means structure that have smaller chunk spans therefore needs to increase it's chunk span to match the major STRUCTURES
 minor_structure_generators = {
     "tall_grass": StructureGenerator("tall_grass", obstruction=True),
     "coal_ore": BlobGenerator("coal_ore", (8, 4), 4, 2),

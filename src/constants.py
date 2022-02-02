@@ -32,7 +32,6 @@ FONT20 = Font(REGULAR_FONT_LOC, 20)
 BLOCK_DATA = load_block_data()
 STRUCTURES = load_structures()
 ORE_DISTRIBUTION = load_ore_distribution()
-print(ORE_DISTRIBUTION)
 
 CONFLICTING_STRUCTURES = {
     ("oak_tree", ): ["tall_grass"],

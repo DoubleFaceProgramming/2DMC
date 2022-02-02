@@ -2,6 +2,7 @@ from pygame.draw import rect as drawrect
 from pygame.locals import SRCALPHA
 from pygame.surface import Surface
 from pygame.math import Vector2
+from random import random
 from pathlib import Path
 from pygame import Rect
 from typing import Any
@@ -92,6 +93,10 @@ def canter_pairing(tup: tuple) -> int:
 def ascii_str_sum(string: str) -> int:
     """Gets the sum of the ASCII values of all the letters in a string"""
     return sum([ord(letter) for letter in string])
+
+def rand_bool(perc: float) -> bool:
+    """Returns True of False with the probability of the percentage given"""
+    return random() < perc
 
 profile_bool = False
 def profile(callable: type, *args: tuple) -> Any:
