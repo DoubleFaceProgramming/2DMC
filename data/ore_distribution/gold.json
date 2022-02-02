@@ -3,12 +3,12 @@
     "sections": [
         {
             "range": [56, 88],
-            "rarity": 5,
+            "rarity": 7,
             "slope": 1
         },
         {
             "range": [64, 96],
-            "rarity": 5,
+            "rarity": 7,
             "slope": -1
         }
     ]

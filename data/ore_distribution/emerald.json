@@ -8,12 +8,12 @@
         },
         {
             "range": [72, 96],
-            "rarity": 2.5,
+            "rarity": 3,
             "slope": 1
         },
         {
             "range": [96, 120],
-            "rarity": 2.5,
+            "rarity": 3,
             "slope": -1
         }
     ]

@@ -98,32 +98,20 @@ class StructureGenerator(object):
             else:
                 block_name = block
 
-            match self.can_generate(block_pos, block_name, chunk_pos, chunk_data):
+            block_in_chunk = self.get_block_in_chunk(block_pos, chunk_pos, chunk_data)
+            match self.can_generate(block_name, block_in_chunk):
                 case 1:
                     block_data[block_pos] = block_name # Generate the block
                 case 2:
                     return # Do not generate the entire structure
                 case 3:
                     continue # Do not generate the block
+                case 4:
+                    block_data[block_pos] = BLOCK_DATA[block_name]["overwrite_and_change"][block_in_chunk]
 
         return Structure(self.name, block_data)
 
-    def can_generate(self, block_pos: tuple, block_name: str, chunk_pos: tuple, chunk_data: dict) -> int:
-        """
-
-        Args:
-            block_pos (tuple): the position of the block to generate
-            block_name (str): the name of the block to generate
-            chunk_pos (tuple): the position of the chunk that the structure originated from
-            chunk_data (dict): the block data of the chunk that the structure originated from
-
-        Returns:
-            int: (
-                1 means valid generation
-                2 means invalid and the entire structure should not generate
-                3 means invalid and only this specific block should not generate
-            )
-        """
+    def get_block_in_chunk(self, block_pos: tuple, chunk_pos: tuple, chunk_data: dict) -> str:
         # If the block is inside the chunk the structure originated from
         if 0 <= block_pos[0] - chunk_pos[0] * CHUNK_SIZE < CHUNK_SIZE and 0 <= block_pos[1] - chunk_pos[1] * CHUNK_SIZE < CHUNK_SIZE:
             if block_pos in chunk_data:
@@ -150,33 +138,58 @@ class StructureGenerator(object):
             else:
                 block_in_chunk = Chunk.generated_blocks[block_pos]
 
+        return block_in_chunk
+
+    def can_generate(self, block_name: str, block_in_chunk: str) -> int:
+        """
+
+        Args:
+            block_pos (tuple): the position of the block to generate
+            block_name (str): the name of the block to generate
+            chunk_pos (tuple): the position of the chunk that the structure originated from
+            chunk_data (dict): the block data of the chunk that the structure originated from
+
+        Returns:
+            int: (
+                1 means valid generation
+                2 means invalid and the entire structure should not generate
+                3 means invalid and only this specific block should not generate
+                4 means valid but it would change to another block to replace the target block
+            )
+        """
+
         # Some tests to check if the block can replace the block it's generating on and if not, whether the entire structure can generate
         if block_in_chunk:
             # Overwriteable means which blocks the block can replace
             if "overwriteable" in BLOCK_DATA[block_name]:
                 if block_in_chunk in BLOCK_DATA[block_name]["overwriteable"]:
-                    return 1
+                    return_value = 1
                 elif self.obstruction:  # If obstruction is true it means that the entire structure should not generate if one block cannot generate
-                    return 2
+                    return_value = 2
                 else:
-                    return 3
+                    return_value = 3
             # Can only overwrite is the same as overwriteable but it also cannot replace air
             elif "can_only_overwrite" in BLOCK_DATA[block_name]:
                 if block_in_chunk in BLOCK_DATA[block_name]["can_only_overwrite"]:
-                    return 1
+                    return_value = 1
                 elif self.obstruction:
-                    return 2
+                    return_value = 2
                 else:
-                    return 3
+                    return_value = 3
             elif self.obstruction:
-                return 2
+                return_value = 2
             else:
-                return 1
+                return_value = 1
+            if "overwrite_and_change" in BLOCK_DATA[block_name]:
+                if block_in_chunk in BLOCK_DATA[block_name]["overwrite_and_change"]:
+                    return_value = 4
         # If the block does not exist (air), and the block can't overwrite air
         elif "can_only_overwrite" in BLOCK_DATA[block_name]:
-            return 3
+            return_value = 3
         else:
-            return 1
+            return_value = 1
+
+        return return_value
 
 class BlobGenerator(StructureGenerator):
     def __init__(self, name, max_size, density, cycles, obstruction=False):
@@ -259,13 +272,16 @@ class BlobGenerator(StructureGenerator):
         for offset, block in blob.items():
             # Convert the positions to real world position by adding the origin to the block position (offset)
             block_pos = (origin[0] + offset[0], origin[1] + offset[1])
-            match self.can_generate(block_pos, block, chunk_pos, chunk_data):
+            block_in_chunk = self.get_block_in_chunk(block_pos, chunk_pos, chunk_data)
+            match self.can_generate(block, block_in_chunk):
                 case 1:
                     block_data[block_pos] = block # Generate the block
                 case 2:
                     return # Do not generate the entire structure
                 case 3:
                     continue # Do not generate the block
+                case 4:
+                    block_data[block_pos] = BLOCK_DATA[block]["overwrite_and_change"][block_in_chunk]
 
         return Structure(self.name, block_data)
 
