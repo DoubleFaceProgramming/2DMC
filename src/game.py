@@ -127,10 +127,6 @@ class Game():
         for line, name in enumerate(debug_values):
             screen.blit(text(f"{name}: {debug_values[name]}"), (6, SPACING * line))
 
-        for particle in Particle.instances:
-            pygame.draw.circle(screen, (255, 0, 0), particle.pos, radius=3)
-            # pygame.draw.rect(screen, (255, 0, 0), particle.image.get_rect())
-
     def tick(self, mpos):
         """Ticks the game loop (makes profiling a bit easier)"""
 

@@ -13,7 +13,6 @@ if TYPE_CHECKING:
     from src.player import Camera
     from src.block import Block
 
-
 class Particle(pygame.sprite.Sprite):
     """Class that handles the management, updation and drawing of particles."""
     instances = []
@@ -22,9 +21,9 @@ class Particle(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.__class__.instances.append(self)
         self.type = type
-        self.pos = VEC(pos)
+        self.world_pos = VEC(pos)
         self.vel = VEC(vel)
-        self.coords = self.pos // BLOCK_SIZE
+        self.coords = self.world_pos // BLOCK_SIZE
         self.survive_time = survive_time
         self.image = image
         # Set the time which the particle is going to last for
@@ -36,22 +35,29 @@ class Particle(pygame.sprite.Sprite):
         if time.time() - self.start_time > self.survive_time:
             self.kill()
 
-        self.pos += (self.vel + camera.pos) * dt
-        self.coords = self.pos // BLOCK_SIZE
+        self.world_pos += self.vel * dt
+        self.pos = self.world_pos - camera.pos
+        self.coords = self.world_pos // BLOCK_SIZE
 
-    def draw(self, screen: Surface, camera):
-        screen.blit(self.image, (self.pos-camera.pos-VEC(self.image.get_size())/2))
+    def draw(self, screen: Surface, camera: Camera):
+        screen.blit(self.image, (self.world_pos-camera.pos-VEC(self.image.get_size())/2))
 
     def kill(self) -> None:
         super().kill()
-        self.__class__.instances.remove(self)
+        # Get each ancestor of the current class
+        for _class in self.__class__.__mro__:
+            try:
+                # If the class has an instances list, remove itself
+                _class.instances.remove(self)
+            except:
+                pass
 
 class PhysicsParticle(Particle):
     def __init__(self, pos: tuple, vel: tuple, survive_time: float, image: Surface, blocks: dict, master=None) -> None:
         self.blocks = blocks
         super().__init__(pos, vel, survive_time, image, master)
 
-    def update(self, dt: float) -> None:
+    def update(self, dt: float, camera: Camera) -> None:
         self.move(dt)
 
         neighbors = [
@@ -66,14 +72,14 @@ class PhysicsParticle(Particle):
             if pos in self.blocks:
                 block = self.blocks[pos]
                 if block.data["collision_box"] != "none":
-                    if pygame.Rect(block.pos.x, block.pos.y, BLOCK_SIZE, BLOCK_SIZE).collidepoint(self.pos.x + self.vel.x * dt, self.pos.y):
+                    if pygame.Rect(block.pos.x, block.pos.y, BLOCK_SIZE, BLOCK_SIZE).collidepoint(self.world_pos.x + self.vel.x * dt, self.world_pos.y):
                         self.vel.x = 0
                         break
-                    if pygame.Rect(block.pos.x, block.pos.y, BLOCK_SIZE, BLOCK_SIZE).collidepoint(self.pos.x, self.pos.y + self.vel.y * dt):
+                    if pygame.Rect(block.pos.x, block.pos.y, BLOCK_SIZE, BLOCK_SIZE).collidepoint(self.world_pos.x, self.world_pos.y + self.vel.y * dt):
                         self.vel.y = 0
                         break
 
-        super().update(dt)
+        super().update(dt, camera)
 
     def move(self, dt: float) -> None:
         # Fall
@@ -87,13 +93,13 @@ class EnvironmentalParticle(Particle):
         self.blocks = blocks
         self.vel = VEC(vel)
         
-    def update(self, dt: float) -> None:
-        super().update(dt)
+    def update(self, dt: float, camera: Camera) -> None:
+        super().update(dt, camera)
         if inttup(self.coords) in self.blocks:
             self.kill()
             return
-        if not (0 < self.pos[0] < WIDTH and 0 < self.pos[1] < HEIGHT):
-            self.kill()
+        # if not (0 < self.pos[0] + camera.pos.x < WIDTH and 0 < self.pos[1] + camera.pos.y < HEIGHT):
+        #     self.kill()
 
 class BlockParticle(PhysicsParticle):
     def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master=None) -> None:
