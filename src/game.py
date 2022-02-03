@@ -1,5 +1,5 @@
 from sys import exit as sysexit
-from random import seed
+from random import seed, randint
 import pygame
 import os
 
@@ -11,10 +11,10 @@ from pygame.locals import  (
 )
 
 from src.constants import SEED, WIDTH, HEIGHT, FPS, SCR_DIM, VEC, CHUNK_SIZE, BLOCK_SIZE, SPACING
+from src.particle import Particle, VoidFogParticle, EnvironmentalParticle, background_particles
 from src.world_gen import Chunk, Block, load_chunks
 from src.background import Background
 from src.utils import inttup, text
-from src.particle import Particle, VoidFogParticle
 from src.player import Player
 import src.utils as utils
 
@@ -65,17 +65,17 @@ class Game():
                     self.debug_bool = not self.debug_bool
                 if event.key == K_F9:
                     utils.profile_bool = True
+                if event.key == K_F2:
+                    VoidFogParticle(self.player.pos, Block.instances)
                 if event.key == K_e:
                     self.player.toggle_inventory()
-                if event.key == K_F2:
-                    VoidFogParticle(self.player.pos)
 
         # Calling relevant update functions.
-        self.background.update(self.player.coords.y, dt)
+        self.background.update(dt, self.player.coords.y, self.player.camera)
         self.rendered_chunks = load_chunks(self.player.camera)
         self.player.update(Block.instances, mouse_state, dt)
         for particle in Particle.instances:
-            particle.update(dt)
+            particle.update(dt, self.player.camera)
         for chunk in self.rendered_chunks:
             Chunk.instances[chunk].update(self.player.camera)
 
@@ -86,8 +86,10 @@ class Game():
         # Calling relevant draw functions.
         for chunk in self.rendered_chunks:
             Chunk.instances[chunk].draw(self.player.camera, screen)
+
         for particle in Particle.instances:
-            particle.draw(self.player.camera, screen)
+            if not issubclass(particle.__class__, background_particles):
+                particle.draw(screen, self.player.camera)
 
         self.player.draw(screen, mpos)
 
@@ -124,6 +126,10 @@ class Game():
         # Displaying the debug values.
         for line, name in enumerate(debug_values):
             screen.blit(text(f"{name}: {debug_values[name]}"), (6, SPACING * line))
+
+        for particle in Particle.instances:
+            pygame.draw.circle(screen, (255, 0, 0), particle.pos, radius=3)
+            # pygame.draw.rect(screen, (255, 0, 0), particle.image.get_rect())
 
     def tick(self, mpos):
         """Ticks the game loop (makes profiling a bit easier)"""

@@ -1,9 +1,10 @@
 from random import randint
 from pygame import Surface
 
-from src.constants import MAX_Y, BLUE_SKY, WIDTH, HEIGHT
-from src.particle import VoidFogParticle
+from src.particle import EnvironmentalParticle, VoidFogParticle, background_particles, Particle
+from src.constants import MAX_Y, BLUE_SKY, WIDTH, HEIGHT, VEC
 from src.player import Camera
+from src.block import Block
 
 class Background():
     """Container class for drawing the background (sky)"""
@@ -14,18 +15,14 @@ class Background():
         self.sun = self.sky.Sun()
         self.moon = self.sky.Moon()
 
-    def update(self, player_y: int, dt: float) -> None:
+    def update(self, dt: float, player_y: int, camera: Camera) -> None:
         self.sky.update(player_y)
         # self.cloud.update()
         # self.sun.update()
         # self.moon.update()
 
         if player_y > 0.8 * MAX_Y:
-            if not randint(0, 1):
-                VoidFogParticle((randint(0, WIDTH), randint(0, HEIGHT)))
-
-        for particle in VoidFogParticle.instances:
-            particle.update(dt)
+            VoidFogParticle((randint(0, WIDTH), randint(0, HEIGHT)), Block.instances)
 
     def draw(self, screen: Surface, camera: Camera) -> None:
         self.sky.draw(screen)
@@ -33,8 +30,9 @@ class Background():
         # self.sun.draw()
         # self.moon.draw()
 
-        for particle in VoidFogParticle.instances:
-            particle.draw(camera, screen)
+        for particle in Particle.instances:
+            if issubclass(particle.__class__, background_particles):
+                particle.draw(screen, camera)
 
     class Sky():
         """Class that handles the sky and all its sub-parts"""
