@@ -12,7 +12,6 @@ import pstats
 import os
 
 from src.constants import VEC, FONT20, FONT24, BLOCK_SIZE, PROFILE_DIR
-from build.exe_comp import BUNDLE_DIR
 
 def intv(vector: Vector2) -> Vector2:
     """Returns vector where x and y are integers"""
@@ -98,7 +97,7 @@ def rand_bool(perc: float) -> bool:
     """Returns True of False with the probability of the percentage given"""
     return random() < perc
 
-profile_bool = False
+do_profile = False
 def profile(callable: type, *args: tuple) -> Any:
     """Profiles the given callable and saves + prints the results
 
@@ -109,9 +108,9 @@ def profile(callable: type, *args: tuple) -> Any:
         [Any]: The result of calling the callable
     """
 
-    global profile_bool
-    if profile_bool: # Profile_bool stops the user from being able to hold down the profile key
-        profile_bool = False
+    global do_profile
+    if do_profile: # Profile_bool stops the user from being able to hold down the profile key
+        do_profile = False
         with cProfile.Profile() as profile: # Profiling the contents of the with block
             returnval = callable(*args)     # Calling the callable with the args
 
@@ -122,6 +121,7 @@ def profile(callable: type, *args: tuple) -> Any:
         stats = pstats.Stats(profile).sort_stats(pstats.SortKey.TIME) # Sorting the stats from highest time to lowest
         stats.dump_stats(filename=str(statfile)) # Saving the stats to a profile file
         stats.print_stats()                      # Printing the stats
+        print(f"\n\n Profile saved to: {str(statfile)}!\n\n")
         return returnval
     else: # Return the output of the callable
         return callable(*args)

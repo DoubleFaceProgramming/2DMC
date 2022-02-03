@@ -1,5 +1,3 @@
-src/__pycache__
-build/__pycache__
 build/profiles/*
+__pycache__/
 /.vscode
-/.VSCodeCounter
