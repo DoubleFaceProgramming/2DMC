@@ -40,16 +40,16 @@ class Particle(pygame.sprite.Sprite):
         self.coords = self.world_pos // BLOCK_SIZE
 
     def draw(self, screen: Surface, camera: Camera):
-        screen.blit(self.image, (self.world_pos-camera.pos-VEC(self.image.get_size())/2))
+        screen.blit(self.image, (self.pos-VEC(self.image.get_size())/2))
 
     def kill(self) -> None:
         super().kill()
         # Get each ancestor of the current class
-        for _class in self.__class__.__mro__:
+        for ancestor in self.__class__.__mro__:
             try:
                 # If the class has an instances list, remove itself
-                _class.instances.remove(self)
-            except:
+                ancestor.instances.remove(self)
+            except (AttributeError, ValueError):
                 pass
 
 class PhysicsParticle(Particle):
@@ -98,8 +98,8 @@ class EnvironmentalParticle(Particle):
         if inttup(self.coords) in self.blocks:
             self.kill()
             return
-        # if not (0 < self.pos[0] + camera.pos.x < WIDTH and 0 < self.pos[1] + camera.pos.y < HEIGHT):
-        #     self.kill()
+        if not (0 < self.pos[0] < WIDTH and 0 < self.pos[1] < HEIGHT):
+            self.kill()
 
 class BlockParticle(PhysicsParticle):
     def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master=None) -> None:
