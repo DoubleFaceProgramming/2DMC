@@ -3,7 +3,6 @@
 2DMC is an abbreviation for 2 Dimensional Minecraft. This idea is originally created and implemented by Griffpatch on Scratch. This is a personal project of creating a Paper Minecraft clone in python, better, smoother, and more Minecrafty.
 
 ## Installation
-
 Clone the repository at <https://github.com/DaNubCoding/2DMC>, run the file named "main.py"
 
 Modules to install (pip install [module]):
