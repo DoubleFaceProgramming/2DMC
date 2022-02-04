@@ -160,7 +160,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.topleft = self.pos - self.camera.pos
         self.holding = self.inventory.hotbar.items[self.inventory.hotbar.selected].name
 
-    def draw(self, screen: Surface, mpos: pygame.math.Vector2) -> None:
+    def draw(self, screen: Surface) -> None:
         self.leg2.rect = self.leg2.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
         screen.blit(self.leg2.image, self.leg2.rect.topleft)
 

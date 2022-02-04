@@ -108,14 +108,14 @@ def ascii_str_sum(string: str) -> int:
     return sum([ord(letter) for letter in string])
 
 profile_bool = False
-def profile(callable: type, *args: tuple) -> Any:
+def profile(callable: type, *args: tuple) -> ...:
     """Profiles the given callable and saves + prints the results
 
     Args:
         callable (type): A callabale type (function, constructor, ect)
 
     Returns:
-        [Any]: The result of calling the callable
+        [...]: The result of calling the callable
     """
 
     global profile_bool

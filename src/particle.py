@@ -6,21 +6,19 @@ from typing import TYPE_CHECKING
 import pygame
 import time
 
-from src.constants import VEC, BLOCK_SIZE, GRAVITY, WIDTH, HEIGHT
+from src.constants import VEC, BLOCK_SIZE, GRAVITY, WIDTH, HEIGHT, MAX_Y
 from src.utils import inttup
 
 if TYPE_CHECKING:
     from src.player import Camera
     from src.block import Block
 
-class Particle(pygame.sprite.Sprite):
-    """Class that handles the management, updation and drawing of particles."""
-    instances = []
+class Particle():
+    """A Common superclass for all particles"""
+    instances = [] # List containing every particle, regardless of type
 
     def __init__(self, pos: tuple, vel: tuple, survive_time: float, image: Surface, master=None) -> None:
-        pygame.sprite.Sprite.__init__(self)
         self.__class__.instances.append(self)
-        self.type = type
         self.world_pos = VEC(pos)
         self.vel = VEC(vel)
         self.coords = self.world_pos // BLOCK_SIZE
@@ -40,17 +38,16 @@ class Particle(pygame.sprite.Sprite):
         self.coords = self.world_pos // BLOCK_SIZE
 
     def draw(self, screen: Surface, camera: Camera):
-        screen.blit(self.image, (self.pos-VEC(self.image.get_size())/2))
+        screen.blit(self.image, (self.pos - VEC(self.image.get_size()) / 2))
 
     def kill(self) -> None:
-        super().kill()
-        # Get each ancestor of the current class
-        for ancestor in self.__class__.__mro__:
-            try:
-                # If the class has an instances list, remove itself
-                ancestor.instances.remove(self)
-            except (AttributeError, ValueError):
-                pass
+        # There is a rare bug where the particle is killed twice,
+        # therefore it is being removed from the list twice, so we catch that here
+        try:
+            self.__class__.instances.remove(self)
+            del self
+        except ValueError:
+            pass
 
 class PhysicsParticle(Particle):
     def __init__(self, pos: tuple, vel: tuple, survive_time: float, image: Surface, blocks: dict, master=None) -> None:
@@ -92,7 +89,7 @@ class EnvironmentalParticle(Particle):
         super().__init__(pos, vel, survive_time, image, master)
         self.blocks = blocks
         self.vel = VEC(vel)
-        
+
     def update(self, dt: float, camera: Camera) -> None:
         super().update(dt, camera)
         if inttup(self.coords) in self.blocks:
@@ -120,13 +117,22 @@ class BlockParticle(PhysicsParticle):
 class VoidFogParticle(EnvironmentalParticle):
     max_speed = 12
 
-    def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block]) -> None:
+    def __init__(self, pos: tuple[int, int], vel: tuple[float, float], blocks: dict[tuple[int, int], Block], size: tuple[int, int]) -> None:
         self.survive_time = randint(5, 12) / 10
         self.pos = pos
-        self.size = choices(range(5, 10+1), weights=range(12, 0, -2))[0]
+        self.size = size
         self.image = pygame.Surface((self.size, self.size))
         self.image.fill(Color((randint(25, 55), ) * 3))
-        self.vel = VEC(randint(-(ms := self.__class__.max_speed), ms) / 10, randint(-ms, ms) / 10)
+        self.vel = vel
         super().__init__(pos, self.vel, self.survive_time, self.image, blocks)
 
+    @staticmethod
+    def spawn(dt: float, cam_pos: VEC, blocks: dict[tuple[int, int], Block], player_y):
+        if player_y > 0.25 * MAX_Y:
+            pos = VEC(randint(0, WIDTH), randint(0, HEIGHT)) + cam_pos
+            size = choices(range(5, 10+1), weights=range(12, 0, -2))[0]
+            vel = VEC(randint(-(ms := __class__.max_speed), ms) / 10, randint(-ms, ms) / 10)
+            VoidFogParticle(pos, vel, blocks, size)
+
+# List of particles (superclasses) that should be drawn behind blocks
 background_particles = (EnvironmentalParticle)

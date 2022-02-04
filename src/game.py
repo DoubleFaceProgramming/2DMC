@@ -5,13 +5,13 @@ import os
 
 from pygame.locals import  (
     MOUSEBUTTONDOWN, KEYDOWN,
-    K_e, K_F5, K_F9, K_F2,
     HWSURFACE, DOUBLEBUF,
+    K_e, K_F5, K_F9,
     QUIT,
 )
 
 from src.constants import SEED, WIDTH, HEIGHT, FPS, SCR_DIM, VEC, CHUNK_SIZE, BLOCK_SIZE, SPACING
-from src.particle import Particle, VoidFogParticle, EnvironmentalParticle, background_particles
+from src.particle import Particle, background_particles
 from src.world_gen import Chunk, Block, load_chunks
 from src.background import Background
 from src.utils import inttup, text
@@ -65,8 +65,6 @@ class Game():
                     self.debug_bool = not self.debug_bool
                 if event.key == K_F9:
                     utils.profile_bool = True
-                if event.key == K_F2:
-                    VoidFogParticle(self.player.pos, Block.instances)
                 if event.key == K_e:
                     self.player.toggle_inventory()
 
@@ -87,11 +85,13 @@ class Game():
         for chunk in self.rendered_chunks:
             Chunk.instances[chunk].draw(self.player.camera, screen)
 
+        # We do not draw particles that are instances of or subclasses of
+        # a background particle (defined in particle.py)
         for particle in Particle.instances:
             if not issubclass(particle.__class__, background_particles):
                 particle.draw(screen, self.player.camera)
 
-        self.player.draw(screen, mpos)
+        self.player.draw(screen)
 
         if self.debug_bool:
             self.debug(self.screen, mpos)

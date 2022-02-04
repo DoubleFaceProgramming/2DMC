@@ -21,8 +21,7 @@ class Background():
         # self.sun.update()
         # self.moon.update()
 
-        if player_y > 0.8 * MAX_Y:
-            VoidFogParticle(VEC(randint(0, WIDTH), randint(0, HEIGHT)) + camera.pos, Block.instances)
+        VoidFogParticle.spawn(dt, camera.pos, Block.instances, player_y)
 
     def draw(self, screen: Surface, camera: Camera) -> None:
         self.sky.draw(screen)
