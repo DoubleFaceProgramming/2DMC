@@ -87,13 +87,13 @@ class Game():
         for particle in Particle.instances:
             particle.draw(self.player.camera, screen)
 
+        if not self.player.inventory.visible:
+            self.player.crosshair.block_selection.draw(screen)
         self.player.draw(screen, mpos)
 
         if self.debug_bool:
             self.debug(self.screen, mpos)
 
-        if not self.player.inventory.visible:
-            self.player.crosshair.block_selection.draw(screen)
         self.player.inventory.draw(screen)
         if not self.player.inventory.visible:
             self.player.crosshair.draw(screen)
