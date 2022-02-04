@@ -64,7 +64,7 @@ class Game():
                 if event.key == K_F5:
                     self.debug_bool = not self.debug_bool
                 if event.key == K_F9:
-                    utils.profile_bool = True
+                    utils.do_profile = True
                 if event.key == K_e:
                     self.player.toggle_inventory()
 
