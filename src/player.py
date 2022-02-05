@@ -7,7 +7,7 @@ import pygame
 from src.block import Block, BLOCK_DATA, remove_block, is_placeable, set_block, inttup
 from src.constants import MAX_Y, SCR_DIM, SLIDE, GRAVITY, TERMINAL_VEL, CHUNK_SIZE
 from src.utils import block_collide, text
-from src.particle import BlockParticle
+from src.particle import BlockParticle, PlayerFallParticle
 from src.inventory import Inventory
 from src.images import *
 
@@ -96,7 +96,7 @@ class Player(pygame.sprite.Sprite):
         self.inventory += "diamond_ore"
         self.inventory += "emerald_ore"
         
-        self.old_coords = self.coords
+        self.last_standing_coords = self.coords
 
     def update(self, blocks: dict, m_state: int, dt: float) -> None:
         self.camera.update(dt)
@@ -148,10 +148,10 @@ class Player(pygame.sprite.Sprite):
         for block in self.detecting_blocks:
             if self.bottom_bar.colliderect(block.rect):
                 self.on_ground = True
-                if (fall_dist := abs(int((self.old_coords - self.coords).y))) >= 4:
-                    amount = (2, round(excess_vel / 2 if (excess_vel := fall_dist - 4 + 6) < 15 else 15))
-                    BlockParticle.spawn(inttup(block.coords - VEC(0, 1)), Block.instances, block, amount)
-                self.old_coords = self.coords
+                if (fall_dist := abs(int((self.last_standing_coords - self.coords).y))) >= 4:
+                    amount = (lower_bound := (excess_vel // 2 if (excess_vel := fall_dist - 4 + 6) < 15 else 15), lower_bound + 3)
+                    PlayerFallParticle.spawn(inttup(block.coords - VEC(0, 1)), Block.instances, block, amount)
+                self.last_standing_coords = self.coords
                 break
         else:
             self.on_ground = False

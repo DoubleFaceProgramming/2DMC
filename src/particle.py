@@ -117,11 +117,20 @@ class BlockParticle(PhysicsParticle):
             self.kill()
 
     @staticmethod
-    def spawn(pos: tuple[int, int],  blocks: dict[tuple[int, int], Block], master=None, amount: tuple[int, int] = (18, 26)):
-        if not master:
-            master = blocks[pos]
-        for _ in range(randint(*amount)):
+    def spawn(pos: tuple[int, int], blocks: dict[tuple[int, int], Block]):
+        master = blocks[pos]
+        for _ in range(randint(18, 26)):
             BlockParticle(VEC(pos) * BLOCK_SIZE + VEC(randint(0, BLOCK_SIZE), randint(0, BLOCK_SIZE)), blocks, master)
+            
+class PlayerFallParticle(BlockParticle):
+    def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block) -> None:
+        super().__init__(pos, blocks, master)
+        self.vel = VEC(randint(-60, 60) / 10, randint(-70, -20) / 10)
+    
+    @staticmethod
+    def spawn(pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block, amount: tuple[int, int]):
+        for _ in range(randint(*amount)):
+            __class__(VEC(pos) * BLOCK_SIZE + VEC(randint(0, BLOCK_SIZE), BLOCK_SIZE-1), blocks, master)
 
 class VoidFogParticle(EnvironmentalParticle):
     max_speed = 12
@@ -144,7 +153,7 @@ class VoidFogParticle(EnvironmentalParticle):
             __class__.timer = time.time()
             if player_y > 0.25 * MAX_Y:
                 for _ in range(round(elapsed_time / __class__.max_spawn_frequency)):
-                    VoidFogParticle(VEC(randint(0, WIDTH), randint(0, HEIGHT)) + cam_pos, blocks)
+                    __class__(VEC(randint(0, WIDTH), randint(0, HEIGHT)) + cam_pos, blocks)
 
 # List of particles (superclasses) that should be drawn behind blocks
 background_particles = (EnvironmentalParticle)
