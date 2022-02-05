@@ -93,9 +93,13 @@ class EnvironmentalParticle(Particle):
 
     def update(self, dt: float, camera: Camera) -> None:
         super().update(dt, camera)
+        
+        # If the particle floats behind a block, there is no point to continue rendering it
         if inttup(self.coords) in self.blocks:
             self.kill()
             return
+        
+        # Same goes when the particle floats outside the screen
         if not (0 < self.pos[0] < WIDTH and 0 < self.pos[1] < HEIGHT):
             self.kill()
 
@@ -110,9 +114,11 @@ class BlockParticle(PhysicsParticle):
         color = self.master.image.get_at((randint(0, BLOCK_SIZE-1), randint(0, BLOCK_SIZE-1)))
         self.image.fill(color)
 
+        # Calculate the time that the particle is going to last for
         self.survive_time = randint(4, 8) / 10
         super().__init__(self.pos, (randint(-35, 35) / 10, randint(-30, 5) / 10), self.survive_time, self.image, blocks, master=master)
 
+        # If the color is white which is the default blank color, it means that it is a transparent pixel, so don't generate
         if color == (255, 255, 255):
             self.kill()
 
@@ -149,11 +155,17 @@ class VoidFogParticle(EnvironmentalParticle):
 
     @staticmethod
     def spawn(cam_pos: VEC, blocks: dict[tuple[int, int], Block], player_y: int):
+        # If the player is below 7/8 of the world
         if player_y >= MAX_Y * 7 / 8:
+            # The lower down the player is, the higher the frequency, the lower the frequency value, therefore more particles
             spawn_frequency = __class__.max_spawn_frequency + (player_y_perc := (MAX_Y - player_y) / (MAX_Y / 8)) * 0.02
+            # If the time between last spawn and this call is more than frequency, spawn the particles
             if (elapsed_time := time.time() - __class__.timer) >= spawn_frequency:
                 __class__.timer = time.time()
+                # If the loop took longer than 1 * spawn_frequency, 
+                # spawn multiple particles determined by elapsed_time / spawn_frequency
                 for _ in range(round(elapsed_time / spawn_frequency)):
+                    # It is exponentially more likely for large particles to spawn the lower down you are
                     size = choices(range(5, 10+1), weights=[i ** (3 * player_y_perc) for i in range(12, 0, -2)])[0]
                     __class__(VEC(randint(0, WIDTH), randint(0, HEIGHT)) + cam_pos, size, blocks)
 

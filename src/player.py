@@ -148,9 +148,13 @@ class Player(pygame.sprite.Sprite):
         for block in self.detecting_blocks:
             if self.bottom_bar.colliderect(block.rect):
                 self.on_ground = True
+                # Calculate the fall distance, how many blocks the player fell
+                # If the player fell for more than or equal to 4 blocks
                 if (fall_dist := abs(int((self.last_standing_coords - self.coords).y))) >= 4:
+                    # The amount of particles to generate, an upper bound and a lower bound
                     amount = (lower_bound := (excess_vel // 2 if (excess_vel := fall_dist - 4 + 6) < 15 else 15), lower_bound + 3)
                     PlayerFallParticle.spawn(inttup(block.coords - VEC(0, 1)), Block.instances, block, amount)
+                # Update the last standing coords used to calculate the fall distance
                 self.last_standing_coords = self.coords
                 break
         else:
