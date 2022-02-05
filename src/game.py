@@ -114,7 +114,7 @@ class Game():
             "Chunks loaded": len(Chunk.instances),
             "Rendered blocks": len(Block.instances),
             "Block position": inttup((self.player.pos + (mpos - self.player.rect.topleft)) // BLOCK_SIZE),
-            "Detecting rects": len(self.player.detecting_rects),
+            "Detecting rects": len(self.player.detecting_blocks),
             "Particles": len(Particle.instances),
         }
 

@@ -19,7 +19,6 @@ CHUNK_SIZE = 8
 # Seed for structure gen testing: -1797233725
 # Seed for low world gen (loads at 1056) testing: 1561761502
 SEED = randint(-2147483648, 2147483647)
-SEED = 1561761502
 
 FPS = 1000
 VEC = Vector2

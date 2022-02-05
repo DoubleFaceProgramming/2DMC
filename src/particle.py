@@ -99,8 +99,9 @@ class EnvironmentalParticle(Particle):
             self.kill()
 
 class BlockParticle(PhysicsParticle):
-    def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master=None) -> None:
+    def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block) -> None:
         self.master = master
+        self.pos = pos
         self.size = randint(6, 8)
 
         # Gets a random colour from master and fills its image with it
@@ -109,10 +110,17 @@ class BlockParticle(PhysicsParticle):
         self.image.fill(color)
 
         self.survive_time = randint(4, 8) / 10
-        super().__init__(pos, (randint(-35, 35) / 10, randint(-30, 5) / 10), self.survive_time, self.image, blocks, master=master)
+        super().__init__(self.pos, (randint(-35, 35) / 10, randint(-30, 5) / 10), self.survive_time, self.image, blocks, master=master)
 
         if color == (255, 255, 255):
             self.kill()
+
+    @staticmethod
+    def spawn(pos: tuple[int, int],  blocks: dict[tuple[int, int], Block], master=None, amount: tuple[int, int] = (18, 26)):
+        if not master:
+            master = blocks[pos]
+        for _ in range(randint(*amount)):
+            BlockParticle(VEC(pos) * BLOCK_SIZE + VEC(randint(0, BLOCK_SIZE), randint(0, BLOCK_SIZE)), blocks, master)
 
 class VoidFogParticle(EnvironmentalParticle):
     max_speed = 12
@@ -127,7 +135,7 @@ class VoidFogParticle(EnvironmentalParticle):
         super().__init__(pos, self.vel, self.survive_time, self.image, blocks)
 
     @staticmethod
-    def spawn(dt: float, cam_pos: VEC, blocks: dict[tuple[int, int], Block], player_y):
+    def spawn(cam_pos: VEC, blocks: dict[tuple[int, int], Block], player_y):
         if player_y > 0.25 * MAX_Y:
             pos = VEC(randint(0, WIDTH), randint(0, HEIGHT)) + cam_pos
             size = choices(range(5, 10+1), weights=range(12, 0, -2))[0]

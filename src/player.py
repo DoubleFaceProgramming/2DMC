@@ -5,9 +5,10 @@ from pygame.math import Vector2
 import pygame
 
 from src.block import Block, BLOCK_DATA, remove_block, is_placeable, set_block, inttup
-from src.utils import block_collide, text
-from src.inventory import Inventory
 from src.constants import MAX_Y, SCR_DIM, SLIDE, GRAVITY, TERMINAL_VEL, CHUNK_SIZE
+from src.utils import block_collide, text
+from src.particle import BlockParticle
+from src.inventory import Inventory
 from src.images import *
 
 class Camera(pygame.sprite.Sprite):
@@ -38,7 +39,7 @@ class Player(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.size = VEC(0.225 * BLOCK_SIZE, 1.8 * BLOCK_SIZE)
         self.width, self.height = self.size.x, self.size.y
-        self.start_pos = VEC(0, 1023) * BLOCK_SIZE # Far lands: 9007199254740993 (aka 2^53)
+        self.start_pos = VEC(0, 3) * BLOCK_SIZE # Far lands: 9007199254740993 (aka 2^53)
         self.pos = VEC(self.start_pos)
         self.coords = self.pos // BLOCK_SIZE
         self.acc = VEC(0, 0)
@@ -48,9 +49,10 @@ class Player(pygame.sprite.Sprite):
         # Sprint-jumping speed: 7.127 bps
         self.max_speed = 5.153
         self.jumping_max_speed = 6.7
-        self.rect = pygame.Rect((0, 0, 0.225*BLOCK_SIZE, 1.8*BLOCK_SIZE))
-        self.bottom_bar = pygame.Rect((self.rect.x+1, self.rect.bottom), (self.width-2, 1))
+        self.rect = pygame.Rect((0, 0, 0.225 * BLOCK_SIZE, 1.8 * BLOCK_SIZE))
+        self.bottom_bar = pygame.Rect((self.rect.x + 1, self.rect.bottom), (self.width - 2, 1))
         self.on_ground = False
+        self.falling_4_blocks = False # 4 blocks is the minimum fall damage, and min to spawn particles
         self.holding = "grass_block"
         self.direction = "right"
 
@@ -141,12 +143,19 @@ class Player(pygame.sprite.Sprite):
         self.move(blocks, dt)
 
         # Check if the player is on the ground with a bar at the bottom of the player
-        for block_rect in self.detecting_rects:
-            if self.bottom_bar.colliderect(block_rect):
+        for block in self.detecting_blocks:
+            if self.bottom_bar.colliderect(block.rect):
                 self.on_ground = True
+                if self.falling_4_blocks:
+                    self.falling_4_blocks = False
+                    BlockParticle.spawn(inttup(block.coords - VEC(0, 1)), Block.instances, block, (2, 6))
                 break
         else:
             self.on_ground = False
+
+        # 13 is a rough version of the velocity when falling 4 blocks
+        if self.vel.y >= 15.5625:
+            self.falling_4_blocks = True
 
         # Update the inventory and the crosshair and animate self
         self.inventory.update(m_state)
@@ -183,8 +192,8 @@ class Player(pygame.sprite.Sprite):
         pygame.draw.rect(screen, (255, 255, 255), self.rect, width=1)
         # Draw the bottom bar (used to calculate if the player is on the ground)
         pygame.draw.rect(screen, (255, 0, 0), self.bottom_bar, width=2)
-        for rect in self.detecting_rects: # Drawing the rects the player is calculating collision against
-            pygame.draw.rect(screen, (255, 0, 0), rect, width=1)
+        for block in self.detecting_blocks: # Drawing the rects the player is calculating collision against
+            pygame.draw.rect(screen, (255, 0, 0), block.rect, width=1)
 
     def animate(self, dt: float) -> None:
         """Calculate the rotation and facing of the player's body parts"""
@@ -221,7 +230,7 @@ class Player(pygame.sprite.Sprite):
         # Determine how many sections to split the delta velocity into based on the delta time
         split = ceil(90 * dt / 62.5 * 1.5)
         flag = False
-        detecting_rects = []
+        detecting_blocks = []
 
         for _ in range(split): # Split the movement
             # Only detect collision within a 3 by 4 area around the player
@@ -236,29 +245,29 @@ class Player(pygame.sprite.Sprite):
                             # https://stackoverflow.com/questions/67419774/falling-left-and-right-inconsistencies-in-pygame-platformer
                             # DaNub is not going to attempt to explain why each "floor" and "ceil" are where they are so deal with it
                             if self.vel.y < 0:
-                                colliding, detecting_rects = block_collide(
+                                colliding, detecting_blocks = block_collide(
                                     floor(self.pos.x), floor(self.pos.y+self.vel.y/split),
                                     self.width, self.height,
-                                    detecting_rects, block)
+                                    detecting_blocks, block)
                                 if colliding:
                                     self.pos.y = floor(block.pos.y + BLOCK_SIZE)
                                     self.vel.y = 0
                                     flag = True
                             elif self.vel.y >= 0:
                                 if self.vel.x <= 0:
-                                    colliding, detecting_rects = block_collide(
+                                    colliding, detecting_blocks = block_collide(
                                         floor(self.pos.x), ceil(self.pos.y+self.vel.y/split),
                                         self.width, self.height,
-                                        detecting_rects, block)
+                                        detecting_blocks, block)
                                     if colliding:
                                         self.pos.y = ceil(block.pos.y - self.height)
                                         self.vel.y = 0
                                         flag = True
                                 elif self.vel.x > 0:
-                                    colliding, detecting_rects = block_collide(
+                                    colliding, detecting_blocks = block_collide(
                                         ceil(self.pos.x), ceil(self.pos.y+self.vel.y/split),
                                         self.width, self.height,
-                                        detecting_rects, block)
+                                        detecting_blocks, block)
                                     if colliding:
                                         self.pos.y = ceil(block.pos.y - self.height)
                                         self.vel.y = 0
@@ -275,19 +284,19 @@ class Player(pygame.sprite.Sprite):
                         block = blocks[(int(self.coords.x-1+x), int(self.coords.y-1+y))]
                         if block.data["collision_box"] == "full":
                             if self.vel.x < 0:
-                                colliding, detecting_rects = block_collide(
+                                colliding, detecting_blocks = block_collide(
                                     floor(self.pos.x+self.vel.x/split), floor(self.pos.y),
                                     self.width, self.height,
-                                    detecting_rects, block)
+                                    detecting_blocks, block)
                                 if colliding:
                                     self.pos.x = floor(block.pos.x + BLOCK_SIZE)
                                     self.vel.x = 0
                                     flag = True
                             elif self.vel.x >= 0:
-                                colliding, detecting_rects = block_collide(
+                                colliding, detecting_blocks = block_collide(
                                     ceil(self.pos.x+self.vel.x/split), ceil(self.pos.y),
                                     self.width, self.height,
-                                    detecting_rects, block)
+                                    detecting_blocks, block)
                                 if colliding:
                                     self.pos.x = ceil(block.pos.x - self.width)
                                     self.vel.x = 0
@@ -296,7 +305,7 @@ class Player(pygame.sprite.Sprite):
             if flag: break
 
         # Store the rects that are being tested for collision in self.detecting rects for debugging purposes
-        self.detecting_rects = detecting_rects
+        self.detecting_blocks = detecting_blocks
         # Recalculating the position of the bottom bar
         self.bottom_bar.topleft = (self.rect.left + 1, self.rect.bottom)
 
