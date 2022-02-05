@@ -1,20 +1,20 @@
 from sys import exit as sysexit
-from random import seed
+from random import seed, randint
 import pygame
 import os
 
 from pygame.locals import  (
     MOUSEBUTTONDOWN, KEYDOWN,
-    K_e, K_F5, K_F9, K_F2,
     HWSURFACE, DOUBLEBUF,
+    K_e, K_F5, K_F9,
     QUIT,
 )
 
 from src.constants import SEED, WIDTH, HEIGHT, FPS, SCR_DIM, VEC, CHUNK_SIZE, BLOCK_SIZE, SPACING
+from src.particle import Particle, background_particles
 from src.world_gen import Chunk, Block, load_chunks
 from src.background import Background
 from src.utils import inttup, text
-from src.particle import Particle, VoidFogParticle
 from src.player import Player
 import src.utils as utils
 
@@ -69,23 +69,27 @@ class Game():
                     self.player.toggle_inventory()
 
         # Calling relevant update functions.
-        self.background.update(self.player.coords.y)
+        self.background.update(dt, self.player.coords.y, self.player.camera)
         self.rendered_chunks = load_chunks(self.player.camera)
         self.player.update(Block.instances, mouse_state, dt)
         for particle in Particle.instances:
-            particle.update(dt)
+            particle.update(dt, self.player.camera)
         for chunk in self.rendered_chunks:
             Chunk.instances[chunk].update(self.player.camera)
 
     def draw(self, screen, mpos) -> None:
         # Clears the frame + also drawing the sky
-        self.background.draw(screen)
+        self.background.draw(screen, self.player.camera)
 
         # Calling relevant draw functions.
         for chunk in self.rendered_chunks:
             Chunk.instances[chunk].draw(self.player.camera, screen)
+
+        # We do not draw particles that are instances of or subclasses of
+        # a background particle (defined in particle.py)
         for particle in Particle.instances:
-            particle.draw(self.player.camera, screen)
+            if not issubclass(particle.__class__, background_particles):
+                particle.draw(screen, self.player.camera)
 
         if not self.player.inventory.visible:
             self.player.crosshair.block_selection.draw(screen)
@@ -110,7 +114,7 @@ class Game():
             "Chunks loaded": len(Chunk.instances),
             "Rendered blocks": len(Block.instances),
             "Block position": inttup((self.player.pos + (mpos - self.player.rect.topleft)) // BLOCK_SIZE),
-            "Detecting rects": len(self.player.detecting_rects),
+            "Detecting rects": len(self.player.detecting_blocks),
             "Particles": len(Particle.instances),
         }
 

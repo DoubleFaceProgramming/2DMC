@@ -57,8 +57,7 @@ def remove_block(chunks: dict, pos: tuple, data: dict, neighbors: dict) -> None:
 
     pos = inttup(pos)
     # Create a random number of particles
-    for _ in range(randint(18, 26)):
-        BlockParticle(VEC(pos) * BLOCK_SIZE + VEC(randint(0, BLOCK_SIZE), randint(0, BLOCK_SIZE)), Block.instances, master=Block.instances[pos])
+    BlockParticle.spawn(pos, Block.instances)
     chunk = (pos[0] // CHUNK_SIZE, pos[1] // CHUNK_SIZE)
     # If the block is layered, instead of removing the block completely, change that block to the next layer
     if "next_layer" in data:
