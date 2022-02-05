@@ -20,6 +20,7 @@ class Particle():
     def __init__(self, pos: tuple, vel: tuple, survive_time: float, image: Surface, master=None) -> None:
         self.__class__.instances.append(self)
         self.world_pos = VEC(pos)
+        self.pos = self.world_pos
         self.vel = VEC(vel)
         self.coords = self.world_pos // BLOCK_SIZE
         self.survive_time = survive_time
@@ -124,23 +125,26 @@ class BlockParticle(PhysicsParticle):
 
 class VoidFogParticle(EnvironmentalParticle):
     max_speed = 12
+    max_spawn_frequency = 0.003
+    timer = time.time()
 
-    def __init__(self, pos: tuple[int, int], vel: tuple[float, float], blocks: dict[tuple[int, int], Block], size: tuple[int, int]) -> None:
-        self.survive_time = randint(5, 12) / 10
-        self.pos = pos
-        self.size = size
+    def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block]) -> None:
+        self.vel = randint(-(ms := __class__.max_speed), ms) / 10, randint(-ms, ms) / 10
+        self.size = choices(range(5, 10+1), weights=range(12, 0, -2))[0]
         self.image = pygame.Surface((self.size, self.size))
-        self.image.fill(Color((randint(25, 55), ) * 3))
-        self.vel = vel
+        self.color = Color((randint(15, 40), ) * 3)
+        self.survive_time = randint(5, 12) / 10
+        self.image.fill(self.color)
+        self.pos = pos
         super().__init__(pos, self.vel, self.survive_time, self.image, blocks)
 
     @staticmethod
-    def spawn(cam_pos: VEC, blocks: dict[tuple[int, int], Block], player_y):
-        if player_y > 0.25 * MAX_Y:
-            pos = VEC(randint(0, WIDTH), randint(0, HEIGHT)) + cam_pos
-            size = choices(range(5, 10+1), weights=range(12, 0, -2))[0]
-            vel = VEC(randint(-(ms := __class__.max_speed), ms) / 10, randint(-ms, ms) / 10)
-            VoidFogParticle(pos, vel, blocks, size)
+    def spawn(cam_pos: VEC, blocks: dict[tuple[int, int], Block], player_y: int):
+        if (elapsed_time := time.time() - __class__.timer) >= __class__.max_spawn_frequency:
+            __class__.timer = time.time()
+            if player_y > 0.25 * MAX_Y:
+                for _ in range(round(elapsed_time / __class__.max_spawn_frequency)):
+                    VoidFogParticle(VEC(randint(0, WIDTH), randint(0, HEIGHT)) + cam_pos, blocks)
 
 # List of particles (superclasses) that should be drawn behind blocks
 background_particles = (EnvironmentalParticle)
