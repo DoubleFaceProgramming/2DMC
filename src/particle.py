@@ -134,7 +134,7 @@ class PlayerFallParticle(BlockParticle):
 
 class VoidFogParticle(EnvironmentalParticle):
     max_speed = 12
-    max_spawn_frequency = 0.003
+    max_spawn_frequency = 0.0025
     timer = time.time()
 
     def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block]) -> None:
@@ -149,10 +149,11 @@ class VoidFogParticle(EnvironmentalParticle):
 
     @staticmethod
     def spawn(cam_pos: VEC, blocks: dict[tuple[int, int], Block], player_y: int):
-        if (elapsed_time := time.time() - __class__.timer) >= __class__.max_spawn_frequency:
-            __class__.timer = time.time()
-            if player_y > 0.25 * MAX_Y:
-                for _ in range(round(elapsed_time / __class__.max_spawn_frequency)):
+        if player_y >= MAX_Y * 7 / 8:
+            spawn_frequency = __class__.max_spawn_frequency + (MAX_Y - player_y) / (MAX_Y / 8) * 0.02
+            if (elapsed_time := time.time() - __class__.timer) >= spawn_frequency:
+                __class__.timer = time.time()
+                for _ in range(round(elapsed_time / spawn_frequency)):
                     __class__(VEC(randint(0, WIDTH), randint(0, HEIGHT)) + cam_pos, blocks)
 
 # List of particles (superclasses) that should be drawn behind blocks
