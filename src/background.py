@@ -17,17 +17,17 @@ class Background():
 
     def update(self, dt: float, player_y: int, camera: Camera) -> None:
         self.sky.update(player_y)
-        # self.cloud.update()
-        # self.sun.update()
-        # self.moon.update()
+        self.cloud.update()
+        self.sun.update()
+        self.moon.update()
 
         VoidFogParticle.spawn(camera.pos, Block.instances, player_y)
 
     def draw(self, screen: Surface, camera: Camera) -> None:
         self.sky.draw(screen)
-        # self.cloud.draw()
-        # self.sun.draw()
-        # self.moon.draw()
+        self.cloud.draw()
+        self.sun.draw()
+        self.moon.draw()
 
         for particle in Particle.instances:
             if issubclass(particle.__class__, background_particles):
