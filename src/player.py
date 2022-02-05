@@ -95,6 +95,8 @@ class Player(pygame.sprite.Sprite):
         self.inventory += "redstone_ore"
         self.inventory += "diamond_ore"
         self.inventory += "emerald_ore"
+        
+        self.old_coords = self.coords
 
     def update(self, blocks: dict, m_state: int, dt: float) -> None:
         self.camera.update(dt)
@@ -146,16 +148,13 @@ class Player(pygame.sprite.Sprite):
         for block in self.detecting_blocks:
             if self.bottom_bar.colliderect(block.rect):
                 self.on_ground = True
-                if self.falling_4_blocks:
-                    self.falling_4_blocks = False
-                    BlockParticle.spawn(inttup(block.coords - VEC(0, 1)), Block.instances, block, (2, 6))
+                if (fall_dist := abs(int((self.old_coords - self.coords).y))) >= 4:
+                    amount = (2, round(excess_vel / 2 if (excess_vel := fall_dist - 4 + 6) < 15 else 15))
+                    BlockParticle.spawn(inttup(block.coords - VEC(0, 1)), Block.instances, block, amount)
+                self.old_coords = self.coords
                 break
         else:
             self.on_ground = False
-
-        # 13 is a rough version of the velocity when falling 4 blocks
-        if self.vel.y >= 15.5625:
-            self.falling_4_blocks = True
 
         # Update the inventory and the crosshair and animate self
         self.inventory.update(m_state)
