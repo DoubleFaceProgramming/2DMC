@@ -21,7 +21,7 @@ class Background():
         # self.sun.update()
         # self.moon.update()
 
-        VoidFogParticle.spawn(dt, camera.pos, Block.instances, player_y)
+        VoidFogParticle.spawn(camera.pos, Block.instances, player_y)
 
     def draw(self, screen: Surface, camera: Camera) -> None:
         self.sky.draw(screen)
