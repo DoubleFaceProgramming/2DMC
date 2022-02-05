@@ -4,5 +4,6 @@
     "bounding_box": "full", 
     "support": false, 
     "next_layer": "oak_log",
+    "unpickblockable": true,
     "overwriteable": ["grass", "tall_grass", "tall_grass_top", "poppy", "dandelion", "oak_leaves", "leafed_oak_log"]
 }

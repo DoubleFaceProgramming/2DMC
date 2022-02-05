@@ -54,7 +54,7 @@ class Player(pygame.sprite.Sprite):
         self.on_ground = False
         self.falling_4_blocks = False # 4 blocks is the minimum fall damage, and min to spawn particles
         self.last_standing_coords = self.coords
-        self.holding = "grass_block"
+        # self.inventory.holding = "grass_block"
         self.direction = "right"
 
         self.head, self.body, self.leg, self.leg2, self.arm, self.arm2 = [pygame.sprite.Sprite() for _ in range(6)]
@@ -177,7 +177,6 @@ class Player(pygame.sprite.Sprite):
         self.coords = self.pos // BLOCK_SIZE
         self.chunk = self.coords // CHUNK_SIZE
         self.rect.topleft = self.pos - self.camera.pos
-        self.holding = self.inventory.hotbar.items[self.inventory.hotbar.selected].name
 
     def draw(self, screen: Surface) -> None:
         self.leg2.rect = self.leg2.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
@@ -353,7 +352,7 @@ class Player(pygame.sprite.Sprite):
             chunks (dict): The main dictionary that contains the list of all chunks in the game
             mpos (Vector2): The position of the mouse
         """
-        if self.holding:
+        if self.inventory.holding:
             # Get the coordinates and the neighbors of the block the crosshair is hovering over
             block_pos = inttup((self.pos + (mpos - self.rect.topleft)) // BLOCK_SIZE)
             if block_pos[1] < MAX_Y: # If the block is above the max y (there is bedrock there but why not /shrug)
@@ -364,8 +363,8 @@ class Player(pygame.sprite.Sprite):
                     "1 0": inttup((block_pos[0] + 1, block_pos[1]))
                 }
                 # If a block has a counterpart (i.e. tall grass)
-                if "counterparts" in BLOCK_DATA[self.holding]:
-                    counterparts = BLOCK_DATA[self.holding]["counterparts"]
+                if "counterparts" in BLOCK_DATA[self.inventory.holding.name]:
+                    counterparts = BLOCK_DATA[self.inventory.holding.name]["counterparts"]
                     for counterpart in counterparts:
                         # Get the position of where counterpart would be and ITS neighbors
                         c_pos = VEC(block_pos)+VEC(inttup(counterpart.split(" ")))
@@ -383,10 +382,10 @@ class Player(pygame.sprite.Sprite):
                         # Note: DaNub forgot how this works so deal with it
                         # Note: trevor CBA to figure out how it works so deal with it
                         for counterpart in counterparts:
-                            if not is_placeable(self, block_pos, BLOCK_DATA[self.holding], neighbors, second_block_pos=c_pos):
+                            if not is_placeable(self, block_pos, BLOCK_DATA[self.inventory.holding.name], neighbors, second_block_pos=c_pos):
                                 break
                         else:
-                            set_block(chunks, block_pos, self.holding, neighbors)
+                            set_block(chunks, block_pos, self.inventory.holding, neighbors)
                             for counterpart in counterparts:
                                 # Get the position of where counterpart would be and ITS neighbors
                                 c_pos = VEC(block_pos) + VEC(inttup(counterpart.split(" ")))
@@ -399,8 +398,8 @@ class Player(pygame.sprite.Sprite):
                                 set_block(chunks, VEC(block_pos)+VEC(inttup(counterpart.split(" "))), counterparts[counterpart], c_neighbors)
                 else:
                     # If the block does not have counterparts, place it if it can be placed
-                    if is_placeable(self, block_pos, BLOCK_DATA[self.holding], neighbors):
-                        set_block(chunks, block_pos, self.holding, neighbors)
+                    if is_placeable(self, block_pos, BLOCK_DATA[self.inventory.holding.name], neighbors):
+                        set_block(chunks, block_pos, self.inventory.holding.name, neighbors)
 
     def toggle_inventory(self) -> None:
         """Toggle the players inventory on and off."""
@@ -416,19 +415,20 @@ class Player(pygame.sprite.Sprite):
     def pick_block(self) -> None:
         """Pick the block at the mouse position, with all the functionality in 3D Minecraft."""
 
-        if block_name := self.crosshair.block.name:
-            old_slot = self.inventory.hotbar.items[self.inventory.hotbar.selected]  # Saving the original hotbar item
-            if block_name in [item.name for item in self.inventory.items.values()]: # Checking if the desired item is in the inventory
+        if block := self.crosshair.block:
+            if "unpickblockable" in BLOCK_DATA[block.name]: return
+            old_slot = self.inventory.holding  # Saving the original hotbar item
+            if block.name in [item.name for item in self.inventory.items.values()]: # Checking if the desired item is in the inventory
                 # Finding the inventory position of the desired item
-                inventory_pos = [pos for pos, item in self.inventory.items.items() if item.name == block_name][0]
+                inventory_pos = [pos for pos, item in self.inventory.items.items() if item.name == block.name][0]
                 if self.inventory.hotbar.selected in self.inventory.hotbar.items:
-                    self.inventory.set_slot((self.inventory.hotbar.selected, 0), block_name) # Setting the hotbar slot to the desired item
+                    self.inventory.set_slot((self.inventory.hotbar.selected, 0), block.name) # Setting the hotbar slot to the desired item
                     self.inventory.set_slot(inventory_pos, old_slot.name)                    # Setting the original hotbar item to the old inventory position
                 else:
-                    self.inventory.set_slot((self.inventory.hotbar.selected, 0), block_name) # Setting the hotbar slot to the desired item
+                    self.inventory.set_slot((self.inventory.hotbar.selected, 0), block.name) # Setting the hotbar slot to the desired item
                     self.inventory.clear_slot(inventory_pos)                                 # Removing the item from the inventory position
             else:
-                self.inventory.set_slot((self.inventory.hotbar.selected, 0), block_name) # Set the hotbar slot to the desired block
+                self.inventory.set_slot((self.inventory.hotbar.selected, 0), block.name) # Set the hotbar slot to the desired block
                 if len(self.inventory.items) < self.inventory.max_items:                 # Add the old item to the inventory if there is enough space
                     self.inventory += old_slot.name
 

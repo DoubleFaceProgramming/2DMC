@@ -87,6 +87,11 @@ class Inventory(object):
             self.hotbar.update(m_state)
         else:
             self.hotbar.update(0)
+        
+        try:
+            self.holding = self.hotbar.items[self.hotbar.selected]
+        except KeyError:
+            self.holding = None
 
     def draw(self, screen: Surface) -> None:
         self.hotbar.draw(screen)

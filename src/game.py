@@ -93,7 +93,7 @@ class Game():
 
         if not self.player.inventory.visible:
             self.player.crosshair.block_selection.draw(screen)
-        self.player.draw(screen, mpos)
+        self.player.draw(screen)
 
         if self.debug_bool:
             self.debug(self.screen, mpos)
