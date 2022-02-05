@@ -141,7 +141,6 @@ class Player(pygame.sprite.Sprite):
         self.move(blocks, dt)
 
         # Check if the player is on the ground with a bar at the bottom of the player
-        self.bottom_bar = pygame.Rect((self.rect.left+1, self.rect.bottom), (self.width-2, 1))
         for block_rect in self.detecting_rects:
             if self.bottom_bar.colliderect(block_rect):
                 self.on_ground = True
@@ -217,7 +216,7 @@ class Player(pygame.sprite.Sprite):
             self.arm.image, self.arm2.image = rotate(invert_player_arm, self.arm.rot), rotate(invert_player_arm, self.arm2.rot)
             self.leg.image, self.leg2.image = rotate(invert_player_leg, self.leg.rot), rotate(invert_player_leg, self.leg2.rot)
 
-    def move(self, blocks: dict, dt: float) -> None:
+    def move(self, blocks: dict[tuple[int, int], Block], dt: float) -> None:
         """Move the player and test for collision between it and the main dictionary of blocks"""
         # Determine how many sections to split the delta velocity into based on the delta time
         split = ceil(90 * dt / 62.5 * 1.5)
@@ -298,6 +297,8 @@ class Player(pygame.sprite.Sprite):
 
         # Store the rects that are being tested for collision in self.detecting rects for debugging purposes
         self.detecting_rects = detecting_rects
+        # Recalculating the position of the bottom bar
+        self.bottom_bar.topleft = (self.rect.left + 1, self.rect.bottom)
 
     def break_block(self, chunks: dict, mpos: pygame.math.Vector2) -> None:
         """Break the block at the position of the mouse
