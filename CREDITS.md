@@ -2,7 +2,7 @@
 
 Special thanks to all the following people for their contributions or advice!
 
-Co-contributor: onlyTr3v0r, 
+Co-contributor: onlyTr3v0r
 
 - Griffpatch: The original creation of Paper Minecraft!
 - Megalng: Structure generation (<https://stackoverflow.com/a/67558183/17303382>)
