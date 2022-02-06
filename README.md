@@ -1,29 +1,24 @@
 # 2DMC
-2DMC is an abrrieviation for 2 Dimensional Minecraft. This idea is originally created and implemented by Griffpatch on Scratch. This is a personal project of creating a Paper Minecraft clone in python, better, smoother, and more Minecrafty. 
 
-## Installation
-Clone the repository at https://github.com/DaNubCoding/2DMC, run the file named "main.py"
+![billboard](https://imgur.com/ggSqLkm.png)
 
-Modules to install (pip install [module]):
-- pygame
-- opensimplex
-- pywin32
+2DMC is short for 2 Dimensional Minecraft, and it represents a personal project to recreate the "[Paper Minecraft](https://scratch.mit.edu/projects/10128407)" game made with scratch in python, while polishing the game, improving the performance and staying true to it's 3D counterpart. It is coded in pygame, using the original minecraft textures. Development is ongoing by DaNub and onlyTr3v0r, and we have a long roadmap of updates planned, so check in or watch this github repo for updates! You can also view planned versions (and the progress on them) in our Trello board at [this link](https://trello.com/b/8FoVz3uU/2dmc)!
 
-## How to play
+Enjoy ^-^
+
+## Related Information
+
+**[Gallery](https://imgur.com/gallery/BHqgAHi)**
+**[Credits](CREDITS.md)**
+**[Install](INSTALL.md)**
+
+## Instructions
+
 - 'a' and 'd' to move left and right
 - 'w' to jump
 - RMB to place blocks
 - LMB to remove blocks
+- MMB to pickblock
 - 'e' to open inventory
 - F5 to open debug
-
-## Credits
-Thank you to Griffpatch for the original creation of Paper Minecraft!
-
-Structure generation code is based heavily on this answer from Megalng: https://stackoverflow.com/questions/67557147/how-to-generate-trees-or-other-structures-over-chunks-in-a-2d-minecraft-like-game
-
-Got ideas from this answer from Rabbid76 in solving a weird glitch (solved now): https://stackoverflow.com/questions/67419774/falling-left-and-right-inconsistencies-in-pygame-platformer
-
-Shoutout to onlyTr3v0r for supporting me throughout this project and helping me with ideas and git/github!
-
-Shoutout to Hayyayson for helping with playtesting and overall support on the project!
+- F9 to profile, if active (see v0.2.0 CHANGELOG.md)

@@ -1,0 +1,8 @@
+{
+    "name": "diamond_ore", 
+    "collision_box": "full", 
+    "bounding_box": "full", 
+    "support": false, 
+    "can_only_overwrite": ["stone", "granite", "andesite", "diorite"],
+    "overwrite_and_change": {"deepslate": "deepslate_diamond_ore"}
+}

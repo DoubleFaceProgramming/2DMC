@@ -1,0 +1,4 @@
+build/profiles/*
+__pycache__/
+build/dist/*
+/.vscode

@@ -1,0 +1,7 @@
+{
+    "name": "tuff", 
+    "collision_box": "full", 
+    "bounding_box": "full", 
+    "support": false, 
+    "can_only_overwrite": ["deepslate", "tuff"]
+}

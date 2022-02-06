@@ -9,5 +9,6 @@
     "counterparts": {
         "0 -1": "tall_grass_top"
     }, 
-    "replaceable": true
+    "replaceable": true,
+    "overwriteable": ["grass"]
 }

@@ -1,0 +1,15 @@
+{
+    "attempts_per_chunk": 2,
+    "sections": [
+        {
+            "range": [0, 8],
+            "rarity": 10,
+            "slope": 1
+        },
+        {
+            "range": [8, 72],
+            "rarity": 10,
+            "slope": -1
+        }
+    ]
+}
