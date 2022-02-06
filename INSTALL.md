@@ -12,7 +12,7 @@ Double click to run the exe.
 
 Clone the desired release from <https://github.com/DaNubCoding/2DMC/releases>, run the file named "main.py"
 
-Modules to install (pip install [module]):
+Modules to install (`pip install <module>`):
 
 - pygame
 - opensimplex
@@ -34,7 +34,7 @@ Then you can just double click the exe to run it.
 
 Clone the repository from <https://github.com/DaNubCoding/2DMC/releases>, run the file named "main.py"
 
-Modules to install (pip install [module]):
+Modules to install (`pip install <module>`):
 
 NOTE: You will most likely either have to downgrade certain modules or modify code to run these versions.
 
