@@ -5,6 +5,7 @@
 ### Windows
 
 Download the latest executable from <https://github.com/DaNubCoding/2DMC>
+
 Double click to run the exe.
 
 ### Mac / Linux
