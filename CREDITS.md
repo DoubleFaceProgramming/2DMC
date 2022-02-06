@@ -11,4 +11,3 @@ Co-contributor: onlyTr3v0r
 - Colby College Chemistry: Curve fitting website that was used for approximating a background gradient: (<https://www.colby.edu/chemistry/PChem/scripts/lsfitpl.html>)
 - sloth: A modified version of this colour changing formula was used for the crosshair (<https://stackoverflow.com/a/51979708/17303382>)
 - Alex Kruckman: A very useful post describing canter pairing (<https://math.stackexchange.com/a/23506>)
-that would... take a while like explain how the game works???
