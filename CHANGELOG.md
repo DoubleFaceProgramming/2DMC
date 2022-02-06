@@ -102,6 +102,12 @@
 
 - The background colour now has a gradient between the default blue (y = 0-) and black (y = 1024)
 
+### Pick-block
+
+- Press the MMB (middle mouse button) to pick the block the crosshair is hovering over
+- Some blocks cannot be pick-blocked, like bedrock, tall grass top, and leafed oak log
+- Pick-blocking will move the targeted block to the slot that you are selecting, no matter if it is on the hotbar or in the inventory
+
 ## Changes
 
 - Crosshair now fades between colors instead of instantly changing
