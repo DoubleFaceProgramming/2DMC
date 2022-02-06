@@ -4,9 +4,7 @@
 
 ### Windows
 
-Download the latest version zip from <https://github.com/DaNubCoding/2DMC>
-Extract the zip to a directory of your choice.
-*Do not move the exe out of the zip directory*
+Download the latest executable from <https://github.com/DaNubCoding/2DMC>
 Double click to run the exe.
 
 ### Mac / Linux
