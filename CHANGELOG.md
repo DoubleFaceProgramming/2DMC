@@ -1,5 +1,8 @@
 # Version 0.2.0
 
+Version 0.2.0 is a major update that focuses primarily on underground generation and features.
+Other notable changes include pickblock, block selection, better particles and profiling.
+
 ## Additions
 
 ### New blocks
@@ -28,8 +31,11 @@
 ### Caves
 
 - Generated with Perlin Noise
-- You will sometimes find grass and dirt getting cut off without any actual cave generating, that is a quirkiness in cave generation
+- You will sometimes find grass and dirt getting cut off without any actual cave generating, that is a quirk of cave generation
 - Caves will not be able to cut through bedrock
+
+Example:
+![img](https://imgur.com/riznmBD.png)
 
 ### Stone Types
 
@@ -65,6 +71,9 @@
   - Redstone ore (2 attempts per chunk) starts generating at chunk-y 56, gets more common until chunk-y 120, then quickly gets rarer until chunk-y 128
   - Diamond ore (1 attempt per chunk) starts generating at chunk-y 56, maintains a 1% chance of generating until chunk-y 96, then gets more common until chunk-y 128 with a 5% chance
   - Emerald ore (1 attempt per chunk) starts generating at chunk-y 56, maintains a 1% chance of generating until chunk-y 72, then gets more common until chunk-y 96 with a 3% chance, then gets rarer until chunk-y 120
+
+Ore distribution map:
+![ore_dist](https://imgur.com/djtQs4s.png)
 
 #### Best y-level for mining
 

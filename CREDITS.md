@@ -2,9 +2,10 @@
 
 Special thanks to all the following people for their contributions or advice!
 
-Co-contributor: onlyTr3v0r
+Originally created by DaNubCoding
+Continued developement by DaNubCoding and onlyTr3v0r
 
-- Griffpatch: The original creation of Paper Minecraft!
+- Griffpatch: The original creation of Paper Minecraft (<https://scratch.mit.edu/projects/10128407>)!
 - Megalng: Structure generation (<https://stackoverflow.com/a/67558183/17303382>)
 - Rabbid76: ideas for solving a weird falling inconsistency bug (<https://stackoverflow.com/a/67437358/17303382>)
 - Hayyayson: original playtesting and overall support on the project
