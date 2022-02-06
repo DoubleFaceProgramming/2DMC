@@ -9,7 +9,9 @@ Enjoy ^-^
 ## Related Information
 
 **[Gallery](https://imgur.com/gallery/BHqgAHi)**
+
 **[Credits](CREDITS.md)**
+
 **[Install](INSTALL.md)**
 
 ## Instructions
