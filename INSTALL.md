@@ -10,7 +10,7 @@ Double click to run the exe.
 
 ### Mac / Linux
 
-Clone the desired release at <https://github.com/DaNubCoding/2DMC/releases>, run the file named "main.py"
+Clone the desired release from <https://github.com/DaNubCoding/2DMC/releases>, run the file named "main.py"
 
 Modules to install (pip install [module]):
 
@@ -22,7 +22,7 @@ Modules to install (pip install [module]):
 
 ### Windows
 
-Download the desired zip at <https://github.com/DaNubCoding/2DMC/releases>
+Download the desired zip from <https://github.com/DaNubCoding/2DMC/releases>
 
 Extract the zip into a directory of your choice.
 
@@ -32,7 +32,7 @@ Then you can just double click the exe to run it.
 
 ### Max / Linux
 
-Clone the repository at <https://github.com/DaNubCoding/2DMC/releases>, run the file named "main.py"
+Clone the repository from <https://github.com/DaNubCoding/2DMC/releases>, run the file named "main.py"
 
 Modules to install (pip install [module]):
 
