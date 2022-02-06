@@ -1,6 +1,6 @@
 # Install
 
-## General Installation (v0.1.1+)
+## General Installation (v0.2.0+)
 
 ### Windows
 
@@ -18,7 +18,7 @@ Modules to install (pip install [module]):
 - opensimplex
 - vnoise
 
-## Old Installation (v0.1.0 and prior)
+## Old Installation (v0.1.1 and prior)
 
 Clone the repository at <https://github.com/DaNubCoding/2DMC>, run the file named "main.py"
 
