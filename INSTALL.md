@@ -4,7 +4,7 @@
 
 ### Windows
 
-Download the latest executable from <https://github.com/DaNubCoding/2DMC/releases>
+Download the desired executable from <https://github.com/DaNubCoding/2DMC/releases>
 
 Double click to run the exe.
 
@@ -22,7 +22,7 @@ Modules to install (pip install [module]):
 
 ### Windows
 
-Download the zip from the release you want to play
+Download the desired zip at <https://github.com/DaNubCoding/2DMC/releases>
 
 Extract the zip into a directory of your choice.
 
