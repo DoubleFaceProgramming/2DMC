@@ -384,7 +384,7 @@ class Player(pygame.sprite.Sprite):
                             if not is_placeable(self, block_pos, BLOCK_DATA[self.inventory.holding.name], neighbors, second_block_pos=c_pos):
                                 break
                         else:
-                            set_block(chunks, block_pos, self.inventory.holding, neighbors)
+                            set_block(chunks, block_pos, self.inventory.holding.name, neighbors)
                             for counterpart in counterparts:
                                 # Get the position of where counterpart would be and ITS neighbors
                                 c_pos = VEC(block_pos) + VEC(inttup(counterpart.split(" ")))
