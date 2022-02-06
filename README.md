@@ -2,23 +2,17 @@
 
 2DMC is an abbreviation for 2 Dimensional Minecraft. This idea is originally created and implemented by Griffpatch on Scratch. This is a personal project of creating a Paper Minecraft clone in python, better, smoother, and more Minecrafty.
 
-## How to play
+## Instructions
 
 - 'a' and 'd' to move left and right
 - 'w' to jump
 - RMB to place blocks
 - LMB to remove blocks
+- MMB to pickblock
 - 'e' to open inventory
 - F5 to open debug
+- F9 to profile, if active (see v0.2.0 CHANGELOG.md)
 
-## Credits
+## Credits and Install
 
-Co-contributor: onlyTr3v0r, thank you for supporting this project!
-
-Thank you to Griffpatch for the original creation of Paper Minecraft!
-
-Structure generation code is based heavily on this answer from Megalng: <https://stackoverflow.com/questions/67557147/how-to-generate-trees-or-other-structures-over-chunks-in-a-2d-minecraft-like-game>
-
-Got ideas from this answer from Rabbid76 in solving a weird glitch (solved now): <https://stackoverflow.com/questions/67419774/falling-left-and-right-inconsistencies-in-pygame-platformer>
-
-Shoutout to Hayyayson for helping with playtesting and overall support on the project!
+See CR
