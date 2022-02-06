@@ -17,7 +17,7 @@ TERMINAL_VEL = 24
 BLOCK_SIZE = 64
 CHUNK_SIZE = 8
 
-# Seed for structure gen testing: -1797233725
+# Seeds for structure gen testing: -1797233725, -301804449
 # Seed for low world gen (loads at 1056) testing: 1561761502
 SEED = randint(-2147483648, 2147483647)
 

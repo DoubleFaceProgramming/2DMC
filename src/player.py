@@ -54,7 +54,6 @@ class Player(pygame.sprite.Sprite):
         self.on_ground = False
         self.falling_4_blocks = False # 4 blocks is the minimum fall damage, and min to spawn particles
         self.last_standing_coords = self.coords
-        # self.inventory.holding = "grass_block"
         self.direction = "right"
 
         self.head, self.body, self.leg, self.leg2, self.arm, self.arm2 = [pygame.sprite.Sprite() for _ in range(6)]

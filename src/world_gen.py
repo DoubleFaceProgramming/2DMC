@@ -58,8 +58,8 @@ class StructureGenerator(object):
             if file != "distribution":
                 self.BLOCK_DATA[file] = STRUCTURES[self.name][file]
                 # Append the max size of all the different possible variations
-                max_sizes.append((max(x for x, _ in self.BLOCK_DATA[file][1]) - min(x for x, _ in self.BLOCK_DATA[file][1]) + 1,
-                                  max(y for _, y in self.BLOCK_DATA[file][1]) - min(y for _, y in self.BLOCK_DATA[file][1]) + 1))
+                max_sizes.append((max(x for x, y in self.BLOCK_DATA[file][1]) - min(x for x, y in self.BLOCK_DATA[file][1]) + 1,
+                                  max(y for x, y in self.BLOCK_DATA[file][1]) - min(y for x, y in self.BLOCK_DATA[file][1]) + 1))
         # Get the biggest one
         self.max_size = max(max_sizes)
 
@@ -70,7 +70,7 @@ class StructureGenerator(object):
                 self.chunks_to_check = major_structure_generators[conflicts[0]].chunks_to_check
                 break
         else:
-            self.chunks_to_check = int(ceil((self.max_size[0] + 7) / CHUNK_SIZE)), int(ceil((self.max_size[1] + 7) / CHUNK_SIZE))
+            self.chunks_to_check = int(ceil((self.max_size[0] + 7) / CHUNK_SIZE)) + 1, int(ceil((self.max_size[1] + 7) / CHUNK_SIZE) + 1)
 
     def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict) -> Structure | None:
         """Generates chunk data that includes a structure at the given origin
