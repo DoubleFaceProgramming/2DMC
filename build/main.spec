@@ -4,10 +4,10 @@
 block_cipher = None
 
 
-a = Analysis(['main.py'],
+a = Analysis(['../main.py'],
              pathex=[],
              binaries=[],
-             datas=[('assets', 'assets'), ('data', 'data'), ('src', 'src')],
+             datas=[('../assets', 'assets'), ('../data', 'data'), ('../src', 'src')],
              hiddenimports=[],
              hookspath=[],
              hooksconfig={},
@@ -24,7 +24,7 @@ exe = EXE(pyz,
           a.scripts,
           a.binaries,
           a.zipfiles,
-          a.datas,  
+          a.datas,
           [],
           name='main',
           debug=False,
