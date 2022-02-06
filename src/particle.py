@@ -51,6 +51,8 @@ class Particle():
             pass
 
 class PhysicsParticle(Particle):
+    """A superclass for all particles that have gravity / collision"""
+
     def __init__(self, pos: tuple, vel: tuple, survive_time: float, image: Surface, blocks: dict, master=None) -> None:
         self.blocks = blocks
         super().__init__(pos, vel, survive_time, image, master)
@@ -86,6 +88,8 @@ class PhysicsParticle(Particle):
         self.vel.x *= 0.93
 
 class EnvironmentalParticle(Particle):
+    """A superclass for particles that act as enviromental (add atmosphere)"""
+
     def __init__(self, pos: tuple, vel: tuple, survive_time: float, image: Surface, blocks: dict, master=None) -> None:
         super().__init__(pos, vel, survive_time, image, master)
         self.blocks = blocks
@@ -93,12 +97,12 @@ class EnvironmentalParticle(Particle):
 
     def update(self, dt: float, camera: Camera) -> None:
         super().update(dt, camera)
-        
+
         # If the particle floats behind a block, there is no point to continue rendering it
         if inttup(self.coords) in self.blocks:
             self.kill()
             return
-        
+
         # Same goes when the particle floats outside the screen
         if not (0 < self.pos[0] < WIDTH and 0 < self.pos[1] < HEIGHT):
             self.kill()
@@ -124,21 +128,24 @@ class BlockParticle(PhysicsParticle):
 
     @staticmethod
     def spawn(pos: tuple[int, int], blocks: dict[tuple[int, int], Block]):
-        master = blocks[pos]
         for _ in range(randint(18, 26)):
-            BlockParticle(VEC(pos) * BLOCK_SIZE + VEC(randint(0, BLOCK_SIZE), randint(0, BLOCK_SIZE)), blocks, master)
-            
+            BlockParticle(VEC(pos) * BLOCK_SIZE + VEC(randint(0, BLOCK_SIZE), randint(0, BLOCK_SIZE)), blocks, blocks[pos])
+
 class PlayerFallParticle(BlockParticle):
+    """End class that handles the particles created when falling 4 blocks or more"""
+
     def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block) -> None:
         super().__init__(pos, blocks, master)
         self.vel = VEC(randint(-60, 60) / 10, randint(-70, -20) / 10)
-    
+
     @staticmethod
     def spawn(pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block, amount: tuple[int, int]):
         for _ in range(randint(*amount)):
             __class__(VEC(pos) * BLOCK_SIZE + VEC(randint(0, BLOCK_SIZE), BLOCK_SIZE-1), blocks, master)
 
 class VoidFogParticle(EnvironmentalParticle):
+    """Class that handles the void fog particles thats spawn at the bottom of the world"""
+
     max_speed = 12
     max_spawn_frequency = 0.0027
     timer = time.time()
@@ -151,7 +158,7 @@ class VoidFogParticle(EnvironmentalParticle):
         self.survive_time = randint(5, 12) / 10
         self.image.fill(self.color)
         self.pos = pos
-        super().__init__(pos, self.vel, self.survive_time, self.image, blocks)
+        super().__init__(self.pos, self.vel, self.survive_time, self.image, blocks)
 
     @staticmethod
     def spawn(cam_pos: VEC, blocks: dict[tuple[int, int], Block], player_y: int):
@@ -162,7 +169,7 @@ class VoidFogParticle(EnvironmentalParticle):
             # If the time between last spawn and this call is more than frequency, spawn the particles
             if (elapsed_time := time.time() - __class__.timer) >= spawn_frequency:
                 __class__.timer = time.time()
-                # If the loop took longer than 1 * spawn_frequency, 
+                # If the loop took longer than 1 * spawn_frequency,
                 # spawn multiple particles determined by elapsed_time / spawn_frequency
                 for _ in range(round(elapsed_time / spawn_frequency)):
                     # It is exponentially more likely for large particles to spawn the lower down you are
