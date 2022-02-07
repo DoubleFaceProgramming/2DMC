@@ -1,16 +1,18 @@
 from sys import exit as sysexit
 from random import seed, randint
+from pathlib import Path
+import datetime
 import pygame
 import os
 
 from pygame.locals import  (
     MOUSEBUTTONDOWN, KEYDOWN,
     HWSURFACE, DOUBLEBUF,
-    K_e, K_F5, K_F9,
+    K_e, K_F5, K_F9, K_F2,
     QUIT,
 )
 
-from src.constants import SEED, WIDTH, HEIGHT, FPS, SCR_DIM, VEC, CHUNK_SIZE, BLOCK_SIZE, SPACING
+from src.constants import SCREENSHOTS_DIR, SEED, WIDTH, HEIGHT, FPS, SCR_DIM, VEC, CHUNK_SIZE, BLOCK_SIZE, SPACING
 from src.particle import Particle, background_particles
 from src.world_gen import Chunk, Block, load_chunks
 from src.background import Background
@@ -67,6 +69,12 @@ class Game():
                     utils.do_profile = True
                 if event.key == K_e:
                     self.player.toggle_inventory()
+                if event.key == K_F2:
+                    screenshot_path = Path(os.path.join(SCREENSHOTS_DIR, str(datetime.datetime.now().strftime("2DMC_%Y-%m-%d_%H.%M.%S.png"))))
+                    # If the screenshots folder doesn't exist
+                    if not (screenshots_dir := screenshot_path.parent).exists():
+                        screenshots_dir.mkdir()
+                    pygame.image.save(self.screen, screenshot_path)
 
         # Calling relevant update functions.
         self.background.update(dt, self.player.coords.y, self.player.camera)

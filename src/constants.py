@@ -25,7 +25,8 @@ FPS = 1000
 VEC = Vector2
 
 REGULAR_FONT_LOC = exe.pathof("assets/fonts/regular.ttf")
-PROFILE_DIR = exe.pathof("build\\profiles\\")
+PROFILE_DIR = exe.pathof("build/profiles/")
+SCREENSHOTS_DIR = exe.pathof("screenshots/")
 FONT24 = Font(REGULAR_FONT_LOC, 24)
 FONT20 = Font(REGULAR_FONT_LOC, 20)
 
