@@ -4,7 +4,7 @@ import pygame
 import time
 
 from src.images import inventory_img, BLOCK_TEXTURES, hotbar_img, hotbar_selection_img
-from src.utils import inttup, create_text_box, smol_text
+from src.utils import inttup, create_text_box, smol_text, CyclicalIter
 from src.constants import WIDTH, HEIGHT, SCR_DIM, VEC
 
 class Item(object):
@@ -202,7 +202,7 @@ class Hotbar(object):
         self.items = items
         self.selected = 0
         self.fade_timer = 0
-        self.scroll = self.HotbarScroll(0, 8, self)
+        self.scroll = self.HotbarScroll(self, 0, 9)
 
     def update(self, scroll: int) -> None:
         # Updating the hotbar with items from the inventory
@@ -219,13 +219,13 @@ class Hotbar(object):
             # range() is not inclusive so we +1 to the max bounds
             for num_key in range(K_1, K_9 + 1):
                 if keys[num_key]:
-                    self.change_selected(num_key - K_0 - 1) # Minusing the lowest bounds and 1 (because we +1-ed earlier)
+                    # self.change_selected(num_key - K_0 - 1) # Minusing the lowest bounds and 1 (because we +1-ed earlier)
                     self.fade_timer = time.time() # Resetting the fade timer
 
             # Increasing or decreasing scroll object (using a kinda unecessary but cool new feature :D)
             match scroll:
-                case 4: self.scroll.decrease()
-                case 5: self.scroll.increase()
+                case 4: self.scroll -= 1
+                case 5: self.scroll += 1
 
             # If the user has scrolled, reset the fade time and update the scroll obj
             if scroll:
@@ -261,25 +261,12 @@ class Hotbar(object):
         self.scroll.current = new
         self.selected = new
 
-    class HotbarScroll():
-        """Micro-class that provides a cleaner implementation for cyclical scrolling"""
-        def __init__(self, min_bounds: int, max_bounds: int, hotbar) -> None:
-            self.min = min_bounds
-            self.max = max_bounds
+    class HotbarScroll(CyclicalIter):
+        """Micro-class that allows for cyclical hotbar scrolling."""
+
+        def __init__(self, hotbar, min: int, max: int) -> None:
             self.hotbar = hotbar
-            self.current = 0
+            super().__init__([*range(min, max)])
 
         def update(self) -> None:
             self.hotbar.selected = self.current
-
-        def increase(self) -> None:
-            """Increase the current value by 1 and cycle if needed"""
-            self.current += 1
-            if self.current > self.max:
-                self.current = self.min
-
-        def decrease(self) -> None:
-            """Decrease the current value by 1 and cycle if needed"""
-            self.current -= 1
-            if self.current < self.min:
-                self.current = self.max

@@ -13,6 +13,44 @@ import os
 
 from src.constants import VEC, FONT20, FONT24, BLOCK_SIZE, PROFILE_DIR
 
+class CyclicalIter:
+    def __init__(self, elements: list[Any], start: int = 0) -> None:
+        self.elements = elements
+        self.current = self.elements[start]
+        self.index = start
+
+    def __iadd__(self, amount: int):
+        # Using modulus operator to calculate the "wrap-around" of the index
+        self.index += amount
+        self.index %= len(self) # An actual use for %= !!
+        self.current = self[self.index] # We have __getitem__ overloaded so we can do self[]!
+
+        return self
+
+    def __isub__(self, amount: int):
+        # Using modulus operator to calculate the "wrap-around" of the index
+        self.index -= amount
+        self.index %= len(self) # An actual use for %= !!
+        self.current = self[self.index] # We have __getitem__ overloaded so we can do self[]!
+
+        return self
+
+    def __len__(self) -> int:
+        return len(self.elements)
+
+    def __getitem__(self, key: int) -> Any:
+        return self.elements[key]
+
+    def __setitem__(self, key: int, value: Any) -> None:
+        self.elements[key] = value
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        self.__iadd__(1)
+        return self.current
+
 def intv(vector: Vector2) -> Vector2:
     """Returns vector where x and y are integers"""
     return VEC(int(vector.x), int(vector.y))
