@@ -1,4 +1,10 @@
-from src.game import Game
+from src.game import GameManager
+
+
+
+
+# quit()
 
 if __name__ == "__main__":
-    Game().run()
+    manager = GameManager()
+    manager.new().run()

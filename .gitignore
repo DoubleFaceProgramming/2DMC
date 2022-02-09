@@ -1,6 +1,5 @@
 build/profiles/*
-build/__pycache__
-__pycache__/
+screenshots/*
 build/dist/*
+__pycache__/
 /.vscode
-/screenshots
