@@ -55,11 +55,10 @@ class GameManager():
         self.cinematic = self.__class__.CinematicModes(next(self.cinematic_modes))
 
     class CinematicModes(Enum):
-        # ex. Crosshair = Crosshair is visible, nothing else.
-        BOTH = (1,)
-        NEITHER = (2,)
-        CROSSHAIR = (3, 1) # ie. Both 3 (crosshair) and 1 (both) should allow the crosshair to be drawn
-        HOTBAR = (4, 1)
+        BOTH = {"CH": True, "HB": True}
+        NEITHER = {"CH": False, "HB": False}
+        CROSSHAIR = {"CH": True, "HB": False}
+        HOTBAR = {"CH": False, "HB": True}
 
 class Game():
     """Class that handles events and function calls to other classes to run the game"""
@@ -132,8 +131,10 @@ class Game():
             if not issubclass(particle.__class__, background_particles):
                 particle.draw(screen, self.player.camera)
 
-        cinematic = self.manager.cinematic.value[0]
-        if cinematic in self.manager.__class__.CinematicModes.CROSSHAIR.value:
+        # Gets the state of cinematic mode
+        cinematic = self.manager.cinematic.value
+
+        if cinematic["CH"]:
             if not self.player.inventory.visible:
                 self.player.crosshair.block_selection.draw(screen)
 
@@ -141,9 +142,9 @@ class Game():
         if self.debug_bool:
             self.debug(self.screen, mpos)
 
-        if cinematic in self.manager.__class__.CinematicModes.HOTBAR.value:
+        if cinematic["HB"]:
             self.player.inventory.draw(screen)
-        if cinematic in self.manager.__class__.CinematicModes.CROSSHAIR.value:
+        if cinematic["CH"]:
             if not self.player.inventory.visible:
                 self.player.crosshair.draw(screen)
 
