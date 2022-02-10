@@ -99,7 +99,7 @@ class Game():
                     self.manager.toggle_cinematic()
 
         # Calling relevant update functions.
-        self.background.update(dt, self.player.coords.y, self.player.camera)
+        self.background.update(self.player.coords.y, self.player.camera)
         self.rendered_chunks = load_chunks(self.player.camera)
         self.player.update(Block.instances, mouse_state, dt)
         for particle in Particle.instances:

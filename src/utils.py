@@ -13,36 +13,37 @@ import os
 
 from src.constants import VEC, FONT20, FONT24, BLOCK_SIZE, PROFILE_DIR
 
-class CyclicalIter:
+class CyclicalList:
     def __init__(self, elements: list[Any], start: int = 0) -> None:
-        self.elements = elements
+        self.elements = list(elements)
         self.current = self.elements[start]
         self.index = start
 
+        self.calc_index = lambda amount: (self.index + amount) % len(self)
+
     def __iadd__(self, amount: int):
-        # Using modulus operator to calculate the "wrap-around" of the index
-        self.index += amount
-        self.index %= len(self) # An actual use for %= !!
-        self.current = self[self.index] # We have __getitem__ overloaded so we can do self[]!
-
-        return self
-
-    def __isub__(self, amount: int):
-        # Using modulus operator to calculate the "wrap-around" of the index
-        self.index -= amount
-        self.index %= len(self) # An actual use for %= !!
-        self.current = self[self.index] # We have __getitem__ overloaded so we can do self[]!
+        self.index = self.calc_index(amount)
+        self.current = self[self.index] # We have __getitem__ overloaded so we can do self[]
 
         return self
 
     def __len__(self) -> int:
         return len(self.elements)
 
+    def __isub__(self, amount: int):
+        self.index = self.calc_index(-amount)
+        self.current = self[self.index] # We have __getitem__ overloaded so we can do self[]
+
+        return self
+
     def __getitem__(self, key: int) -> Any:
         return self.elements[key]
 
     def __setitem__(self, key: int, value: Any) -> None:
         self.elements[key] = value
+
+    def __delitem__(self, key) -> None:
+        del self.elements[key]
 
     def __iter__(self):
         return self

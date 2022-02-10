@@ -1,8 +1,7 @@
-from random import randint
 from pygame import Surface
 
-from src.particle import EnvironmentalParticle, VoidFogParticle, background_particles, Particle
-from src.constants import MAX_Y, BLUE_SKY, WIDTH, HEIGHT, VEC
+from src.particle import VoidFogParticle, Particle, background_particles
+from src.constants import MAX_Y, BLUE_SKY
 from src.player import Camera
 from src.block import Block
 
@@ -15,7 +14,7 @@ class Background():
         self.sun = self.sky.Sun()
         self.moon = self.sky.Moon()
 
-    def update(self, dt: float, player_y: int, camera: Camera) -> None:
+    def update(self, player_y: int, camera: Camera) -> None:
         self.sky.update(player_y)
         self.cloud.update()
         self.sun.update()
@@ -37,17 +36,18 @@ class Background():
         """Class that handles the sky and all its sub-parts"""
 
         def __init__(self) -> None:
+            # The dimness of the sky is determined by a cubic relation between the player y-coords and the color multiplier
+            # The values of the cubic function is approximated by a curve fitting website, see CREDITS.md
+            # It is then slightly modified for our needs
+            self.calc_color = lambda player_y: ((3.2 * (y_perc := player_y / MAX_Y) ** 3 - 6.16 * y_perc ** 2 + 4.13 * y_perc) / 1.17)
+            self.old_player_y = 0 # Allows for a very minor optimsation
             self.color = (0, 0, 0)
 
         def update(self, player_y: int) -> None:
-            # Fancy math algorithm to do some gradient shmuck
-            # Blue at y = 0+, black at y = 1024-, and some colour changing in between
-            # Trevor doesnt understand the maff so wont comment it but it looks cool
-            # Also wk it shouldn't be a 1-liner but it looks so cool you can't not :D
-            self.color = color if min((color := ([old + (new - old) * ((3.2 * (y_perc := player_y / MAX_Y) ** 3 - 6.16 * y_perc ** 2 + 4.13 * y_perc) / 1.17) for old, new in zip(BLUE_SKY, (0, 0, 0))]) if player_y > 0 else BLUE_SKY)) > 0 else (0, 0, 0)
-            # DaNub: To add on, the dimness of the sky is determined by a cubic relation between the player y-coords and the color multiplier
-            # The values of the cubic function is approximated by a curve fitting website at https://www.colby.edu/chemistry/PChem/scripts/lsfitpl.html
-            # It is then slightly modified for our needs
+            if player_y != self.old_player_y:
+                # Updating colour attribute using the above lambda
+                self.color = color if min((color := ([old + (new - old) * self.calc_color(player_y) for old, new in zip(BLUE_SKY, (0, 0, 0))]) if player_y > 0 else BLUE_SKY)) > 0 else (0, 0, 0)
+                self.old_player_y = player_y
 
         def draw(self, screen: Surface) -> None:
             """Clears the frame"""
