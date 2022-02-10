@@ -1,6 +1,7 @@
 from sys import exit as sysexit
-from random import seed, randint
 from pathlib import Path
+from random import seed
+from enum import Enum
 import datetime
 import pygame
 import os
@@ -15,10 +16,11 @@ from pygame.locals import  (
 from src.constants import SCREENSHOTS_DIR, SEED, WIDTH, HEIGHT, FPS, SCR_DIM, VEC, CHUNK_SIZE, BLOCK_SIZE, SPACING
 from src.particle import Particle, background_particles
 from src.world_gen import Chunk, Block, load_chunks
+from src.utils import inttup, text, CyclicalList
 from src.background import Background
-from src.utils import inttup, text
 from src.player import Player
-import src.utils as utils
+
+import src.utils as utils # For doing utils.do_profile ¯\_(ツ)_/¯
 
 class GameManager():
     """For ultimate Karen mode"""
@@ -34,7 +36,9 @@ class GameManager():
         pygame.event.set_allowed([MOUSEBUTTONDOWN, KEYDOWN, QUIT])
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), HWSURFACE | DOUBLEBUF)
-        self.cinematic = False
+
+        self.cinematic_modes = iter(CyclicalList([mode.value for mode in self.__class__.CinematicModes]))
+        self.cinematic = self.__class__.CinematicModes.BOTH
 
     def new(self):
         self.__class__.instances.append(game := Game(self))
@@ -46,9 +50,16 @@ class GameManager():
         if not (screenshots_dir := screenshot_path.parent).exists():
             screenshots_dir.mkdir()
         pygame.image.save(game.screen, screenshot_path)
-        
-    def toggle_cinematic(self) -> None:
-        self.cinematic = not self.cinematic
+
+    def cycle_cinematic(self) -> None:
+        self.cinematic = self.__class__.CinematicModes(next(self.cinematic_modes))
+
+    class CinematicModes(Enum):
+        # ex. Crosshair = Crosshair is visible, nothing else.
+        BOTH = (1,)
+        NEITHER = (2,)
+        CROSSHAIR = (3, 1) # ie. Both 3 (crosshair) and 1 (both) should allow the crosshair to be drawn
+        HOTBAR = (4, 1)
 
 class Game():
     """Class that handles events and function calls to other classes to run the game"""
@@ -96,7 +107,7 @@ class Game():
                 if event.key == K_F2:
                     self.manager.screenshot(self)
                 if event.key == K_F3:
-                    self.manager.toggle_cinematic()
+                    self.manager.cycle_cinematic()
 
         # Calling relevant update functions.
         self.background.update(self.player.coords.y, self.player.camera)
@@ -121,16 +132,18 @@ class Game():
             if not issubclass(particle.__class__, background_particles):
                 particle.draw(screen, self.player.camera)
 
-        if not self.manager.cinematic:
+        cinematic = self.manager.cinematic.value[0]
+        if cinematic in self.manager.__class__.CinematicModes.CROSSHAIR.value:
             if not self.player.inventory.visible:
                 self.player.crosshair.block_selection.draw(screen)
-        self.player.draw(screen)
 
+        self.player.draw(screen)
         if self.debug_bool:
             self.debug(self.screen, mpos)
 
-        if not self.manager.cinematic:
+        if cinematic in self.manager.__class__.CinematicModes.HOTBAR.value:
             self.player.inventory.draw(screen)
+        if cinematic in self.manager.__class__.CinematicModes.CROSSHAIR.value:
             if not self.player.inventory.visible:
                 self.player.crosshair.draw(screen)
 
