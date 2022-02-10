@@ -11,7 +11,7 @@ WIDTH, HEIGHT = SCR_DIM = 1200, 600
 BLUE_SKY = (135, 206, 250)
 MAX_Y = 1024
 GRAVITY = 0.5
-SLIDE = 0.3
+SLIDE = 1#0.3
 SPACING = 24
 TERMINAL_VEL = 24
 BLOCK_SIZE = 64
@@ -20,6 +20,7 @@ CHUNK_SIZE = 8
 # Seeds for structure gen testing: -1797233725, -301804449
 # Seed for low world gen (loads at 1056) testing: 1561761502
 SEED = randint(-2147483648, 2147483647)
+# SEED = 1666679850
 
 FPS = 1000
 VEC = Vector2

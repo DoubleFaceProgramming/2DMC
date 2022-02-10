@@ -70,9 +70,9 @@ class StructureGenerator(object):
                 self.chunks_to_check = major_structure_generators[conflicts[0]].chunks_to_check
                 break
         else:
-            self.chunks_to_check = int(ceil((self.max_size[0] + 7) / CHUNK_SIZE)) + 1, int(ceil((self.max_size[1] + 7) / CHUNK_SIZE) + 1)
+            self.chunks_to_check = int(ceil((self.max_size[0] + 7) / CHUNK_SIZE)), int(ceil((self.max_size[1] + 7) / CHUNK_SIZE))
 
-    def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict) -> Structure | None:
+    def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict, save=True) -> dict | None:
         """Generates chunk data that includes a structure at the given origin
 
         Args:
@@ -109,7 +109,8 @@ class StructureGenerator(object):
                 case 4:
                     block_data[block_pos] = BLOCK_DATA[block_name]["overwrite_and_change"][block_in_chunk]
 
-        return Structure(self.name, block_data)
+        if save: Structure(self.name, block_data)
+        return block_data
 
     def get_block_in_chunk(self, block_pos: tuple, chunk_pos: tuple, chunk_data: dict) -> str:
         # If the block is inside the chunk the structure originated from
@@ -252,7 +253,7 @@ class BlobGenerator(StructureGenerator):
 
         return blob_dict
 
-    def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict) -> Structure | None:
+    def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict, save=True) -> dict | None:
         """Generates chunk data that includes a structure at the given origin
 
         Args:
@@ -283,7 +284,8 @@ class BlobGenerator(StructureGenerator):
                 case 4:
                     block_data[block_pos] = BLOCK_DATA[block]["overwrite_and_change"][block_in_chunk]
 
-        return Structure(self.name, block_data)
+        if save: Structure(self.name, block_data)
+        return block_data
 
 class Chunk(object):
     """The class responsible for updating and drawing chunks."""
@@ -351,7 +353,7 @@ class Chunk(object):
 
         return chunk_data
 
-def get_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerator, attempts: int, chance: int | None, dist: dict) -> list:
+def get_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerator, attempts: int, chance: int | None, dist: dict, save=True) -> list:
     """Get structures inside the current chunk (x, y)
 
     Args:
@@ -367,34 +369,40 @@ def get_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerat
         list: a list containing the block data of each of the structures in the chunk
     """
 
-    out = []
-    seed(SEED + canter_pairing((x, y)) + ascii_str_sum(generator.name))
-    if chance == None: # Has to be ""== None" because chance can also be 0
-        upper = dist["range"][0]
-        lower = dist["range"][1]
-        slope = dist["slope"]
-        rarity = dist["rarity"]
-        chance = (((y - upper) if slope == 1 else (lower - y)) / (lower - upper) * rarity) if slope else rarity
-    for _ in range(attempts):
-        if rand_bool(chance / 100):
-            start_x = x * CHUNK_SIZE + randint(0, CHUNK_SIZE)
-            if generator.on_surface:
-                # Generate on the surface of the world
-                start_y = terrain_generate(start_x)[1] - 1
-                # If it is cut off by a cave, don't generate
-                if (92.7 < cave_generate((start_x / 70, start_y / 70)) < 103) or (92.7 < cave_generate((start_x / 70, (start_y + 1) / 70)) < 103):
+    if (x, y) not in Structure.instances:
+        out = []
+        seed(SEED + canter_pairing((x, y)) + ascii_str_sum(generator.name))
+        if not save:
+            Structure.instances[(x, y)] = []
+    
+        if chance == None: # Has to be ""== None" because chance can also be 0
+            upper = dist["range"][0]
+            lower = dist["range"][1]
+            slope = dist["slope"]
+            rarity = dist["rarity"]
+            chance = (((y - upper) if slope == 1 else (lower - y)) / (lower - upper) * rarity) if slope else rarity
+            
+        for _ in range(attempts):
+            if rand_bool(chance / 100):
+                start_x = x * CHUNK_SIZE + randint(0, CHUNK_SIZE)
+                if generator.on_surface:
+                    # Generate on the surface of the world
+                    start_y = terrain_generate(start_x)[1] - 1
+                    # If it is cut off by a cave, don't generate
+                    if (92.7 < cave_generate((start_x / 70, start_y / 70)) < 103) or (92.7 < cave_generate((start_x / 70, (start_y + 1) / 70)) < 103):
+                        return out
+                else:
+                    start_y = y * CHUNK_SIZE + randint(0, CHUNK_SIZE)
+
+                # Structures that are not in this chunk
+                if not 0 <= start_y - y * CHUNK_SIZE < CHUNK_SIZE:
                     return out
-            else:
-                start_y = y * CHUNK_SIZE + randint(0, CHUNK_SIZE)
 
-            # Structures that are not in this chunk
-            if not 0 <= start_y - y * CHUNK_SIZE < CHUNK_SIZE:
-                return out
-
-            structure = generator.generate((start_x, start_y), (x, y), chunk_data)
-            if structure:
-                if structure.block_data:
+                structure = generator.generate((start_x, start_y), (x, y), chunk_data, save=save)
+                if structure:
                     out.append(structure)
+    else:
+        out = Structure.instances[(x, y)]
 
     return out
 
@@ -419,9 +427,13 @@ def generate_structures(x: int, y: int, chunk_data: dict, name: str, attempts: i
     for ox in range(-generator.chunks_to_check[0], generator.chunks_to_check[0] + 1):
         for oy in range(-generator.chunks_to_check[1], generator.chunks_to_check[1] + 1):
             # Get the surrounding STRUCTURES that might protrude into the current chunk
-            structs = get_structures(x + ox, y + oy, chunk_data, generator, attempts, chance, dist)
+            structs = get_structures(x + ox, y + oy , chunk_data, generator, attempts, chance, dist, save=(ox == 0 and oy == 0))
             for struct in structs:
-                for block, block_name in struct.block_data.items():
+                if type(struct) == Structure:
+                    block_data = struct.block_data
+                elif type(struct) == dict:
+                    block_data = struct
+                for block, block_name in block_data.items():
                     # If there are parts of that structure inside the current chunk, generate that part in this chunk
                     if 0 <= block[0] - x * CHUNK_SIZE < CHUNK_SIZE and 0 <= block[1] - y * CHUNK_SIZE < CHUNK_SIZE:
                         chunk_data[block] = block_name
