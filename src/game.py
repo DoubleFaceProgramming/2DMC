@@ -96,7 +96,7 @@ class Game():
                         self.player.place_block(Chunk.instances, mpos)
 
             if event.type == KEYDOWN:
-                # Toggling debug mode and the player inventory
+                # Toggles and functionalities
                 if event.key == K_F5:
                     self.debug_bool = not self.debug_bool
                 if event.key == K_F9:
@@ -134,16 +134,21 @@ class Game():
         # Gets the state of cinematic mode
         cinematic = self.manager.cinematic.value
 
+        # If the CH (Crosshair) value is True, display the block selection box, else do not
         if cinematic["CH"]:
             if not self.player.inventory.visible:
                 self.player.crosshair.block_selection.draw(screen)
 
+        # Display the player
         self.player.draw(screen)
+        # Display the debug information
         if self.debug_bool:
             self.debug(self.screen, mpos)
 
+        # If the HB (Hotbar) value is True, display the hotbar, else do not
         if cinematic["HB"]:
             self.player.inventory.draw(screen)
+        # If the CH (Crosshair) value is True, display the crosshair, else do not
         if cinematic["CH"]:
             if not self.player.inventory.visible:
                 self.player.crosshair.draw(screen)
