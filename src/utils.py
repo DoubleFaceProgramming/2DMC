@@ -19,6 +19,7 @@ class CyclicalList:
         self.current = self.elements[start]
         self.index = start
 
+        # What % len(self) does is that if adding the amount goes over the length of the list, it would wrap around
         self.calc_index = lambda amount: (self.index + amount) % len(self)
 
     def __iadd__(self, amount: int):

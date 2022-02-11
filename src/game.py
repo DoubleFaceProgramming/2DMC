@@ -55,6 +55,8 @@ class GameManager():
         self.cinematic = self.__class__.CinematicModes(next(self.cinematic_modes))
 
     class CinematicModes(Enum):
+        """An Enum that stores the options for the cinematic modes cycle/toggle
+        CH is whether the crosshair shows, HB is whether the hotbar shows"""
         BOTH = {"CH": True, "HB": True}
         NEITHER = {"CH": False, "HB": False}
         CROSSHAIR = {"CH": True, "HB": False}
