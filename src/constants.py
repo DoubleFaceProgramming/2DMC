@@ -11,16 +11,16 @@ WIDTH, HEIGHT = SCR_DIM = 1200, 600
 BLUE_SKY = (135, 206, 250)
 MAX_Y = 1024
 GRAVITY = 0.5
-SLIDE = 1#0.3
+SLIDE = 2#0.3
 SPACING = 24
 TERMINAL_VEL = 24
 BLOCK_SIZE = 64
 CHUNK_SIZE = 8
 
-# Seeds for structure gen testing: -1797233725, -301804449
+# Seeds for structure gen testing: -1797233725, -301804449, 1666679850, 1671665804
 # Seed for low world gen (loads at 1056) testing: 1561761502
 SEED = randint(-2147483648, 2147483647)
-# SEED = 1666679850
+SEED = -1797233725
 
 FPS = 1000
 VEC = Vector2
@@ -40,3 +40,4 @@ CONFLICTING_STRUCTURES = {
     ("granite", "diorite", "andesite"): ["coal_ore", "iron_ore", "lapis_ore", "gold_ore", "redstone_ore", "diamond_ore", "emerald_ore"],
     ("tuff", ): ["deepslate_coal_ore", "deepslate_iron_ore", "deepslate_lapis_ore", "deepslate_gold_ore", "deepslate_redstone_ore", "deepslate_diamond_ore", "deepslate_emerald_ore"]
 }
+MAX_STRUCTURE_SIZE = (3, 3)

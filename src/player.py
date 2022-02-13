@@ -4,7 +4,7 @@ from pygame import Surface, Rect
 from pygame.math import Vector2
 import pygame
 
-from src.block import Block, BLOCK_DATA, remove_block, is_placeable, set_block, inttup
+from src.block import Block, BLOCK_DATA, remove_block, is_placeable, updated_set_block, inttup
 from src.constants import MAX_Y, SCR_DIM, SLIDE, GRAVITY, TERMINAL_VEL, CHUNK_SIZE
 from src.utils import block_collide, text
 from src.particle import BlockParticle, PlayerFallParticle
@@ -39,7 +39,7 @@ class Player(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.size = VEC(0.225 * BLOCK_SIZE, 1.8 * BLOCK_SIZE)
         self.width, self.height = self.size.x, self.size.y
-        self.start_pos = VEC(0, 3) * BLOCK_SIZE # Far lands: 9007199254740993 (aka 2^53)
+        self.start_pos = VEC(0, 50) * BLOCK_SIZE # Far lands: 9007199254740993 (aka 2^53)
         self.pos = VEC(self.start_pos)
         self.coords = self.pos // BLOCK_SIZE
         self.acc = VEC(0, 0)
@@ -47,8 +47,8 @@ class Player(pygame.sprite.Sprite):
         # Walking speed: 4.317 bps
         # Sprinting speed: 5.612 bps
         # Sprint-jumping speed: 7.127 bps
-        self.max_speed = 10#5.153
-        self.jumping_max_speed = 10#6.7
+        self.max_speed = 20#5.153
+        self.jumping_max_speed = 20#6.7
         self.rect = pygame.Rect((0, 0, 0.225 * BLOCK_SIZE, 1.8 * BLOCK_SIZE))
         self.bottom_bar = pygame.Rect((self.rect.x + 1, self.rect.bottom), (self.width - 2, 1))
         self.on_ground = False
@@ -125,7 +125,7 @@ class Player(pygame.sprite.Sprite):
             self.vel.x -= SLIDE * dt
         # If the player is on the ground and not in the inventory, jump
         if keys[K_w] and self.on_ground and not self.inventory.visible:
-            self.vel.y = -20#-9.2
+            self.vel.y = -16.5#-9.2
             # When the player jumps, its x-speed also increases slightly (aka sprint jumping in minecraft)
             self.vel.x *= 1.133
             # Accelerate the player unless its speed is already at the maximum
@@ -385,7 +385,7 @@ class Player(pygame.sprite.Sprite):
                             if not is_placeable(self, block_pos, BLOCK_DATA[self.inventory.holding.name], neighbors, second_block_pos=c_pos):
                                 break
                         else:
-                            set_block(chunks, block_pos, self.inventory.holding.name, neighbors)
+                            updated_set_block(chunks, block_pos, self.inventory.holding.name, neighbors)
                             for counterpart in counterparts:
                                 # Get the position of where counterpart would be and ITS neighbors
                                 c_pos = VEC(block_pos) + VEC(inttup(counterpart.split(" ")))
@@ -395,11 +395,11 @@ class Player(pygame.sprite.Sprite):
                                     "-1 0": inttup((c_pos.x - 1, c_pos.y)),
                                     "1 0": inttup((c_pos.x + 1, c_pos.y))
                                 }
-                                set_block(chunks, VEC(block_pos)+VEC(inttup(counterpart.split(" "))), counterparts[counterpart], c_neighbors)
+                                updated_set_block(chunks, VEC(block_pos)+VEC(inttup(counterpart.split(" "))), counterparts[counterpart], c_neighbors)
                 else:
                     # If the block does not have counterparts, place it if it can be placed
                     if is_placeable(self, block_pos, BLOCK_DATA[self.inventory.holding.name], neighbors):
-                        set_block(chunks, block_pos, self.inventory.holding.name, neighbors)
+                        updated_set_block(chunks, block_pos, self.inventory.holding.name, neighbors)
 
     def toggle_inventory(self) -> None:
         """Toggle the players inventory on and off."""

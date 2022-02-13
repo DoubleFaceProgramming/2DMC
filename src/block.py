@@ -72,7 +72,16 @@ def remove_block(chunks: dict, pos: tuple, data: dict, neighbors: dict) -> None:
         if neighbors[neighbor] in Block.instances:
             Block.instances[neighbors[neighbor]].update(chunks)
 
-def set_block(chunks: dict, pos: tuple, name: str, neighbors: dict) -> None:
+def set_block(chunks: dict, pos: tuple, name: str):
+    pos = inttup(pos)
+    # Calculates the position of the chunk the block is in.
+    chunk = (pos[0] // CHUNK_SIZE, pos[1] // CHUNK_SIZE)
+    if chunk in chunks:
+        # Create an entry in the block dictionary that contains a new Block object
+        Block.instances[pos] = Block(chunks[chunk], pos, name)
+        chunks[chunk].block_data[pos] = name
+
+def updated_set_block(chunks: dict, pos: tuple, name: str, neighbors: dict) -> None:
     """Set the block at the position given to the block given
 
     Args:
@@ -82,13 +91,7 @@ def set_block(chunks: dict, pos: tuple, name: str, neighbors: dict) -> None:
         neighbors (dict): THe neighbours of the block
     """
 
-    pos = inttup(pos)
-    # Calculates the position of the chunk the block is in.
-    chunk = (pos[0] // CHUNK_SIZE, pos[1] // CHUNK_SIZE)
-    if chunk in chunks:
-        # Create an entry in the block dictionary that contains a new Block object
-        Block.instances[pos] = Block(chunks[chunk], pos, name)
-        chunks[chunk].block_data[pos] = name
+    set_block(chunks, pos, name)
     for neighbor in neighbors:
         # Update the neighboring blocks
         if neighbors[neighbor] in Block.instances:

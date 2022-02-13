@@ -7,12 +7,12 @@ from os.path import join
 from pathlib import Path
 from vnoise import Noise
 from os import listdir
-from math import ceil
+from math import ceil, floor
 import numpy as np
 
-from src.constants import CHUNK_SIZE, BLOCK_SIZE, ORE_DISTRIBUTION, SEED, WIDTH, HEIGHT, CONFLICTING_STRUCTURES, MAX_Y, STRUCTURES, BLOCK_DATA
-from src.utils import ascii_str_sum, canter_pairing, rand_bool
-from src.block import Block
+from src.constants import CHUNK_SIZE, BLOCK_SIZE, ORE_DISTRIBUTION, SEED, VEC, WIDTH, HEIGHT, CONFLICTING_STRUCTURES, MAX_Y, STRUCTURES, BLOCK_DATA, MAX_STRUCTURE_SIZE
+from src.utils import ascii_str_sum, canter_pairing, inttup, rand_bool
+from src.block import Block, set_block
 from src.player import Camera
 from build.exe_comp import pathof
 
@@ -72,7 +72,7 @@ class StructureGenerator(object):
         else:
             self.chunks_to_check = int(ceil((self.max_size[0] + 7) / CHUNK_SIZE)), int(ceil((self.max_size[1] + 7) / CHUNK_SIZE))
 
-    def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict, save=True) -> dict | None:
+    def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict) -> dict | None:
         """Generates chunk data that includes a structure at the given origin
 
         Args:
@@ -98,7 +98,7 @@ class StructureGenerator(object):
             else:
                 block_name = block
 
-            block_in_chunk = self.get_block_in_chunk(block_pos, chunk_pos, chunk_data)
+            block_in_chunk = self.get_block_in_chunk(block_pos)
             match self.can_generate(block_name, block_in_chunk):
                 case 1:
                     block_data[block_pos] = block_name # Generate the block
@@ -109,20 +109,13 @@ class StructureGenerator(object):
                 case 4:
                     block_data[block_pos] = BLOCK_DATA[block_name]["overwrite_and_change"][block_in_chunk]
 
-        if save: Structure(self.name, block_data)
+        Structure(self.name, block_data)
         return block_data
 
-    def get_block_in_chunk(self, block_pos: tuple, chunk_pos: tuple, chunk_data: dict) -> str:
-        # If the block is inside the chunk the structure originated from
-        if 0 <= block_pos[0] - chunk_pos[0] * CHUNK_SIZE < CHUNK_SIZE and 0 <= block_pos[1] - chunk_pos[1] * CHUNK_SIZE < CHUNK_SIZE:
-            if block_pos in chunk_data:
-                block_in_chunk = chunk_data[block_pos] # Get the block name of the target position in the chunk
-            else:
-                block_in_chunk = "" # If the block does not exist in the chunk, set it to an empty string
-
+    def get_block_in_chunk(self, block_pos: tuple) -> str:
         # real_chunk_pos is the actual chunk position of the current block, not the chunk the structure originates from
         if (real_chunk_pos := (block_pos[0] // CHUNK_SIZE, block_pos[1] // CHUNK_SIZE)) in Structure.instances:
-            for structure in Structure.instances[real_chunk_pos]:       # Check for STRUCTURES that have already been pre-generated
+            for structure in Structure.instances[real_chunk_pos]:       # Check for structures that have already been pre-generated
                 if block_pos in structure.block_data:                   # If the current block overlaps a block in the structure
                     block_in_chunk = structure.block_data[block_pos]    # Set the block in chunk to that block in the structure
                     break
@@ -273,7 +266,7 @@ class BlobGenerator(StructureGenerator):
         for offset, block in blob.items():
             # Convert the positions to real world position by adding the origin to the block position (offset)
             block_pos = (origin[0] + offset[0], origin[1] + offset[1])
-            block_in_chunk = self.get_block_in_chunk(block_pos, chunk_pos, chunk_data)
+            block_in_chunk = self.get_block_in_chunk(block_pos)
             match self.can_generate(block, block_in_chunk):
                 case 1:
                     block_data[block_pos] = block # Generate the block
@@ -284,7 +277,7 @@ class BlobGenerator(StructureGenerator):
                 case 4:
                     block_data[block_pos] = BLOCK_DATA[block]["overwrite_and_change"][block_in_chunk]
 
-        if save: Structure(self.name, block_data)
+        Structure(self.name, block_data)
         return block_data
 
 class Chunk(object):
@@ -353,7 +346,7 @@ class Chunk(object):
 
         return chunk_data
 
-def get_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerator, attempts: int, chance: int | None, dist: dict, save=True) -> list:
+def get_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerator, attempts: int, chance: int | None, dist: dict) -> list:
     """Get structures inside the current chunk (x, y)
 
     Args:
@@ -369,42 +362,37 @@ def get_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerat
         list: a list containing the block data of each of the structures in the chunk
     """
 
-    if (x, y) not in Structure.instances:
-        out = []
-        seed(SEED + canter_pairing((x, y)) + ascii_str_sum(generator.name))
-        if not save:
-            Structure.instances[(x, y)] = []
-    
-        if chance == None: # Has to be ""== None" because chance can also be 0
-            upper = dist["range"][0]
-            lower = dist["range"][1]
-            slope = dist["slope"]
-            rarity = dist["rarity"]
-            chance = (((y - upper) if slope == 1 else (lower - y)) / (lower - upper) * rarity) if slope else rarity
-            
-        for _ in range(attempts):
-            if rand_bool(chance / 100):
-                start_x = x * CHUNK_SIZE + randint(0, CHUNK_SIZE)
-                if generator.on_surface:
-                    # Generate on the surface of the world
-                    start_y = terrain_generate(start_x)[1] - 1
-                    # If it is cut off by a cave, don't generate
-                    if (92.7 < cave_generate((start_x / 70, start_y / 70)) < 103) or (92.7 < cave_generate((start_x / 70, (start_y + 1) / 70)) < 103):
-                        return out
-                else:
-                    start_y = y * CHUNK_SIZE + randint(0, CHUNK_SIZE)
+    structures = []
+    seed(SEED + canter_pairing((x, y)) + ascii_str_sum(generator.name))
 
-                # Structures that are not in this chunk
-                if not 0 <= start_y - y * CHUNK_SIZE < CHUNK_SIZE:
-                    return out
+    if chance is None: # Has to be "is None" because chance can also be 0
+        upper = dist["range"][0]
+        lower = dist["range"][1]
+        slope = dist["slope"]
+        rarity = dist["rarity"]
+        chance = (((y - upper) if slope == 1 else (lower - y)) / (lower - upper) * rarity) if slope else rarity
+        
+    for _ in range(attempts):
+        if rand_bool(chance / 100):
+            start_x = x * CHUNK_SIZE + randint(0, CHUNK_SIZE)
+            if generator.on_surface:
+                # Generate on the surface of the world
+                start_y = terrain_generate(start_x)[1] - 1
+                # If it is cut off by a cave, don't generate
+                if (92.7 < cave_generate((start_x / 70, start_y / 70)) < 103) or (92.7 < cave_generate((start_x / 70, (start_y + 1) / 70)) < 103):
+                    return structures
+            else:
+                start_y = y * CHUNK_SIZE + randint(0, CHUNK_SIZE)
 
-                structure = generator.generate((start_x, start_y), (x, y), chunk_data, save=save)
-                if structure:
-                    out.append(structure)
-    else:
-        out = Structure.instances[(x, y)]
+            # Structures that are not in this chunk
+            if not 0 <= start_y - y * CHUNK_SIZE < CHUNK_SIZE:
+                return structures
 
-    return out
+            structure = generator.generate((start_x, start_y), (x, y), chunk_data)
+            if structure:
+                structures.append(structure)
+
+    return structures
 
 def generate_structures(x: int, y: int, chunk_data: dict, name: str, attempts: int, chance: int | None = None, dist: dict = {}) -> dict:
     """Check the surrounding chunks for structures that generates in the current chunk (x, y), and then returns the chunk data with the structure
@@ -423,20 +411,20 @@ def generate_structures(x: int, y: int, chunk_data: dict, name: str, attempts: i
     """
 
     generator = structure_generators[name]
-    # Check all chunks around the current chunk within the size limit of the structure
-    for ox in range(-generator.chunks_to_check[0], generator.chunks_to_check[0] + 1):
-        for oy in range(-generator.chunks_to_check[1], generator.chunks_to_check[1] + 1):
-            # Get the surrounding STRUCTURES that might protrude into the current chunk
-            structs = get_structures(x + ox, y + oy , chunk_data, generator, attempts, chance, dist, save=(ox == 0 and oy == 0))
-            for struct in structs:
-                if type(struct) == Structure:
-                    block_data = struct.block_data
-                elif type(struct) == dict:
-                    block_data = struct
-                for block, block_name in block_data.items():
-                    # If there are parts of that structure inside the current chunk, generate that part in this chunk
-                    if 0 <= block[0] - x * CHUNK_SIZE < CHUNK_SIZE and 0 <= block[1] - y * CHUNK_SIZE < CHUNK_SIZE:
-                        chunk_data[block] = block_name
+    if (x, y) not in Structure.instances:
+        structs = get_structures(x, y, chunk_data, generator, attempts, chance, dist)
+    else:
+        structs = [structure.block_data for structure in Structure.instances[(x, y)]]
+    for struct in structs:
+        for block_pos, block_name in struct.items():
+            block_chunk = (floor(block_pos[0] / CHUNK_SIZE), floor(block_pos[1] / CHUNK_SIZE))
+            if block_chunk[0] == x and block_chunk[1] == y:
+                chunk_data[block_pos] = block_name
+            else:
+                if block_chunk in Chunk.instances:
+                    set_block(Chunk.instances, block_pos, block_name)
+                else:
+                    Chunk.generated_blocks[block_pos] = block_name
 
     return chunk_data
 
@@ -539,24 +527,27 @@ def load_chunks(camera: Camera) -> list:
 
     rendered_chunks = []
     # Load the chunks that show up on the screen
-    for y in range(HEIGHT // (CHUNK_SIZE * BLOCK_SIZE) + 2):
-        for x in range(WIDTH // (CHUNK_SIZE * BLOCK_SIZE) + 2):
+    chunks_to_load = (WIDTH // (CHUNK_SIZE * BLOCK_SIZE) + 2 + 2 * MAX_STRUCTURE_SIZE[0], HEIGHT // (CHUNK_SIZE * BLOCK_SIZE) + 2 + 2 * MAX_STRUCTURE_SIZE[1])
+    for y in range(-chunks_to_load[1] // 2, chunks_to_load[1] // 2):
+        for x in range(-chunks_to_load[0] // 2, chunks_to_load[0] // 2):
             chunk = (
-                x - 1 + int(round(camera.pos.x / (CHUNK_SIZE * BLOCK_SIZE))),
-                y - 1 + int(round(camera.pos.y / (CHUNK_SIZE * BLOCK_SIZE)))
+                int(round(camera.pos.x / (CHUNK_SIZE * BLOCK_SIZE) + 1) + x),
+                int(round(camera.pos.y / (CHUNK_SIZE * BLOCK_SIZE) + 1) + y)
             )
-            rendered_chunks.append(chunk)
+            chunks_to_render = inttup(VEC(chunks_to_load) - VEC(2 * MAX_STRUCTURE_SIZE[0], 2 * MAX_STRUCTURE_SIZE[1]))
+            if y in range(-chunks_to_render[1] // 2, chunks_to_render[1] // 2) and x in range(-chunks_to_render[0] // 2, chunks_to_render[0] // 2):
+                rendered_chunks.append(chunk)
             # If the chunk has not yet been generated, create the chunk object
             if chunk not in Chunk.instances:
                 Chunk.instances[chunk] = Chunk(chunk)
 
     unrendered_chunks = []
     # Check a bigger area around the camera to see if there are chunks that are still active but shouldn't be
-    for y in range(HEIGHT // (CHUNK_SIZE * BLOCK_SIZE) + 4):
-        for x in range(WIDTH // (CHUNK_SIZE * BLOCK_SIZE) + 4):
+    for y in range(-chunks_to_load[1] // 2 - 1, chunks_to_load[1] // 2 + 1):
+        for x in range(-chunks_to_load[0] // 2 - 1, chunks_to_load[0] // 2 + 1):
             chunk = (
-                x - 2 + int(round(camera.pos.x / (CHUNK_SIZE * BLOCK_SIZE))),
-                y - 2 + int(round(camera.pos.y / (CHUNK_SIZE * BLOCK_SIZE)))
+                x + camera.pos.x // (CHUNK_SIZE * BLOCK_SIZE),
+                y + camera.pos.y // (CHUNK_SIZE * BLOCK_SIZE)
             )
             # Add that chunk to "unrendered_chunks" if it is still being rendered
             if chunk in Chunk.instances:
