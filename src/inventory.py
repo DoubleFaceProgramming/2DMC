@@ -179,13 +179,15 @@ class Hotbar(object):
 
         self.items = hotbar_items
         if not self.inventory.visible:
+            mouse = pygame.mouse.get_pressed()
             keys = pygame.key.get_pressed()
-            # Looping through the hotbar numbers (ie. "1", "2", "3" ect)
-            for hotbarkey in (hotbarkbs := {setting: bind for setting, bind in SETTINGS.config["keybinds"].items() if setting.startswith("hotbar")}):
-                # Gets the key bound to the hotbar number and tests if it is being pressed
-                if keys[pygame.key.key_code(str(hotbarkbs[hotbarkey]))]:
+
+            # Looping through the hotbar numbers (ex. "1", "2", ... "9")
+            for hotbarnum in SETTINGS["keybinds"]["hotbar"]:
+                # Test if the keybind associated with the hotbar key is being pressed
+                if SETTINGS.get_pressed(keys, mouse, "hotbar", hotbarnum):
                     # Subtracting 1 because json isnt 0-indexed for clarity
-                    self.change_selected(int(hotbarkbs[hotbarkey]) - 1)
+                    self.change_selected(int(hotbarnum) - 1)
                     break
 
             # Increasing or decreasing scroll object (using a kinda unecessary but cool new feature :D)

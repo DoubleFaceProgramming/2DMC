@@ -89,21 +89,22 @@ class Player(pygame.sprite.Sprite):
 
         keys = pygame.key.get_pressed()
         mouse = pygame.mouse.get_pressed()
+
         # Calculate player's velocity with a little bit of slipperiness
-        if SETTINGS.get_pressed("left", keys, mouse) and not self.inventory.visible:
+        if SETTINGS.get_pressed(keys, mouse, "left") and not self.inventory.visible:
             if self.vel.x > -self.max_speed:
                 # Slow the player down
                 self.vel.x -= SLIDE * dt
         elif self.vel.x < 0:
             self.vel.x += SLIDE * dt
-        if SETTINGS.get_pressed("right", keys, mouse) and not self.inventory.visible:
+        if SETTINGS.get_pressed(keys, mouse, "right") and not self.inventory.visible:
             if self.vel.x < self.max_speed:
                 # Slow the player down but in the other direction
                 self.vel.x += SLIDE * dt
         elif self.vel.x > 0:
             self.vel.x -= SLIDE * dt
         # If the player is on the ground and not in the inventory, jump
-        if SETTINGS.get_pressed("jump", keys, mouse) and self.on_ground and not self.inventory.visible:
+        if SETTINGS.get_pressed(keys, mouse, "jump") and self.on_ground and not self.inventory.visible:
             self.vel.y = -9.2
             # When the player jumps, its x-speed also increases slightly (aka sprint jumping in minecraft)
             self.vel.x *= 1.133

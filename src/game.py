@@ -51,15 +51,15 @@ class Game():
                 keyorbutton = event.key if hasattr(event, "key") else event.button
                 mouse_state = event.button if hasattr(event, "button") else 0
                 if not self.player.inventory.visible:
-                    if SETTINGS.get_pressed_short("attack/destroy", keyorbutton):
+                    if SETTINGS.get_pressed_short(keyorbutton, "attack/destroy"):
                         self.player.break_block(Chunk.instances, mpos)
-                    if SETTINGS.get_pressed_short("use/place", keyorbutton):
+                    if SETTINGS.get_pressed_short(keyorbutton, "use/place"):
                         self.player.place_block(Chunk.instances, mpos)
-                    if SETTINGS.get_pressed_short("pickblock", keyorbutton):
+                    if SETTINGS.get_pressed_short(keyorbutton, "pickblock"):
                         self.player.pick_block(mpos)
-                if SETTINGS.get_pressed_short("inventory", keyorbutton):
+                if SETTINGS.get_pressed_short(keyorbutton, "inventory"):
                     self.player.toggle_inventory()
-                if SETTINGS.get_pressed_short("debug", keyorbutton):
+                if SETTINGS.get_pressed_short(keyorbutton, "debug"):
                     self.debug_bool = not self.debug_bool
 
         # Calling relevant update functions.
