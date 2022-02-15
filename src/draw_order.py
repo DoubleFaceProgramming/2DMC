@@ -35,8 +35,8 @@ class SpriteHandler:
             else:
                 self.layers[sprite.layer].append(sprite)
 
-    def draw(self, screen: Surface, **kwargs) -> None:
+    def draw(self, screen: Surface) -> None:
         self.layers = dict(sorted(self.layers.items()))
         for layer in self.layers.values():
             for sprite in layer:
-                sprite.draw(screen, kwargs)
+                sprite.draw(screen)

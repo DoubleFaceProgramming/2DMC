@@ -150,7 +150,7 @@ class Game():
 
         # Display the player
         # self.player.draw(screen)
-        SPRITE_HANDLER.draw(self.screen, cinematic=self.manager.cinematic.value)
+        SPRITE_HANDLER.draw(self.screen)
 
         # Display the debug information
         if self.debug_bool:
