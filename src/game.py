@@ -13,10 +13,11 @@ from pygame.locals import  (
     QUIT,
 )
 
-from src.constants import SCREENSHOTS_DIR, SEED, WIDTH, HEIGHT, FPS, SCR_DIM, VEC, CHUNK_SIZE, BLOCK_SIZE, SPACING
+from src.constants import SCREENSHOTS_DIR, SEED, SPRITE_HANDLER, WIDTH, HEIGHT, FPS, SCR_DIM, VEC, CHUNK_SIZE, BLOCK_SIZE, SPACING
 from src.particle import Particle, background_particles
 from src.world_gen import Chunk, Block, load_chunks
 from src.utils import inttup, text, CyclicalList
+from src.draw_order import LayersEnum
 from src.background import Background
 from src.player import Player
 
@@ -70,12 +71,15 @@ class Game():
 
         self.manager = manager
         self.screen = self.manager.screen
+
+        self.player = Player(LayersEnum.PLAYER)
+        SPRITE_HANDLER.add(self.player)
         self.background = Background()
         self.clock = pygame.time.Clock()
         self.rendered_chunks = []
         self.debug_bool = False
-        self.player = Player()
         self.running = True
+
 
     def update(self, mpos) -> None:
         dt = self.clock.tick_busy_loop(FPS) / 16
@@ -134,26 +138,31 @@ class Game():
                 particle.draw(screen, self.player.camera)
 
         # Gets the state of cinematic mode
-        cinematic = self.manager.cinematic.value
+        # cinematic = self.manager.cinematic.value
+
+        # NOTE: port cinematics to the new drawing system, add comments everywhere, docstrings
+        #       add update and debug functions to sprite handler, add sprite superclass, add sprite.py
 
         # If the CH (Crosshair) value is True, display the block selection box, else do not
-        if cinematic["CH"]:
-            if not self.player.inventory.visible:
-                self.player.crosshair.block_selection.draw(screen)
+        # if cinematic["CH"]:
+        #     if not self.player.inventory.visible:
+        #         self.player.crosshair.block_selection.draw(screen)
 
         # Display the player
-        self.player.draw(screen)
+        # self.player.draw(screen)
+        SPRITE_HANDLER.draw(self.screen, cinematic=self.manager.cinematic.value)
+
         # Display the debug information
         if self.debug_bool:
             self.debug(self.screen, mpos)
 
         # If the HB (Hotbar) value is True, display the hotbar, else do not
-        if cinematic["HB"]:
-            self.player.inventory.draw(screen)
+        # if cinematic["HB"]:
+        #     self.player.inventory.draw(screen)
         # If the CH (Crosshair) value is True, display the crosshair, else do not
-        if cinematic["CH"]:
-            if not self.player.inventory.visible:
-                self.player.crosshair.draw(screen)
+        # if cinematic["CH"]:
+        #     if not self.player.inventory.visible:
+        #         self.player.crosshair.draw(screen)
 
     def debug(self, screen, mpos) -> None:
         # Generating some debug values and storing in a dict for easy access.
