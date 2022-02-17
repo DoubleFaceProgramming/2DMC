@@ -1,13 +1,14 @@
 from pygame.constants import K_0, K_1, K_9
+from pygame.transform import scale
 from pygame import Surface
 import pygame
 import time
 
 from src.images import inventory_img, BLOCK_TEXTURES, hotbar_img, hotbar_selection_img
 from src.utils import inttup, create_text_box, smol_text, CyclicalList
-from src.constants import WIDTH, HEIGHT, SCR_DIM, VEC
+from src.constants import WIDTH, HEIGHT, SCR_DIM, VEC, BLOCK_SIZE
 
-class Item(object):
+class Item:
     """Micro-class that stores metadata about items."""
 
     def __init__(self, name):
@@ -15,6 +16,13 @@ class Item(object):
         self.count = 1
         self.nbt = {}
         # NOTE: Add -= and += support for item count decrement and increment
+
+# class HeldItem(Item):
+
+#     scale = 0.3
+#     def __init__(self, id: str | Item) -> None:
+#         super().__init__(name)
+#         self.image = scale(BLOCK_TEXTURES[self.name], inttup((BLOCK_SIZE * self.__class__.scale, self.__class__.scale * 0.3)))
 
 class InventoryFullException(Exception):
     def __init__(self, item: Item, message="The inventory was full when trying to add item: ") -> None:
@@ -25,7 +33,7 @@ class InventoryFullException(Exception):
     def __str__(self) -> str:
         return (self.message + self.item.name)
 
-class Inventory(object):
+class Inventory:
     """Class that updates and draws the inventory and manages its contents."""
 
     def __init__(self, player) -> None:
@@ -188,7 +196,7 @@ class Inventory(object):
 
         raise InventoryFullException(item)
 
-class Hotbar(object):
+class Hotbar:
     """Class that draws, updates and provides functionality for the hotbar."""
 
     def __init__(self, inventory: Inventory) -> None:

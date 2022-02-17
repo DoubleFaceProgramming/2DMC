@@ -1,5 +1,5 @@
 from pygame.constants import K_a, K_d, K_w
-from math import ceil, cos, floor
+from math import ceil, floor, degrees, radians, tan, cos, sin
 from pygame import Surface, Rect
 from pygame.math import Vector2
 import pygame
@@ -188,14 +188,17 @@ class Player(pygame.sprite.Sprite):
         self.body.rect = self.body.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+51))
         screen.blit(self.body.image, self.body.rect.topleft)
 
+        self.leg.rect = self.leg.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
+        screen.blit(self.leg.image, self.leg.rect.topleft)
+
+        self.held_block = pygame.transform.rotate(pygame.transform.scale(BLOCK_TEXTURES[self.inventory.holding.name], inttup((BLOCK_SIZE * 0.34, BLOCK_SIZE * 0.34))), (self.arm.rot + (45 if abs(self.head.rot) > 90 else -45)) * 0.75)
+        screen.blit(self.held_block, self.held_item_pos - VEC(self.held_block.get_size()) / 2 + VEC(12 if abs(self.head.rot) > 90 else -12, 0))
+
         self.arm.rect = self.arm.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+35))
         screen.blit(self.arm.image, self.arm.rect.topleft)
 
         self.head.rect = self.head.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+23))
         screen.blit(self.head.image, self.head.rect.topleft)
-
-        self.leg.rect = self.leg.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
-        screen.blit(self.leg.image, self.leg.rect.topleft)
 
     def debug(self, screen: Surface) -> None:
         self.crosshair.debug(screen)
@@ -224,6 +227,10 @@ class Player(pygame.sprite.Sprite):
             self.arm2.rot = -self.arm.rot                # Rotate the other arm in the opposite direction
         else:
             self.leg.count = self.leg.rot = self.leg2.rot = self.arm.rot = self.arm2.rot = 0
+
+        y_offset = player_arm_img.get_height() * cos(radians(self.arm.rot) * 0.65)
+        x_offset = player_arm_img.get_height() * sin(radians(self.arm.rot) * 0.65)
+        self.held_item_pos = VEC(self.body.rect.centerx, self.body.rect.top + 14) + VEC(x_offset + (24 if abs(self.head.rot) < 90 else -24), y_offset)
 
         rotate = pygame.transform.rotate
         if abs(self.head.rot) < 90: # If the player is facing right, flip the body and the head to the right
