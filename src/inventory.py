@@ -1,4 +1,5 @@
 from pygame.constants import K_0, K_1, K_9
+from src.draw_order import LayersEnum
 from pygame.transform import scale
 from pygame import Surface
 import pygame
@@ -36,7 +37,8 @@ class InventoryFullException(Exception):
 class Inventory:
     """Class that updates and draws the inventory and manages its contents."""
 
-    def __init__(self, player) -> None:
+    def __init__(self, player, layer: LayersEnum) -> None:
+        self.layer = layer.value
         self.player = player
         self.slot_start = VEC(400, 302)
         self.slot_size = (40, 40)
@@ -184,7 +186,7 @@ class Inventory:
             case str(item):
                 item = Item(item)
             case Item(item):
-                pass
+                pass # Sonarlint shut up!
             case _:
                 raise TypeError("Item must be of type 'str' or 'Item'")
 

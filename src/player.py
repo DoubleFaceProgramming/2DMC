@@ -4,10 +4,11 @@ from pygame import Surface, Rect
 from pygame.math import Vector2
 import pygame
 
+from src.constants import MAX_Y, SCR_DIM, SLIDE, GRAVITY, TERMINAL_VEL, CHUNK_SIZE, SPRITE_HANDLER
 from src.block import Block, BLOCK_DATA, remove_block, is_placeable, set_block, inttup
-from src.constants import MAX_Y, SCR_DIM, SLIDE, GRAVITY, TERMINAL_VEL, CHUNK_SIZE
+from src.particle import PlayerFallParticle
 from src.utils import block_collide, text
-from src.particle import BlockParticle, PlayerFallParticle
+from src.draw_order import LayersEnum
 from src.inventory import Inventory
 from src.images import *
 
@@ -35,7 +36,7 @@ class Camera(pygame.sprite.Sprite):
 
 class Player(pygame.sprite.Sprite):
     """Class that contains player methods and attributes."""
-    def __init__(self) -> None:
+    def __init__(self, layer: LayersEnum) -> None:
         pygame.sprite.Sprite.__init__(self)
         self.size = VEC(0.225 * BLOCK_SIZE, 1.8 * BLOCK_SIZE)
         self.width, self.height = self.size.x, self.size.y
@@ -55,6 +56,7 @@ class Player(pygame.sprite.Sprite):
         self.falling_4_blocks = False # 4 blocks is the minimum fall damage, and min to spawn particles
         self.last_standing_coords = self.coords
         self.direction = "right"
+        self.layer = layer.value
 
         self.head, self.body, self.leg, self.leg2, self.arm, self.arm2 = [pygame.sprite.Sprite() for _ in range(6)]
         self.head.image, self.body.image, self.leg.image = player_head, player_body, player_leg
@@ -70,8 +72,9 @@ class Player(pygame.sprite.Sprite):
         self.arm2.rot = 0
 
         self.camera = Camera(self)
-        self.inventory = Inventory(self)
-        self.crosshair = Crosshair(self, 1750)
+        self.inventory = Inventory(self, LayersEnum.INVENTORY)
+        self.crosshair = Crosshair(self, 1750, LayersEnum.CROSSHAIR)
+        SPRITE_HANDLER.add(self.inventory, self.crosshair)
 
         self.inventory += "grass_block"
         self.inventory += "dirt"
@@ -442,7 +445,8 @@ class Player(pygame.sprite.Sprite):
 class Crosshair():
     """The class responsible for the drawing and updating of the crosshair"""
 
-    def __init__(self, master: Player, changeover: int) -> None:
+    def __init__(self, master: Player, changeover: int, layer: LayersEnum) -> None:
+        self.layer = layer.value
         self.master = master
         self.old_color = pygame.Color(0, 0, 0)
         self.new_color = pygame.Color(0, 0, 0)
@@ -450,7 +454,8 @@ class Crosshair():
         self.mpos = VEC(pygame.mouse.get_pos())
         self.block_pos = inttup((self.master.pos + (self.mpos - self.master.rect.topleft)) // BLOCK_SIZE)
         self.block = None
-        self.block_selection = self.BlockSelection(self)
+        self.block_selection = self.BlockSelection(self, LayersEnum.BLOCK_SELECTION)
+        SPRITE_HANDLER.add(self.block_selection)
         self.grey = {*range(127 - 30, 127 + 30 + 1)} # A set that contains value from 97 to 157
 
     def update(self, dt: float) -> None:
@@ -503,8 +508,9 @@ class Crosshair():
         return color
 
     class BlockSelection():
-        def __init__(self, crosshair):
+        def __init__(self, crosshair, layer: LayersEnum):
             self.crosshair = crosshair
+            self.layer = layer.value
 
         def update(self):
             # Not needed as of yet
