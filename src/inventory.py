@@ -10,7 +10,7 @@ from src.constants import WIDTH, HEIGHT, SCR_DIM, VEC
 import src.constants as constants
 from src.sprite import Sprite
 
-class Item(object):
+class Item:
     """Micro-class that stores metadata about items."""
 
     def __init__(self, name):
@@ -18,6 +18,13 @@ class Item(object):
         self.count = 1
         self.nbt = {}
         # NOTE: Add -= and += support for item count decrement and increment
+
+# class HeldItem(Item):
+
+#     scale = 0.3
+#     def __init__(self, id: str | Item) -> None:
+#         super().__init__(name)
+#         self.image = scale(BLOCK_TEXTURES[self.name], inttup((BLOCK_SIZE * self.__class__.scale, self.__class__.scale * 0.3)))
 
 class InventoryFullException(Exception):
     def __init__(self, item: Item, message="The inventory was full when trying to add item: ") -> None:
@@ -193,7 +200,7 @@ class Inventory(Sprite):
 
         raise InventoryFullException(item)
 
-class Hotbar(object):
+class Hotbar:
     """Class that draws, updates and provides functionality for the hotbar."""
 
     def __init__(self, inventory: Inventory) -> None:
