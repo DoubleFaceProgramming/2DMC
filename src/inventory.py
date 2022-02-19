@@ -1,5 +1,5 @@
 from pygame.constants import K_0, K_1, K_9
-from src.draw_order import LayersEnum
+from src.sprite import LayersEnum
 from pygame import Surface
 import pygame
 import time
@@ -7,6 +7,8 @@ import time
 from src.images import inventory_img, BLOCK_TEXTURES, hotbar_img, hotbar_selection_img
 from src.utils import inttup, create_text_box, smol_text, CyclicalList
 from src.constants import WIDTH, HEIGHT, SCR_DIM, VEC
+import src.constants as constants
+from src.sprite import Sprite
 
 class Item(object):
     """Micro-class that stores metadata about items."""
@@ -26,11 +28,11 @@ class InventoryFullException(Exception):
     def __str__(self) -> str:
         return (self.message + self.item.name)
 
-class Inventory(object):
+class Inventory(Sprite):
     """Class that updates and draws the inventory and manages its contents."""
 
-    def __init__(self, player, layer: LayersEnum) -> None:
-        self.layer = layer.value
+    def __init__(self, player, layer: LayersEnum = LayersEnum.INVENTORY) -> None:
+        super().__init__(layer)
         self.player = player
         self.slot_start = VEC(400, 302)
         self.slot_size = (40, 40)
@@ -51,7 +53,8 @@ class Inventory(object):
         self.add_item(other)
         return self
 
-    def update(self, m_state: int) -> None:
+    def update(self, dt: float, **kwargs) -> None:
+        m_state = kwargs["m_state"]
         if self.visible:
             mpos = VEC(pygame.mouse.get_pos())
             # Check if the mouse is within the inventory slots area
@@ -95,7 +98,7 @@ class Inventory(object):
         except KeyError:
             self.holding = None
 
-    def draw(self, screen: Surface) -> None:
+    def draw(self, screen: Surface, **kwargs) -> None:
         self.hotbar.draw(screen)
         if self.visible:
             # Draw the dimming layer of background when the inventory opens up
@@ -235,6 +238,8 @@ class Hotbar(object):
                 self.scroll.update()
 
     def draw(self, screen: pygame.Surface) -> None:
+        if not constants.MANAGER.cinematic.value["HB"]: return
+
         # Drawing the hotbar and selected "icon"
         screen.blit(hotbar_img, self.slot_start)
         screen.blit(hotbar_selection_img, (self.slot_start - VEC(2, 2) + VEC(self.slot_size[0] + 10, 0) * self.selected))

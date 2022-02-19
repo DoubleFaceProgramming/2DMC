@@ -3,18 +3,15 @@ from pygame.draw import rect as drawrect
 from opensimplex import OpenSimplex
 from pygame import Rect, Surface
 from functools import cache
-from os.path import join
-from pathlib import Path
 from vnoise import Noise
-from os import listdir
 from math import ceil
 import numpy as np
 
-from src.constants import CHUNK_SIZE, BLOCK_SIZE, ORE_DISTRIBUTION, SEED, WIDTH, HEIGHT, CONFLICTING_STRUCTURES, MAX_Y, STRUCTURES, BLOCK_DATA
+from src.constants import CHUNK_SIZE, BLOCK_SIZE, ORE_DISTRIBUTION, SEED, SPRITE_HANDLER, WIDTH, HEIGHT, CONFLICTING_STRUCTURES, MAX_Y, STRUCTURES, BLOCK_DATA
+from src.sprite import Sprite, LayersEnum, SpriteNotFoundException
 from src.utils import ascii_str_sum, canter_pairing, rand_bool
-from src.block import Block
 from src.player import Camera
-from build.exe_comp import pathof
+from src.block import Block
 
 seed(SEED)
 snoise = OpenSimplex(seed=SEED)
@@ -285,30 +282,45 @@ class BlobGenerator(StructureGenerator):
 
         return Structure(self.name, block_data)
 
-class Chunk(object):
+class Chunk(Sprite):
     """The class responsible for updating and drawing chunks."""
     instances = {}
     generated_blocks = {}
 
-    def __init__(self, pos: tuple) -> None:
+    def __init__(self, pos: tuple, layer: LayersEnum = LayersEnum.BLOCKS) -> None:
         self.__class__.instances[pos] = self
+        super().__init__(layer)
+        SPRITE_HANDLER.add(self)
         self.pos = pos
         self.block_data = self.generate(pos[0], pos[1])
         self.rect = Rect(0, 0, CHUNK_SIZE * BLOCK_SIZE, CHUNK_SIZE * BLOCK_SIZE)
 
-    def update(self, camera: Camera) -> None:
-        self.rect.topleft = (self.pos[0] * CHUNK_SIZE * BLOCK_SIZE - camera.pos[0],
-                             self.pos[1] * CHUNK_SIZE * BLOCK_SIZE - camera.pos[1])
+    def update(self, dt: float, **kwargs) -> None:
+        if self.pos not in kwargs["rendered_chunks"]: return
+        self.rect.topleft = (self.pos[0] * CHUNK_SIZE * BLOCK_SIZE - kwargs["camera"].pos[0],
+                             self.pos[1] * CHUNK_SIZE * BLOCK_SIZE - kwargs["camera"].pos[1])
 
-    def draw(self, camera: Camera, screen: Surface) -> None:
+    def draw(self, screen: Surface, **kwargs) -> None:
         # Calls the draw function for each of the blocks inside
+        if self.pos not in kwargs["rendered_chunks"]: return
         for block in self.block_data:
             if not block in Block.instances:
                 Block.instances[block] = Block(self, block, self.block_data[block])
-            Block.instances[block].draw(camera, screen)
+            Block.instances[block].draw(kwargs["camera"], screen)
 
     def debug(self, screen: Surface) -> None:
         drawrect(screen, (255, 255, 0), self.rect, width=1)
+
+    def kill(self) -> None:
+        # Removing the blocks inside the chunk.
+        for block in self.block_data:
+            if block in Block.instances:
+                Block.instances[block].kill()
+
+        try: # Deleting the chunk from the sprite list.
+            SPRITE_HANDLER.remove(self)
+        except SpriteNotFoundException:
+            pass
 
     def generate(self, x: int, y: int) -> dict:
         """Takes the chunk coordinates and returns a dictionary containing the block data inside the chunk"""
@@ -553,10 +565,7 @@ def load_chunks(camera: Camera) -> list:
 
     # Unrender all the chunks in "unrendered_chunks"
     for chunk in unrendered_chunks:
-        for block in Chunk.instances[chunk].block_data:
-            if block in Block.instances:
-                Block.instances[block].kill()
-                del Block.instances[block]
+        Chunk.instances[chunk].kill()
 
     return rendered_chunks
 

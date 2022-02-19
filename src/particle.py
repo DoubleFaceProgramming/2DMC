@@ -6,19 +6,22 @@ from typing import TYPE_CHECKING
 import pygame
 import time
 
-from src.constants import VEC, BLOCK_SIZE, GRAVITY, WIDTH, HEIGHT, MAX_Y
+from src.constants import VEC, BLOCK_SIZE, GRAVITY, WIDTH, HEIGHT, MAX_Y, SPRITE_HANDLER
+from src.sprite import LayersEnum, Sprite
 from src.utils import inttup
 
 if TYPE_CHECKING:
     from src.player import Camera
     from src.block import Block
 
-class Particle():
+class Particle(Sprite):
     """A Common superclass for all particles"""
     instances = [] # List containing every particle, regardless of type
 
-    def __init__(self, pos: tuple, vel: tuple, survive_time: float, image: Surface, master=None) -> None:
+    def __init__(self, pos: tuple, vel: tuple, survive_time: float, image: Surface, layer: LayersEnum, master=None) -> None:
+        super().__init__(layer)
         self.__class__.instances.append(self)
+        SPRITE_HANDLER.add(self)
         self.world_pos = VEC(pos)
         self.pos = self.world_pos
         self.vel = VEC(vel)
@@ -29,16 +32,16 @@ class Particle():
         self.start_time = time.time()
         self.master = master
 
-    def update(self, dt: float, camera: Camera) -> None:
+    def update(self, dt: float, **kwargs) -> None:
         # If the particle's lifetime is greater than its intended lifetime, commit die
         if time.time() - self.start_time > self.survive_time:
             self.kill()
 
         self.world_pos += self.vel * dt
-        self.pos = self.world_pos - camera.pos
+        self.pos = self.world_pos - kwargs["camera"].pos
         self.coords = self.world_pos // BLOCK_SIZE
 
-    def draw(self, screen: Surface, camera: Camera):
+    def draw(self, screen: Surface, **kwargs):
         screen.blit(self.image, (self.pos - VEC(self.image.get_size()) / 2))
 
     def kill(self) -> None:
@@ -46,6 +49,7 @@ class Particle():
         # therefore it is being removed from the list twice, so we catch that here
         try:
             self.__class__.instances.remove(self)
+            SPRITE_HANDLER.remove(self)
             del self
         except ValueError:
             pass
@@ -53,11 +57,11 @@ class Particle():
 class PhysicsParticle(Particle):
     """A superclass for all particles that have gravity / collision"""
 
-    def __init__(self, pos: tuple, vel: tuple, survive_time: float, image: Surface, blocks: dict, master=None) -> None:
+    def __init__(self, pos: tuple, vel: tuple, survive_time: float, image: Surface, blocks: dict, layer: LayersEnum, master=None) -> None:
         self.blocks = blocks
-        super().__init__(pos, vel, survive_time, image, master)
+        super().__init__(pos, vel, survive_time, image, layer, master)
 
-    def update(self, dt: float, camera: Camera) -> None:
+    def update(self, dt: float, **kwargs) -> None:
         self.move(dt)
 
         neighbors = [
@@ -79,7 +83,7 @@ class PhysicsParticle(Particle):
                         self.vel.y = 0
                         break
 
-        super().update(dt, camera)
+        super().update(dt, **kwargs)
 
     def move(self, dt: float) -> None:
         # Fall
@@ -90,13 +94,13 @@ class PhysicsParticle(Particle):
 class EnvironmentalParticle(Particle):
     """A superclass for particles that act as enviromental (add atmosphere)"""
 
-    def __init__(self, pos: tuple, vel: tuple, survive_time: float, image: Surface, blocks: dict, master=None) -> None:
-        super().__init__(pos, vel, survive_time, image, master)
+    def __init__(self, pos: tuple, vel: tuple, survive_time: float, image: Surface, blocks: dict, layer: LayersEnum = LayersEnum.ENV_PARTICLES, master=None) -> None:
+        super().__init__(pos, vel, survive_time, image, layer, master)
         self.blocks = blocks
         self.vel = VEC(vel)
 
-    def update(self, dt: float, camera: Camera) -> None:
-        super().update(dt, camera)
+    def update(self, dt: float, **kwargs) -> None:
+        super().update(dt, **kwargs)
 
         # If the particle floats behind a block, there is no point to continue rendering it
         if inttup(self.coords) in self.blocks:
@@ -108,7 +112,7 @@ class EnvironmentalParticle(Particle):
             self.kill()
 
 class BlockParticle(PhysicsParticle):
-    def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block) -> None:
+    def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block, layer: LayersEnum = LayersEnum.REG_PARTICLES) -> None:
         self.master = master
         self.pos = pos
         self.size = randint(6, 8)
@@ -120,7 +124,7 @@ class BlockParticle(PhysicsParticle):
 
         # Calculate the time that the particle is going to last for
         self.survive_time = randint(4, 8) / 10
-        super().__init__(self.pos, (randint(-35, 35) / 10, randint(-30, 5) / 10), self.survive_time, self.image, blocks, master=master)
+        super().__init__(self.pos, (randint(-35, 35) / 10, randint(-30, 5) / 10), self.survive_time, self.image, blocks, layer, master=master)
 
         # If the color is white which is the default blank color, it means that it is a transparent pixel, so don't generate
         if color == (255, 255, 255):
@@ -139,7 +143,7 @@ class PlayerFallParticle(BlockParticle):
         self.vel = VEC(randint(-60, 60) / 10, randint(-70, -20) / 10)
 
     @staticmethod
-    def spawn(pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block, amount: tuple[int, int]):
+    def spawn(pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block, amount: tuple[int, int], layer: LayersEnum = LayersEnum.REG_PARTICLES):
         for _ in range(randint(*amount)):
             __class__(VEC(pos) * BLOCK_SIZE + VEC(randint(0, BLOCK_SIZE), BLOCK_SIZE-1), blocks, master)
 
@@ -175,6 +179,3 @@ class VoidFogParticle(EnvironmentalParticle):
                     # It is exponentially more likely for large particles to spawn the lower down you are
                     size = choices(range(5, 10+1), weights=[i ** (3 * player_y_perc) for i in range(12, 0, -2)])[0]
                     __class__(VEC(randint(0, WIDTH), randint(0, HEIGHT)) + cam_pos, size, blocks)
-
-# List of particles (superclasses) that should be drawn behind blocks
-background_particles = (EnvironmentalParticle)

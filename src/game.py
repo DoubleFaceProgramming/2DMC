@@ -14,11 +14,11 @@ from pygame.locals import  (
 )
 
 from src.constants import SCREENSHOTS_DIR, SEED, SPRITE_HANDLER, WIDTH, HEIGHT, FPS, SCR_DIM, VEC, CHUNK_SIZE, BLOCK_SIZE, SPACING
-from src.particle import Particle, background_particles
 from src.world_gen import Chunk, Block, load_chunks
 from src.utils import inttup, text, CyclicalList
-from src.draw_order import LayersEnum
 from src.background import Background
+from src.particle import Particle
+from src.sprite import LayersEnum
 from src.player import Player
 
 import src.utils as utils # For doing utils.do_profile ¯\_(ツ)_/¯
@@ -73,13 +73,12 @@ class Game():
         self.screen = self.manager.screen
 
         self.player = Player(LayersEnum.PLAYER)
-        SPRITE_HANDLER.add(self.player)
         self.background = Background()
+        SPRITE_HANDLER.add(self.player, self.background)
         self.clock = pygame.time.Clock()
         self.rendered_chunks = []
         self.debug_bool = False
         self.running = True
-
 
     def update(self, mpos) -> None:
         dt = self.clock.tick_busy_loop(FPS) / 16
@@ -115,54 +114,17 @@ class Game():
                     self.manager.cycle_cinematic()
 
         # Calling relevant update functions.
-        self.background.update(self.player.coords.y, self.player.camera)
+        # self.background.update(self.player.coords.y, self.player.camera)
         self.rendered_chunks = load_chunks(self.player.camera)
-        self.player.update(Block.instances, mouse_state, dt)
-        for particle in Particle.instances:
-            particle.update(dt, self.player.camera)
-        for chunk in self.rendered_chunks:
-            Chunk.instances[chunk].update(self.player.camera)
+        SPRITE_HANDLER.update(dt, m_state=mouse_state, blocks=Block.instances, camera=self.player.camera, rendered_chunks=self.rendered_chunks, player_y=self.player.coords.y)
 
-    def draw(self, screen, mpos) -> None:
-        # Clears the frame + also drawing the sky
-        self.background.draw(screen, self.player.camera)
-
-        # Calling relevant draw functions.
-        for chunk in self.rendered_chunks:
-            Chunk.instances[chunk].draw(self.player.camera, screen)
-
-        # We do not draw particles that are instances of or subclasses of
-        # a background particle (defined in particle.py)
-        for particle in Particle.instances:
-            if not issubclass(particle.__class__, background_particles):
-                particle.draw(screen, self.player.camera)
-
-        # Gets the state of cinematic mode
-        # cinematic = self.manager.cinematic.value
-
-        # NOTE: port cinematics to the new drawing system, add comments everywhere, docstrings
-        #       add update and debug functions to sprite handler, add sprite superclass, add sprite.py
-
-        # If the CH (Crosshair) value is True, display the block selection box, else do not
-        # if cinematic["CH"]:
-        #     if not self.player.inventory.visible:
-        #         self.player.crosshair.block_selection.draw(screen)
-
-        # Display the player
-        # self.player.draw(screen)
-        SPRITE_HANDLER.draw(self.screen)
+    def draw(self, mpos) -> None:
+        # Drawing all sprites!
+        SPRITE_HANDLER.draw(self.screen, camera=self.player.camera, rendered_chunks=self.rendered_chunks)
 
         # Display the debug information
         if self.debug_bool:
             self.debug(self.screen, mpos)
-
-        # If the HB (Hotbar) value is True, display the hotbar, else do not
-        # if cinematic["HB"]:
-        #     self.player.inventory.draw(screen)
-        # If the CH (Crosshair) value is True, display the crosshair, else do not
-        # if cinematic["CH"]:
-        #     if not self.player.inventory.visible:
-        #         self.player.crosshair.draw(screen)
 
     def debug(self, screen, mpos) -> None:
         # Generating some debug values and storing in a dict for easy access.
@@ -181,9 +143,7 @@ class Game():
         }
 
         # Calling the relevant debug functions.
-        self.player.debug(screen)
-        for chunk in self.rendered_chunks:
-            Chunk.instances[chunk].debug(screen)
+        SPRITE_HANDLER.debug(screen)
 
         # Displaying the debug values.
         for line, name in enumerate(debug_values):
@@ -193,7 +153,7 @@ class Game():
         """Ticks the game loop (makes profiling a bit easier)"""
 
         self.update(mpos)
-        self.draw(self.screen, mpos)
+        self.draw(mpos)
 
     def run(self) -> None:
         """Start the main loop of the game, which handles the calling of other functions."""

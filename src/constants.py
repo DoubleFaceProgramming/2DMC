@@ -3,7 +3,7 @@ from pygame.math import Vector2
 from random import randint
 
 from src.parsing import load_block_data, load_ore_distribution, load_structures
-from src.draw_order import SpriteHandler
+from src.sprite import SpriteHandler
 import build.exe_comp as exe
 
 init()
@@ -37,8 +37,12 @@ ORE_DISTRIBUTION = load_ore_distribution()
 
 SPRITE_HANDLER = SpriteHandler()
 
+
 CONFLICTING_STRUCTURES = {
     ("oak_tree", ): ["tall_grass"],
     ("granite", "diorite", "andesite"): ["coal_ore", "iron_ore", "lapis_ore", "gold_ore", "redstone_ore", "diamond_ore", "emerald_ore"],
     ("tuff", ): ["deepslate_coal_ore", "deepslate_iron_ore", "deepslate_lapis_ore", "deepslate_gold_ore", "deepslate_redstone_ore", "deepslate_diamond_ore", "deepslate_emerald_ore"]
 }
+
+import src.game as game
+MANAGER = game.GameManager()

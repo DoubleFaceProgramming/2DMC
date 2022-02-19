@@ -1,21 +1,16 @@
-from random import randint
-from pathlib import Path
 import pygame
-import json
-import os
 
-from src.constants import VEC, BLOCK_SIZE, CHUNK_SIZE, BLOCK_DATA
+from src.constants import VEC, BLOCK_SIZE, CHUNK_SIZE, BLOCK_DATA, SPRITE_HANDLER
+from src.sprite import Sprite, LayersEnum
 from src.particle import BlockParticle
 from src.images import BLOCK_TEXTURES
 from src.utils import inttup
-from build.exe_comp import pathof
 
-class Block(pygame.sprite.Sprite):
+class Block:
     """Class that handles the managaing, updating and drawing of blocks."""
     instances = {}
 
     def __init__(self, chunk, pos: tuple, name: str):
-        pygame.sprite.Sprite.__init__(self)
         self.__class__.instances[tuple(pos)] = self
         self.name = name
         self.data = BLOCK_DATA[self.name]
@@ -44,6 +39,11 @@ class Block(pygame.sprite.Sprite):
     def draw(self, camera, screen):
         self.rect.topleft = self.pos - camera.pos
         screen.blit(self.image, self.rect.topleft)
+
+    def kill(self) -> None:
+        if inttup(self.coords) in self.__class__.instances:
+            del self.__class__.instances[inttup(self.coords)]
+            del self
 
 def remove_block(chunks: dict, pos: tuple, data: dict, neighbors: dict) -> None:
     """Remove the block at the position given

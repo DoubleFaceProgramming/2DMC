@@ -57,7 +57,7 @@ def intv(vector: Vector2) -> Vector2:
     """Returns vector where x and y are integers"""
     return VEC(int(vector.x), int(vector.y))
 
-def inttup(tup: tuple) -> tuple:
+def inttup(tup: tuple[float, float] | VEC) -> tuple:
     """Returns a tuple where both elements are integers"""
     return (int(tup[0]), int(tup[1]))
 

@@ -7,9 +7,10 @@ import pygame
 from src.constants import MAX_Y, SCR_DIM, SLIDE, GRAVITY, TERMINAL_VEL, CHUNK_SIZE, SPRITE_HANDLER
 from src.block import Block, BLOCK_DATA, remove_block, is_placeable, set_block, inttup
 from src.particle import PlayerFallParticle
+from src.sprite import LayersEnum, Sprite
 from src.utils import block_collide, text
-from src.draw_order import LayersEnum
 from src.inventory import Inventory
+import src.constants as constants
 from src.images import *
 
 class Camera(pygame.sprite.Sprite):
@@ -34,10 +35,10 @@ class Camera(pygame.sprite.Sprite):
 
         self.pos += (tick_offset / 10 + VEC(dist_squared) / 18000) * dt
 
-class Player(pygame.sprite.Sprite):
+class Player(Sprite):
     """Class that contains player methods and attributes."""
-    def __init__(self, layer: LayersEnum) -> None:
-        pygame.sprite.Sprite.__init__(self)
+    def __init__(self, layer: LayersEnum = LayersEnum.PLAYER) -> None:
+        super().__init__(layer)
         self.size = VEC(0.225 * BLOCK_SIZE, 1.8 * BLOCK_SIZE)
         self.width, self.height = self.size.x, self.size.y
         self.start_pos = VEC(0, 3) * BLOCK_SIZE # Far lands: 9007199254740993 (aka 2^53)
@@ -56,7 +57,6 @@ class Player(pygame.sprite.Sprite):
         self.falling_4_blocks = False # 4 blocks is the minimum fall damage, and min to spawn particles
         self.last_standing_coords = self.coords
         self.direction = "right"
-        self.layer = layer.value
 
         self.head, self.body, self.leg, self.leg2, self.arm, self.arm2 = [pygame.sprite.Sprite() for _ in range(6)]
         self.head.image, self.body.image, self.leg.image = player_head, player_body, player_leg
@@ -72,8 +72,8 @@ class Player(pygame.sprite.Sprite):
         self.arm2.rot = 0
 
         self.camera = Camera(self)
-        self.inventory = Inventory(self, LayersEnum.INVENTORY)
-        self.crosshair = Crosshair(self, 1750, LayersEnum.CROSSHAIR)
+        self.inventory = Inventory(self)
+        self.crosshair = Crosshair(self, 1750)
         SPRITE_HANDLER.add(self.inventory, self.crosshair)
 
         self.inventory += "grass_block"
@@ -109,7 +109,7 @@ class Player(pygame.sprite.Sprite):
         self.inventory += "deepslate_emerald_ore"
         self.inventory += "tuff"
 
-    def update(self, blocks: dict, m_state: int, dt: float) -> None:
+    def update(self, dt: float, **kwargs) -> None:
         self.camera.update(dt)
 
         keys = pygame.key.get_pressed()
@@ -153,7 +153,7 @@ class Player(pygame.sprite.Sprite):
                 self.vel.x -= 0.03 * dt
 
         # Move the test for collision
-        self.move(blocks, dt)
+        self.move(kwargs["blocks"], dt)
 
         # Check if the player is on the ground with a bar at the bottom of the player
         for block in self.detecting_blocks:
@@ -172,8 +172,6 @@ class Player(pygame.sprite.Sprite):
             self.on_ground = False
 
         # Update the inventory and the crosshair and animate self
-        self.inventory.update(m_state)
-        self.crosshair.update(dt)
         self.animate(dt)
 
         # Update some position values
@@ -181,7 +179,7 @@ class Player(pygame.sprite.Sprite):
         self.chunk = self.coords // CHUNK_SIZE
         self.rect.topleft = self.pos - self.camera.pos
 
-    def draw(self, screen: Surface) -> None:
+    def draw(self, screen: Surface, **kwargs) -> None:
         self.leg2.rect = self.leg2.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
         screen.blit(self.leg2.image, self.leg2.rect.topleft)
 
@@ -200,7 +198,7 @@ class Player(pygame.sprite.Sprite):
         self.leg.rect = self.leg.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
         screen.blit(self.leg.image, self.leg.rect.topleft)
 
-    def debug(self, screen: Surface) -> None:
+    def debug(self, screen: Surface, **kwargs) -> None:
         self.crosshair.debug(screen)
         pygame.draw.rect(screen, (255, 255, 255), self.rect, width=1)
         # Draw the bottom bar (used to calculate if the player is on the ground)
@@ -435,10 +433,10 @@ class Player(pygame.sprite.Sprite):
                 if len(self.inventory.items) < self.inventory.max_items:                 # Add the old item to the inventory if there is enough space
                     self.inventory += old_slot.name
 
-class Crosshair():
+class Crosshair(Sprite):
     """The class responsible for the drawing and updating of the crosshair"""
 
-    def __init__(self, master: Player, changeover: int, layer: LayersEnum) -> None:
+    def __init__(self, master: Player, changeover: int, layer: LayersEnum = LayersEnum.CROSSHAIR) -> None:
         self.layer = layer.value
         self.master = master
         self.old_color = pygame.Color(0, 0, 0)
@@ -451,7 +449,7 @@ class Crosshair():
         SPRITE_HANDLER.add(self.block_selection)
         self.grey = {*range(127 - 30, 127 + 30 + 1)} # A set that contains value from 97 to 157
 
-    def update(self, dt: float) -> None:
+    def update(self, dt: float, **kwargs) -> None:
         if self.new_color.r in self.grey and self.new_color.g in self.grey and self.new_color.b in self.grey:
             self.new_color = pygame.Color(255, 255, 255) # Checks if the colour is grey, and makes it white if it is
 
@@ -469,14 +467,15 @@ class Crosshair():
         else:
             self.block = None
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface, **kwargs) -> None:
+        if self.master.inventory.visible: return
         self.new_color = self.get_avg_color(screen) # I know this is cursed it's the easiest way ;-;
 
         # The 2 boxes that make up the crosshair
         pygame.draw.rect(screen, self.old_color, (self.mpos[0] - 2, self.mpos[1] - 16, 4, 32))
         pygame.draw.rect(screen, self.old_color, (self.mpos[0] - 16, self.mpos[1] - 2, 32, 4))
 
-    def debug(self, screen: Surface) -> None:
+    def debug(self, screen: Surface, **kwargs) -> None:
         if not self.master.inventory.visible:
             if self.block:
                 # Displays the name of the block below the mouse cursor next to the mouse
@@ -500,16 +499,13 @@ class Crosshair():
 
         return color
 
-    class BlockSelection():
-        def __init__(self, crosshair, layer: LayersEnum):
+    class BlockSelection(Sprite):
+        def __init__(self, crosshair, layer: LayersEnum = LayersEnum.BLOCK_SELECTION):
             self.crosshair = crosshair
             self.layer = layer.value
 
-        def update(self):
-            # Not needed as of yet
-            pass
-
-        def draw(self, screen):
+        def draw(self, screen: Surface, **kwargs):
             # Drawing a selection box around the block beneath the mouse (but 2px larger than the block)
+            if not constants.MANAGER.cinematic.value["CH"]: return
             if self.crosshair.block:
                 pygame.draw.rect(screen, (0, 0, 0), Rect((self.crosshair.block.rect.left - 2, self.crosshair.block.rect.top - 2, BLOCK_SIZE + 4, BLOCK_SIZE + 4)), 2)
