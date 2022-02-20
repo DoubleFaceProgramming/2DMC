@@ -516,6 +516,6 @@ class Crosshair(Sprite):
 
         def draw(self, screen: Surface, **kwargs):
             # Drawing a selection box around the block beneath the mouse (but 2px larger than the block)
-            if not constants.MANAGER.cinematic.value["CH"]: return
+            if not constants.MANAGER.cinematic.value["CH"] or self.crosshair.master.inventory.visible: return
             if self.crosshair.block:
                 pygame.draw.rect(screen, (0, 0, 0), Rect((self.crosshair.block.rect.left - 2, self.crosshair.block.rect.top - 2, BLOCK_SIZE + 4, BLOCK_SIZE + 4)), 2)
