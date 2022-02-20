@@ -477,6 +477,7 @@ class Crosshair(Sprite):
             self.block = None
 
     def draw(self, screen: pygame.Surface, **kwargs) -> None:
+        if not constants.MANAGER.cinematic.value["CH"]: return
         if self.master.inventory.visible: return
         self.new_color = self.get_avg_color(screen) # I know this is cursed it's the easiest way ;-;
 
