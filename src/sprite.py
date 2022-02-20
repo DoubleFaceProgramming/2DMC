@@ -151,11 +151,10 @@ class SpriteHandler:
     def remove(self, sprite: Sprite) -> None:
         try: # Remove the sprite
             self.layers[sprite.layer].remove(sprite)
-        except ValueError | KeyError:
-            if sprite.layer not in self.layers: # If the sprite's layer was not in the layer dict
-                raise LayerNotFoundException(sprite.layer)
-            elif sprite not in self.layers[sprite.layer]: # If the sprite was not in its corresponding layer list
-                raise SpriteNotFoundException(sprite)
+        except ValueError: # If the sprite was not in its corresponding layer list
+            raise SpriteNotFoundException(sprite)
+        except KeyError: # If the sprite's layer was not in the layer dict
+            raise LayerNotFoundException(sprite.layer)
 
         # If the layer list is empty, delete it
         # (Having an empty list breaks iteration)
