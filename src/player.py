@@ -43,7 +43,7 @@ class Player(Sprite):
         self.width, self.height = self.size.x, self.size.y
         self.start_pos = VEC(0, 3) * BLOCK_SIZE # Far lands: 9007199254740993 (aka 2^53)
         self.pos = VEC(self.start_pos)
-        self.coords = self.pos // BLOCK_SIZE
+        self.coords = self.last_standing_coords = self.pos // BLOCK_SIZE
         self.acc = VEC(0, 0)
         self.vel = VEC(0, 0)
         # Walking speed: 4.317 bps
@@ -54,8 +54,6 @@ class Player(Sprite):
         self.rect = pygame.Rect((0, 0, 0.225 * BLOCK_SIZE, 1.8 * BLOCK_SIZE))
         self.bottom_bar = pygame.Rect((self.rect.x + 1, self.rect.bottom), (self.width - 2, 1))
         self.on_ground = False
-        self.falling_4_blocks = False # 4 blocks is the minimum fall damage, and min to spawn particles
-        self.last_standing_coords = self.coords
         self.direction = "right"
 
         self.head, self.body, self.leg, self.leg2, self.arm, self.arm2 = [pygame.sprite.Sprite() for _ in range(6)]
@@ -159,6 +157,7 @@ class Player(Sprite):
         for block in self.detecting_blocks:
             if self.bottom_bar.colliderect(block.rect):
                 self.on_ground = True
+
                 # Calculate the fall distance, how many blocks the player fell
                 # If the player fell for more than or equal to 4 blocks
                 if (fall_dist := abs(int((self.last_standing_coords - self.coords).y))) >= 4:
