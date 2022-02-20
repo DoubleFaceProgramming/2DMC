@@ -549,6 +549,8 @@ def load_chunks(camera: Camera) -> list:
             # If the chunk has not yet been generated, create the chunk object
             if chunk not in Chunk.instances:
                 Chunk.instances[chunk] = Chunk(chunk)
+            elif Chunk.instances[chunk] not in SPRITE_HANDLER:
+                SPRITE_HANDLER.add(Chunk.instances[chunk])
 
     unrendered_chunks = []
     # Check a bigger area around the camera to see if there are chunks that are still active but shouldn't be
