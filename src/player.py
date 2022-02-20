@@ -446,7 +446,7 @@ class Crosshair(Sprite):
     """The class responsible for the drawing and updating of the crosshair"""
 
     def __init__(self, master: Player, changeover: int, layer: LayersEnum = LayersEnum.CROSSHAIR) -> None:
-        self.layer = layer.value
+        super().__init__(layer)
         self.master = master
         self.old_color = pygame.Color(0, 0, 0)
         self.new_color = pygame.Color(0, 0, 0)
@@ -510,8 +510,8 @@ class Crosshair(Sprite):
 
     class BlockSelection(Sprite):
         def __init__(self, crosshair, layer: LayersEnum = LayersEnum.BLOCK_SELECTION):
+            super().__init__(layer)
             self.crosshair = crosshair
-            self.layer = layer.value
 
         def draw(self, screen: Surface, **kwargs):
             # Drawing a selection box around the block beneath the mouse (but 2px larger than the block)

@@ -308,7 +308,7 @@ class Chunk(Sprite):
                 Block.instances[block] = Block(self, block, self.block_data[block])
             Block.instances[block].draw(kwargs["camera"], screen)
 
-    def debug(self, screen: Surface) -> None:
+    def debug(self, screen: Surface, **kwargs) -> None:
         drawrect(screen, (255, 255, 0), self.rect, width=1)
 
     def kill(self) -> None:

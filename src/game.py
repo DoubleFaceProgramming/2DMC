@@ -118,15 +118,13 @@ class Game():
         self.rendered_chunks = load_chunks(self.player.camera)
         SPRITE_HANDLER.update(dt, m_state=mouse_state, blocks=Block.instances, camera=self.player.camera, rendered_chunks=self.rendered_chunks, player_y=self.player.coords.y)
 
-    def draw(self, mpos) -> None:
+    def draw(self) -> None:
         # Drawing all sprites!
-        SPRITE_HANDLER.draw(self.screen, camera=self.player.camera, rendered_chunks=self.rendered_chunks)
+        SPRITE_HANDLER.draw(self.screen, self.debug_bool, camera=self.player.camera, rendered_chunks=self.rendered_chunks)
 
-        # Display the debug information
-        if self.debug_bool:
-            self.debug(self.screen, mpos)
+    def debug(self, mpos) -> None:
+        if not self.debug_bool: return
 
-    def debug(self, screen, mpos) -> None:
         # Generating some debug values and storing in a dict for easy access.
         debug_values = {
             "FPS": int(self.clock.get_fps()),
@@ -142,18 +140,16 @@ class Game():
             "Particles": len(Particle.instances),
         }
 
-        # Calling the relevant debug functions.
-        SPRITE_HANDLER.debug(screen)
-
         # Displaying the debug values.
         for line, name in enumerate(debug_values):
-            screen.blit(text(f"{name}: {debug_values[name]}"), (6, SPACING * line))
+            self.screen.blit(text(f"{name}: {debug_values[name]}"), (6, SPACING * line))
 
     def tick(self, mpos):
         """Ticks the game loop (makes profiling a bit easier)"""
 
         self.update(mpos)
-        self.draw(mpos)
+        self.debug (mpos)
+        self.draw()
 
     def run(self) -> None:
         """Start the main loop of the game, which handles the calling of other functions."""
