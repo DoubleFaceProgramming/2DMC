@@ -152,7 +152,7 @@ class VoidFogParticle(EnvironmentalParticle):
 
     max_speed = 12
     max_spawn_frequency = 0.0027
-    timer = time.time()
+    timer = None
 
     def __init__(self, pos: tuple[int, int], size: tuple[int, int], blocks: dict[tuple[int, int], Block]) -> None:
         self.vel = randint(-(ms := __class__.max_speed), ms) / 10, randint(-ms, ms) / 10
@@ -168,6 +168,9 @@ class VoidFogParticle(EnvironmentalParticle):
     def spawn(cam_pos: VEC, blocks: dict[tuple[int, int], Block], player_y: int):
         # If the player is below 7/8 of the world
         if player_y >= MAX_Y * 7 / 8:
+            # Initialize the timer if this is the first time VFPs spawn
+            if not __class__.timer:
+                __class__.timer = time.time()
             # The lower down the player is, the higher the frequency, the lower the frequency value, therefore more particles
             spawn_frequency = __class__.max_spawn_frequency + (player_y_perc := (MAX_Y - player_y) / (MAX_Y / 8)) * 0.02
             # If the time between last spawn and this call is more than frequency, spawn the particles
