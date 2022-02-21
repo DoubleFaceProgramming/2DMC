@@ -137,6 +137,9 @@ def rand_bool(perc: float) -> bool:
     """Returns True of False with the probability of the percentage given"""
     return random() < perc
 
+def sign(num: int | float) -> int:
+    return (num > 0) - (num < 0)
+
 do_profile = False
 def profile(callable: type, *args: tuple) -> Any:
     """Profiles the given callable and saves + prints the results

@@ -8,7 +8,7 @@ import time
 
 from src.constants import VEC, BLOCK_SIZE, GRAVITY, WIDTH, HEIGHT, MAX_Y, SPRITE_HANDLER
 from src.sprite import LayersEnum, Sprite
-from src.utils import inttup
+from src.utils import inttup, sign
 
 if TYPE_CHECKING:
     from src.player import Camera
@@ -64,24 +64,19 @@ class PhysicsParticle(Particle):
     def update(self, dt: float, **kwargs) -> None:
         self.move(dt)
 
-        neighbors = [
-            inttup((self.coords.x-1, self.coords.y)),
-            inttup((self.coords.x+1, self.coords.y)),
-            inttup((self.coords.x, self.coords.y-1)),
-            inttup((self.coords.x, self.coords.y+1)),
-        ]
-
-        # Collision with the blocks above, below, to the left and the right
-        for pos in neighbors:
+        # Collision with the blocks around, block on the left if going left, block below if moving down, and vice versa
+        for pos in set([(self.coords.x + sign(self.vel.x), self.coords.y), (self.coords.x, self.coords.y + sign(self.vel.y))]):
             if pos in self.blocks:
                 block = self.blocks[pos]
                 if block.data["collision_box"] != "none":
-                    if pygame.Rect(block.pos.x, block.pos.y, BLOCK_SIZE, BLOCK_SIZE).collidepoint(self.world_pos.x + self.vel.x * dt, self.world_pos.y):
-                        self.vel.x = 0
-                        break
-                    if pygame.Rect(block.pos.x, block.pos.y, BLOCK_SIZE, BLOCK_SIZE).collidepoint(self.world_pos.x, self.world_pos.y + self.vel.y * dt):
-                        self.vel.y = 0
-                        break
+                    if self.vel.x != 0:
+                        if pygame.Rect(block.pos.x, block.pos.y, BLOCK_SIZE, BLOCK_SIZE).collidepoint(self.world_pos.x + self.vel.x * dt, self.world_pos.y):
+                            self.vel.x = 0
+                            break
+                    if self.vel.y != 0:
+                        if pygame.Rect(block.pos.x, block.pos.y, BLOCK_SIZE, BLOCK_SIZE).collidepoint(self.world_pos.x, self.world_pos.y + self.vel.y * dt):
+                            self.vel.y = 0
+                            break
 
         super().update(dt, **kwargs)
 
