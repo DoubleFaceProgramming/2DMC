@@ -1,5 +1,7 @@
 from pygame.font import Font, init
 from pygame.math import Vector2
+from pygame import USEREVENT
+from enum import Enum, auto
 from random import randint
 
 from src.parsing import load_block_data, load_ore_distribution, load_structures
@@ -43,6 +45,13 @@ CONFLICTING_STRUCTURES = {
     ("granite", "diorite", "andesite"): ["coal_ore", "iron_ore", "lapis_ore", "gold_ore", "redstone_ore", "diamond_ore", "emerald_ore"],
     ("tuff", ): ["deepslate_coal_ore", "deepslate_iron_ore", "deepslate_lapis_ore", "deepslate_gold_ore", "deepslate_redstone_ore", "deepslate_diamond_ore", "deepslate_emerald_ore"]
 }
+
+# We dont need this yet but if we ever need custom events i realised we could do something like this :P
+class CustomEvents(Enum):
+    pass
+    # AN_EVENT = USEREVENT + auto()
+    # ANOTHER_EVENT = USEREVENT + auto()
+    # . . . ect
 
 import src.game as game
 MANAGER = game.GameManager()

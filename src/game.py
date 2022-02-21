@@ -13,7 +13,7 @@ from pygame.locals import  (
     QUIT,
 )
 
-from src.constants import SCREENSHOTS_DIR, SEED, SPRITE_HANDLER, WIDTH, HEIGHT, FPS, SCR_DIM, VEC, CHUNK_SIZE, BLOCK_SIZE, SPACING
+from src.constants import SCREENSHOTS_DIR, SEED, SPRITE_HANDLER, WIDTH, HEIGHT, FPS, SCR_DIM, VEC, CHUNK_SIZE, BLOCK_SIZE, SPACING, CustomEvents
 from src.world_gen import Chunk, Block, load_chunks
 from src.utils import inttup, text, CyclicalList
 from src.background import Background
@@ -34,7 +34,7 @@ class GameManager():
         os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (50, 50)
         pygame.display.set_caption("2D Minecraft")
         pygame.mouse.set_visible(False)
-        pygame.event.set_allowed([MOUSEBUTTONDOWN, KEYDOWN, QUIT])
+        pygame.event.set_allowed([MOUSEBUTTONDOWN, KEYDOWN, QUIT, *[event.value for event in CustomEvents]])
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), HWSURFACE | DOUBLEBUF)
 
@@ -113,9 +113,9 @@ class Game():
                 if event.key == K_F3:
                     self.manager.cycle_cinematic()
 
-        # Calling relevant update functions.
-        # self.background.update(self.player.coords.y, self.player.camera)
+        # Loading chunks
         self.rendered_chunks = load_chunks(self.player.camera)
+        # Calling relevant update functions.
         SPRITE_HANDLER.update(dt, m_state=mouse_state, blocks=Block.instances, camera=self.player.camera, rendered_chunks=self.rendered_chunks, player_y=self.player.coords.y)
 
     def draw(self) -> None:
