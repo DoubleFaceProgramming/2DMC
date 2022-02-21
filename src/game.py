@@ -148,8 +148,8 @@ class Game():
         """Ticks the game loop (makes profiling a bit easier)"""
 
         self.update(mpos)
-        self.debug (mpos)
         self.draw()
+        self.debug(mpos)
 
     def run(self) -> None:
         """Start the main loop of the game, which handles the calling of other functions."""
