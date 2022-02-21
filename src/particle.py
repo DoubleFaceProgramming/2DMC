@@ -1,4 +1,5 @@
 from __future__ import annotations
+from math import ceil
 
 from pygame import Color, Surface
 from random import randint, choices
@@ -39,7 +40,7 @@ class Particle(Sprite):
 
         self.world_pos += self.vel * dt
         self.pos = self.world_pos - kwargs["camera"].pos
-        self.coords = self.world_pos // BLOCK_SIZE
+        self.coords = VEC(tuple(map(ceil, self.world_pos // BLOCK_SIZE)))
 
     def draw(self, screen: Surface, **kwargs):
         screen.blit(self.image, (self.pos - VEC(self.image.get_size()) / 2))
