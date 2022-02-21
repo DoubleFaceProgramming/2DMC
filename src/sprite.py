@@ -123,10 +123,16 @@ class SpriteHandler:
         self.spriteiter += 1 # Increase the iter variable
         # Then check if it is greater than the max.
         if self.spriteiter >= len(layer):
-            self.layeriter += 1 # Next iteration, loop through the next layer
             self.spriteiter = 0 # Reset the sprite iter variable
+            self.layeriter += 1 # Next iteration, loop through the next layer
+            # We dont want to return sprites in debug layers, as they would be returned in their respective normal layers
+            # so would just cause repition.
+            # If the next layer is a debug layer, keep on incrementing the layer counter until it is no longer a debug layer
+            # The if check in the square brackets is to avoid negative indexing
+            while LayersEnum(list(self.layers)[self.layeriter - 1 if self.layeriter > 1 else 0]).name.endswith("_DEBUG"):
+                self.layeriter += 1
 
-        return list(self.layers)[self.layeriter - 1 if self.layeriter > 1 else 0], layer[self.spriteiter] # Return the sprite
+        return layer[self.spriteiter] # Return the sprite
 
     def __contains__(self, sprite: Sprite) -> bool:
         try:
@@ -190,6 +196,5 @@ class SpriteHandler:
                             sprite.debug(screen, **kwargs)
 
     def update(self, dt: float, **kwargs) -> None:
-        for layer, sprite in self:
-            if not LayersEnum(layer).name.endswith("_DEBUG"): # Dont update debug layers (would be repetition)
-                sprite.update(dt, **kwargs)
+        for sprite in self:
+            sprite.update(dt, **kwargs)
