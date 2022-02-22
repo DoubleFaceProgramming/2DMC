@@ -7,8 +7,8 @@ from vnoise import Noise
 from math import ceil
 import numpy as np
 
-from src.constants import CHUNK_SIZE, BLOCK_SIZE, ORE_DISTRIBUTION, SEED, SPRITE_HANDLER, WIDTH, HEIGHT, CONFLICTING_STRUCTURES, MAX_Y, STRUCTURES, BLOCK_DATA
-from src.sprite import Sprite, LayersEnum, SpriteNotFoundException
+from src.constants import CHUNK_SIZE, BLOCK_SIZE, ORE_DISTRIBUTION, SEED, WIDTH, HEIGHT, CONFLICTING_STRUCTURES, MAX_Y, STRUCTURES, BLOCK_DATA
+from src.sprite import Sprite, LayersEnum, SpriteNotFoundException, SPRITE_MANAGER
 from src.utils import ascii_str_sum, canter_pairing, rand_bool
 from src.player import Camera
 from src.block import Block
@@ -290,7 +290,6 @@ class Chunk(Sprite):
     def __init__(self, pos: tuple, layer: LayersEnum = LayersEnum.BLOCKS) -> None:
         self.__class__.instances[pos] = self
         super().__init__(layer)
-        SPRITE_HANDLER.add(self)
         self.pos = pos
         self.block_data = self.generate(pos[0], pos[1])
         self.rect = Rect(0, 0, CHUNK_SIZE * BLOCK_SIZE, CHUNK_SIZE * BLOCK_SIZE)
@@ -318,7 +317,7 @@ class Chunk(Sprite):
                 Block.instances[block].kill()
 
         try: # Deleting the chunk from the sprite list.
-            SPRITE_HANDLER.remove(self)
+            SPRITE_MANAGER.remove(self)
         except SpriteNotFoundException:
             pass
 
@@ -549,8 +548,8 @@ def load_chunks(camera: Camera) -> list:
             # If the chunk has not yet been generated, create the chunk object
             if chunk not in Chunk.instances:
                 Chunk.instances[chunk] = Chunk(chunk)
-            elif Chunk.instances[chunk] not in SPRITE_HANDLER:
-                SPRITE_HANDLER.add(Chunk.instances[chunk])
+            elif Chunk.instances[chunk] not in SPRITE_MANAGER:
+                SPRITE_MANAGER.add(Chunk.instances[chunk])
 
     unrendered_chunks = []
     # Check a bigger area around the camera to see if there are chunks that are still active but shouldn't be

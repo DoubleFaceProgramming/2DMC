@@ -13,12 +13,12 @@ from pygame.locals import  (
     QUIT,
 )
 
-from src.constants import SCREENSHOTS_DIR, SEED, SPRITE_HANDLER, WIDTH, HEIGHT, FPS, SCR_DIM, VEC, CHUNK_SIZE, BLOCK_SIZE, SPACING, CustomEvents
+from src.constants import SCREENSHOTS_DIR, SEED, WIDTH, HEIGHT, FPS, SCR_DIM, VEC, CHUNK_SIZE, BLOCK_SIZE, SPACING, CustomEvents
 from src.world_gen import Chunk, Block, load_chunks
+from src.sprite import LayersEnum, SPRITE_MANAGER
 from src.utils import inttup, text, CyclicalList
 from src.background import Background
 from src.particle import Particle
-from src.sprite import LayersEnum
 from src.player import Player
 
 import src.utils as utils # For doing utils.do_profile ¯\_(ツ)_/¯
@@ -74,7 +74,6 @@ class Game():
 
         self.player = Player(LayersEnum.PLAYER)
         self.background = Background()
-        SPRITE_HANDLER.add(self.player, self.background)
         self.clock = pygame.time.Clock()
         self.rendered_chunks = []
         self.debug_bool = False
@@ -116,11 +115,11 @@ class Game():
         # Loading chunks
         self.rendered_chunks = load_chunks(self.player.camera)
         # Calling relevant update functions.
-        SPRITE_HANDLER.update(dt, m_state=mouse_state, blocks=Block.instances, camera=self.player.camera, rendered_chunks=self.rendered_chunks, player_y=self.player.coords.y)
+        SPRITE_MANAGER.update(dt, m_state=mouse_state, blocks=Block.instances, camera=self.player.camera, rendered_chunks=self.rendered_chunks, player_y=self.player.coords.y)
 
     def draw(self) -> None:
         # Drawing all sprites!
-        SPRITE_HANDLER.draw(self.screen, self.debug_bool, camera=self.player.camera, rendered_chunks=self.rendered_chunks)
+        SPRITE_MANAGER.draw(self.screen, self.debug_bool, camera=self.player.camera, rendered_chunks=self.rendered_chunks)
 
     def debug(self, mpos) -> None:
         if not self.debug_bool: return

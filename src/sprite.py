@@ -41,6 +41,8 @@ class Sprite:
                 else:
                     raise TypeError("Argument 'debug_layer' must be of type 'int' or 'Enum item'")
 
+        SPRITE_MANAGER.add(self)
+
     def update(self, dt: float, **kwargs: dict[Any]) -> None:
         """Update the classes attributes and variables or handle class logic related to the class.
 
@@ -67,6 +69,7 @@ class Sprite:
 
     def kill(self) -> None:
         """Kill the sprite and handle any cleanup logic"""
+        SPRITE_MANAGER.remove(self)
 
 class NoLayerAttributeException(Exception):
     """If the sprite does not have a layer attribute"""
@@ -97,7 +100,7 @@ class SpriteNotFoundException(Exception):
     def __str__(self) -> str:
         return f"Sprite object {self.sprite} does not exist in the sprite list!"
 
-class SpriteHandler:
+class SpriteManager:
     """A class to simplify and better how sprites are drawn and managed"""
 
     def __init__(self, *args: tuple[Sprite]) -> None:
@@ -105,7 +108,7 @@ class SpriteHandler:
         if args: # You can create a spritehandler without specifying any args
             self.add(*args)
 
-    def __iter__(self) -> SpriteHandler:
+    def __iter__(self) -> SpriteManager:
         # Sorting the layer dict so that the lowest layer (layer that should be drawn first)
         # is first, and the highest is drawn last
         self.layers = dict(sorted(self.layers.items()))
@@ -198,3 +201,5 @@ class SpriteHandler:
     def update(self, dt: float, **kwargs) -> None:
         for sprite in self:
             sprite.update(dt, **kwargs)
+
+SPRITE_MANAGER = SpriteManager()

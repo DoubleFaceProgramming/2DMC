@@ -4,8 +4,8 @@ from pygame import Surface, Rect
 from pygame.math import Vector2
 import pygame
 
-from src.constants import MAX_Y, SCR_DIM, SLIDE, GRAVITY, TERMINAL_VEL, CHUNK_SIZE, SPRITE_HANDLER
 from src.block import Block, BLOCK_DATA, remove_block, is_placeable, set_block, inttup
+from src.constants import MAX_Y, SCR_DIM, SLIDE, GRAVITY, TERMINAL_VEL, CHUNK_SIZE
 from src.particle import PlayerFallParticle
 from src.sprite import LayersEnum, Sprite
 from src.utils import block_collide, text
@@ -72,7 +72,6 @@ class Player(Sprite):
         self.camera = Camera(self)
         self.inventory = Inventory(self)
         self.crosshair = Crosshair(self, 1750)
-        SPRITE_HANDLER.add(self.inventory, self.crosshair)
 
         self.inventory += "grass_block"
         self.inventory += "dirt"
@@ -456,7 +455,6 @@ class Crosshair(Sprite):
         self.block_pos = inttup((self.master.pos + (self.mpos - self.master.rect.topleft)) // BLOCK_SIZE)
         self.block = None
         self.block_selection = self.BlockSelection(self, LayersEnum.BLOCK_SELECTION)
-        SPRITE_HANDLER.add(self.block_selection)
         self.grey = {*range(127 - 30, 127 + 30 + 1)} # A set that contains value from 97 to 157
 
     def update(self, dt: float, **kwargs) -> None:
