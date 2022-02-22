@@ -70,6 +70,7 @@ class Sprite:
     def kill(self) -> None:
         """Kill the sprite and handle any cleanup logic"""
         SPRITE_MANAGER.remove(self)
+        del self
 
 class NoLayerAttributeException(Exception):
     """If the sprite does not have a layer attribute"""
@@ -188,15 +189,15 @@ class SpriteManager:
             del self.layers[sprite._layer]
 
     def draw(self, screen: Surface, debug: bool, **kwargs) -> None:
-        for layer in self.layers: # Loop through every layer
-            for sprite in self.layers[layer]: # Loop through every sprite
-                    if not LayersEnum(layer).name.endswith("_DEBUG"): # Draw every layer that isnt a debug layer
-                        sprite.draw(screen, **kwargs)
+        for layer in (layers := self.layers.copy()): # Loop through every layer
+            for sprite in layers[layer]: # Loop through every sprite
+                if not LayersEnum(layer).name.endswith("_DEBUG"): # Draw every layer that isnt a debug layer
+                    sprite.draw(screen, **kwargs)
 
-                    # If we should render debug stuff and the either the layer is a debug layer or the sprite's debug layer is its default layer, debug the sprite
-                    if debug:
-                        if LayersEnum(layer).name.endswith("_DEBUG") or sprite._layer == sprite._debug_layer:
-                            sprite.debug(screen, **kwargs)
+                # If we should render debug stuff and the either the layer is a debug layer or the sprite's debug layer is its default layer, debug the sprite
+                if debug:
+                    if LayersEnum(layer).name.endswith("_DEBUG") or sprite._layer == sprite._debug_layer:
+                        sprite.debug(screen, **kwargs)
 
     def update(self, dt: float, **kwargs) -> None:
         for sprite in self:
