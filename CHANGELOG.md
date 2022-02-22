@@ -38,8 +38,8 @@
 
 - Reworked the sprite system to allow better control over draw order, and to make the sprites easier to work with!
   - We now have a custom defined sprite class
-    - This sprite class serves as a superclass for all other sprites, and provides a constructor and a number of methods that make all sprites compatible with our SpriteHandler
-  - We have a SpriteHandler class that manages draw order, updates and other useful management functions
+    - This sprite class serves as a superclass for all other sprites, and provides a constructor and a number of methods that make all sprites compatible with our SpriteManager
+  - We have a SpriteManager class that manages draw order, updates and other useful management functions
   - Draw order is defined in an automatic enumeration
   - Sprites can have a custom debug layer (debug information is rendered on a different layer to the sprite) or a regular debug layer (debug information is rendered on the same layer as the sprite)
   - If you want to get a better understanding of this system then you are best off looking at the code (particuarly [sprite.py](src/sprite.py)), be warned the code is kinda gross >.<

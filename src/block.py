@@ -1,7 +1,6 @@
 import pygame
 
-from src.constants import VEC, BLOCK_SIZE, CHUNK_SIZE, BLOCK_DATA, SPRITE_HANDLER
-from src.sprite import Sprite, LayersEnum
+from src.constants import VEC, BLOCK_SIZE, CHUNK_SIZE, BLOCK_DATA
 from src.particle import BlockParticle
 from src.images import BLOCK_TEXTURES
 from src.utils import inttup

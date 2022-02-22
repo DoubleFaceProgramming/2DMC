@@ -14,7 +14,7 @@ class TextBox:
         self.survive_time = survive_time
         self.centered = centered
         self.opacity = 255
-        
+
     def update(self):
         if self.survive_time:
             if (time_elapsed := time.time() - self.fade_timer) < self.survive_time:
@@ -38,7 +38,7 @@ class TextBox:
 
         # Blitting the text onto the surface
         surface.blit(self.text_surf, (8, 4))
-        
+
         # If centered[0] is True, it means the text box will be blitted centered on the x-pos
         if self.centered[0]:
             self.pos.x -= text_rect.width / 2

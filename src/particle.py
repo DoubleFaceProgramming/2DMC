@@ -7,12 +7,11 @@ from typing import TYPE_CHECKING
 import pygame
 import time
 
-from src.constants import VEC, BLOCK_SIZE, GRAVITY, WIDTH, HEIGHT, MAX_Y, SPRITE_HANDLER
+from src.constants import VEC, BLOCK_SIZE, GRAVITY, WIDTH, HEIGHT, MAX_Y
 from src.sprite import LayersEnum, Sprite
 from src.utils import inttup, sign
 
 if TYPE_CHECKING:
-    from src.player import Camera
     from src.block import Block
 
 class Particle(Sprite):
@@ -22,7 +21,6 @@ class Particle(Sprite):
     def __init__(self, pos: tuple, vel: tuple, survive_time: float, image: Surface, layer: LayersEnum, master=None) -> None:
         super().__init__(layer)
         self.__class__.instances.append(self)
-        SPRITE_HANDLER.add(self)
         self.world_pos = VEC(pos)
         self.pos = self.world_pos
         self.vel = VEC(vel)
@@ -48,9 +46,9 @@ class Particle(Sprite):
     def kill(self) -> None:
         # There is a rare bug where the particle is killed twice,
         # therefore it is being removed from the list twice, so we catch that here
+        super().kill()
         try:
             self.__class__.instances.remove(self)
-            SPRITE_HANDLER.remove(self)
             del self
         except ValueError:
             pass
