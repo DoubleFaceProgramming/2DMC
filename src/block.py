@@ -35,14 +35,17 @@ class Block:
         if not is_supported(self.pos, self.data, self.neighbors):
             remove_block(chunks, self.coords, self.data, self.neighbors)
 
-    def draw(self, camera, screen):
-        self.rect.topleft = self.pos - camera.pos
-        screen.blit(self.image, self.rect.topleft)
+    def draw(self, screen, camera):
+        on_chunk_pos = self.pos.x % (CHUNK_SIZE * BLOCK_SIZE), self.pos.y % (CHUNK_SIZE * BLOCK_SIZE)
+        screen.blit(self.image, on_chunk_pos)
 
     def kill(self) -> None:
         if inttup(self.coords) in self.__class__.instances:
             del self.__class__.instances[inttup(self.coords)]
             del self
+
+    def calc_pos(self, camera) -> None:
+        self.rect.topleft = self.pos - camera.pos
 
 def remove_block(chunks: dict, pos: tuple, data: dict, neighbors: dict) -> None:
     """Remove the block at the position given

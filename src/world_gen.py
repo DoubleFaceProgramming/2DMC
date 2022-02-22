@@ -1,13 +1,14 @@
 from random import randint, seed, choices
 from pygame.draw import rect as drawrect
 from opensimplex import OpenSimplex
+from pygame.locals import SRCALPHA
 from pygame import Rect, Surface
 from functools import cache
 from vnoise import Noise
 from math import ceil
 import numpy as np
 
-from src.constants import CHUNK_SIZE, BLOCK_SIZE, ORE_DISTRIBUTION, SEED, WIDTH, HEIGHT, CONFLICTING_STRUCTURES, MAX_Y, STRUCTURES, BLOCK_DATA
+from src.constants import CHUNK_SIZE, BLOCK_SIZE, ORE_DISTRIBUTION, SEED, VEC, WIDTH, HEIGHT, CONFLICTING_STRUCTURES, MAX_Y, STRUCTURES, BLOCK_DATA
 from src.sprite import Sprite, LayersEnum, SpriteNotFoundException, SPRITE_MANAGER
 from src.utils import ascii_str_sum, canter_pairing, rand_bool
 from src.player import Camera
@@ -284,28 +285,49 @@ class BlobGenerator(StructureGenerator):
 
 class Chunk(Sprite):
     """The class responsible for updating and drawing chunks."""
-    instances = {}
+
     generated_blocks = {}
+    instances = {}
 
     def __init__(self, pos: tuple, layer: LayersEnum = LayersEnum.BLOCKS) -> None:
         self.__class__.instances[pos] = self
         super().__init__(layer)
-        self.pos = pos
+        self.pos = VEC(pos)
+        self.previous_block_data = {}
         self.block_data = self.generate(pos[0], pos[1])
         self.rect = Rect(0, 0, CHUNK_SIZE * BLOCK_SIZE, CHUNK_SIZE * BLOCK_SIZE)
+        self.image = Surface(self.rect.size, SRCALPHA)
 
     def update(self, dt: float, **kwargs) -> None:
         if self.pos not in kwargs["rendered_chunks"]: return
+
+        if (block_positions := list(self.block_data.keys())):
+            if block_positions[0] not in Block.instances:
+                for block in self.block_data:
+                    Block.instances[block] = Block(self, block, self.block_data[block])
+
+        for block in self.block_data:
+            Block.instances[block].calc_pos(kwargs["camera"])
+
         self.rect.topleft = (self.pos[0] * CHUNK_SIZE * BLOCK_SIZE - kwargs["camera"].pos[0],
-                             self.pos[1] * CHUNK_SIZE * BLOCK_SIZE - kwargs["camera"].pos[1])
+                             self.pos[1] * CHUNK_SIZE * BLOCK_SIZE - kwargs["camera"].pos[1],)
 
     def draw(self, screen: Surface, **kwargs) -> None:
         # Calls the draw function for each of the blocks inside
         if self.pos not in kwargs["rendered_chunks"]: return
-        for block in self.block_data:
-            if not block in Block.instances:
-                Block.instances[block] = Block(self, block, self.block_data[block])
-            Block.instances[block].draw(kwargs["camera"], screen)
+
+        if self.block_data:
+            if self.previous_block_data != self.block_data:
+                self.image = Surface(self.rect.size).convert()
+                self.image.set_colorkey((0, 0, 0))
+                for block in self.block_data:
+                    if not block in Block.instances:
+                        Block.instances[block] = Block(self, block, self.block_data[block])
+                    Block.instances[block].draw(self.image, kwargs["camera"])
+
+            screen.blit(self.image, self.rect)
+
+        self.previous_block_data = self.block_data.copy()
 
     def debug(self, screen: Surface, **kwargs) -> None:
         drawrect(screen, (255, 255, 0), self.rect, width=1)
