@@ -115,7 +115,7 @@ class Game():
         # Loading chunks
         self.rendered_chunks = load_chunks(self.player.camera)
         # Calling relevant update functions.
-        SPRITE_MANAGER.update(dt, m_state=mouse_state, blocks=Block.instances, camera=self.player.camera, rendered_chunks=self.rendered_chunks, player_y=self.player.coords.y)
+        SPRITE_MANAGER.update(dt, m_state=mouse_state, blocks=Block.instances, camera=self.player.camera, rendered_chunks=self.rendered_chunks, player_y=self.player.coords.y, mpos=mpos)
 
     def draw(self) -> None:
         # Drawing all sprites!

@@ -1,13 +1,14 @@
 from pygame.constants import K_0, K_1, K_9
-from src.sprite import LayersEnum
+from src.sprite import LayerNotFoundException, LayersEnum, SpriteNotFoundException
 from pygame import Surface
 import pygame
 import time
 
 from src.images import inventory_img, BLOCK_TEXTURES, hotbar_img, hotbar_selection_img
-from src.utils import inttup, create_text_box, smol_text, CyclicalList
 from src.constants import WIDTH, HEIGHT, SCR_DIM, VEC
+from src.utils import inttup, smol_text, CyclicalList
 import src.constants as constants
+from src.text_box import TextBox
 from src.sprite import Sprite
 
 class Item:
@@ -48,6 +49,7 @@ class Inventory(Sprite):
         self.visible = False
         self.selected = None
         self.hovering = None
+        self.old_hovering = VEC(0, 0)
         self.over_hotbar = False
         self.max_items = 36
         self.hover_surf = pygame.surface.Surface(self.slot_size, pygame.SRCALPHA)
@@ -55,6 +57,8 @@ class Inventory(Sprite):
         self.hover_surf.set_alpha(100)
         self.transparent_background = pygame.Surface((WIDTH, HEIGHT)).convert_alpha()
         self.transparent_background.fill((0, 0, 0, 125))
+        self.create_label = False
+        self.label = None
 
     def __iadd__(self, other):
         self.add_item(other)
@@ -62,8 +66,8 @@ class Inventory(Sprite):
 
     def update(self, dt: float, **kwargs) -> None:
         m_state = kwargs["m_state"]
+        mpos = kwargs["mpos"]
         if self.visible:
-            mpos = VEC(pygame.mouse.get_pos())
             # Check if the mouse is within the inventory slots area
             in_inv_x = self.slot_start.x < mpos.x < self.slot_start.x+(self.slot_size[0]+5)*9
             over_inv = self.slot_start.y < mpos.y < self.slot_start.y+(self.slot_size[1]+5)*3 and in_inv_x
@@ -78,6 +82,22 @@ class Inventory(Sprite):
                 self.hovering = inttup(((mpos.x-400)//(self.slot_size[0]+5), 0))
             else:
                 self.hovering = None
+
+            # Draw an item label
+            if over_inv or self.over_hotbar:
+                if self.hovering != self.old_hovering: # If the player has changed the item they are hovering over
+                    if self.hovering in self.items:
+                        name = self.items[self.hovering].name.replace("_", " ").capitalize()
+                        self.kill_label() # Kill the old label
+                        self.label = TextBox(LayersEnum.INVENTORY_LABELS, name, (mpos[0] + 12, mpos[1] - 24)) # Make a new label
+                    else: # Ex. if you are hovering over an empty slot
+                        self.kill_label()
+            else: # Ex. if you are outside the inventory
+                self.kill_label()
+
+            self.old_hovering = self.hovering
+            if self.label:
+                self.label.pos = (mpos[0] + 12, mpos[1] - 24)
 
             # If the mouse left button is pressed when it is hovering over a valid slot
             if m_state == 1 and (over_inv or self.over_hotbar):
@@ -99,7 +119,8 @@ class Inventory(Sprite):
             self.hotbar.update(m_state)
         else:
             self.hotbar.update(0)
-        
+
+        # Generating a holding attribute
         try:
             self.holding = self.hotbar.items[self.hotbar.selected]
         except KeyError:
@@ -133,14 +154,6 @@ class Inventory(Sprite):
             if self.selected:
                 screen.blit(pygame.transform.scale(BLOCK_TEXTURES[self.selected.name], inttup(VEC(self.slot_size)*0.9)), VEC(pygame.mouse.get_pos())-VEC(self.slot_size)*0.45)
 
-            # Draw the textbox of the item that is being hovered over
-            if self.hovering in self.items:
-                name = self.items[self.hovering].name.replace("_", " ").capitalize()
-                mpos = pygame.mouse.get_pos()
-                if self.selected == None:
-                    surf, pos = create_text_box(smol_text(name), (mpos[0]+12, mpos[1]-24), 255)
-                    screen.blit(surf, pos)
-
             # Draw the player paper doll in the inventory
             self.player.leg2.rect = self.player.leg2.image.get_rect(center=(593+self.player.width/2, 140+72))
             screen.blit(self.player.leg2.image, self.player.leg2.rect.topleft)
@@ -154,6 +167,15 @@ class Inventory(Sprite):
             screen.blit(self.player.head.image, self.player.head.rect.topleft)
             self.player.leg.rect = self.player.leg.image.get_rect(center=(593+self.player.width/2, 140+72))
             screen.blit(self.player.leg.image, self.player.leg.rect.topleft)
+
+    def kill_label(self) -> None:
+        """Kill the nametag or text box or label that shows the name of the item"""
+
+        if self.label:
+            try:
+                self.label.kill()
+            except (SpriteNotFoundException, LayerNotFoundException):
+                pass # For some reason these errors got thrown so... catching them ¯\_(ツ)_/¯
 
     def set_slot(self, slot: int, item: str) -> None:
         """Set the given slot in the inventory to the given item
@@ -215,6 +237,7 @@ class Hotbar:
         self.selected = 0
         self.fade_timer = 0
         self.scroll = self.HotbarScroll(self)
+        self.hasscrolled = False
 
     def update(self, scroll: int) -> None:
         # Updating the hotbar with items from the inventory
@@ -242,6 +265,7 @@ class Hotbar:
             # If the user has scrolled, reset the fade time and update the scroll obj
             if scroll:
                 self.fade_timer = time.time()
+                self.hasscrolled = True
                 self.scroll.update()
 
     def draw(self, screen: pygame.Surface) -> None:
@@ -256,14 +280,13 @@ class Hotbar:
             item_img = pygame.transform.scale(BLOCK_TEXTURES[self.items[slot].name], self.slot_size)
             screen.blit(item_img, self.slot_start + VEC(8, 0) + VEC(slot * (self.slot_size[0] + 10), 8))
 
-        # If it has been 3 seconds since self.fade_timer has been reset:
-        if (time_elapsed := time.time() - self.fade_timer) < 3:
-            if self.selected in self.items: # If you are holding an item
-                opacity = 255 * (3-time_elapsed) if time_elapsed > 2 else 255 # Dims the opacity if it has been longer than 2 seconds
-                # Generating text and a text box
-                blitted_text = smol_text(self.items[self.selected].name.replace("_", " ").capitalize())
-                surf, pos = create_text_box(blitted_text, (WIDTH / 2-blitted_text.get_width() / 2 - 8, HEIGHT - 92), opacity)
-                screen.blit(surf, pos)
+        # Create a text box
+        if self.hasscrolled:
+            if self.selected in self.items:
+                self.inventory.kill_label()
+                name = self.items[self.selected].name.replace("_", " ").capitalize()
+                self.inventory.label = TextBox(LayersEnum.INVENTORY_LABELS, name, (WIDTH / 2 - smol_text(name).get_width() / 2 - 8, HEIGHT - 92), survive_time=3)
+                self.hasscrolled = False # Reset the scroll variable
 
     def change_selected(self, new: int) -> None:
         """Change the selected slot

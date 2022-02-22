@@ -13,6 +13,7 @@ class LayersEnum(Enum):
     DEBUG = auto()
     PLAYER = auto()
     INVENTORY = auto()
+    INVENTORY_LABELS = auto()
     CROSSHAIR = auto()
 
 class Sprite:
@@ -189,6 +190,7 @@ class SpriteManager:
             del self.layers[sprite._layer]
 
     def draw(self, screen: Surface, debug: bool, **kwargs) -> None:
+        # We need to copy self.layers because otheriwse when sprites are created whilst rendering it would crash
         for layer in (layers := self.layers.copy()): # Loop through every layer
             for sprite in layers[layer]: # Loop through every sprite
                 if not LayersEnum(layer).name.endswith("_DEBUG"): # Draw every layer that isnt a debug layer
