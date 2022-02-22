@@ -256,6 +256,7 @@ class Hotbar:
                 if keys[num_key]:
                     self.change_selected(num_key - K_0 - 1) # Minusing the lowest bounds and 1 (because we +1-ed earlier)
                     self.fade_timer = time.time() # Resetting the fade timer
+                    self.hasscrolled = True
 
             # Increasing or decreasing scroll object (using a kinda unecessary but cool new feature :D)
             match scroll:
