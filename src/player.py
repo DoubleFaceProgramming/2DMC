@@ -191,8 +191,9 @@ class Player(Sprite):
         self.leg.rect = self.leg.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
         screen.blit(self.leg.image, self.leg.rect.topleft)
 
-        self.held_block = pygame.transform.rotate(pygame.transform.scale(BLOCK_TEXTURES[self.inventory.holding.name], inttup((BLOCK_SIZE * 0.34, BLOCK_SIZE * 0.34))), (self.arm.rot + (45 if abs(self.head.rot) > 90 else -45)) * 0.75)
-        screen.blit(self.held_block, self.held_item_pos - VEC(self.held_block.get_size()) / 2 + VEC(12 if abs(self.head.rot) > 90 else -12, 0))
+        if self.inventory.holding:
+            self.held_block = pygame.transform.rotate(pygame.transform.scale(BLOCK_TEXTURES[self.inventory.holding.name], inttup((BLOCK_SIZE * 0.34, BLOCK_SIZE * 0.34))), (self.arm.rot + (45 if abs(self.head.rot) > 90 else -45)) * 0.75)
+            screen.blit(self.held_block, self.held_item_pos - VEC(self.held_block.get_size()) / 2 + VEC(12 if abs(self.head.rot) > 90 else -12, 0))
 
         self.arm.rect = self.arm.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+35))
         screen.blit(self.arm.image, self.arm.rect.topleft)
