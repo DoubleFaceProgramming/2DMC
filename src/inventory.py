@@ -237,7 +237,7 @@ class Hotbar:
         self.selected = 0
         self.fade_timer = 0
         self.scroll = self.HotbarScroll(self)
-        self.hasscrolled = False
+        self.has_scrolled = False
 
     def update(self, scroll: int) -> None:
         # Updating the hotbar with items from the inventory
@@ -256,7 +256,7 @@ class Hotbar:
                 if keys[num_key]:
                     self.change_selected(num_key - K_0 - 1) # Minusing the lowest bounds and 1 (because we +1-ed earlier)
                     self.fade_timer = time.time() # Resetting the fade timer
-                    self.hasscrolled = True
+                    self.make_label()
 
             # Increasing or decreasing scroll object (using a kinda unecessary but cool new feature :D)
             match scroll:
@@ -266,7 +266,7 @@ class Hotbar:
             # If the user has scrolled, reset the fade time and update the scroll obj
             if scroll:
                 self.fade_timer = time.time()
-                self.hasscrolled = True
+                self.has_scrolled = True
                 self.scroll.update()
 
     def draw(self, screen: pygame.Surface) -> None:
@@ -281,13 +281,16 @@ class Hotbar:
             item_img = pygame.transform.scale(BLOCK_TEXTURES[self.items[slot].name], self.slot_size)
             screen.blit(item_img, self.slot_start + VEC(8, 0) + VEC(slot * (self.slot_size[0] + 10), 8))
 
-        # Create a text box
-        if self.hasscrolled:
-            if self.selected in self.items:
-                self.inventory.kill_label()
-                name = self.items[self.selected].name.replace("_", " ").capitalize()
-                self.inventory.label = TextBox(LayersEnum.INVENTORY_LABELS, name, (WIDTH / 2 - smol_text(name).get_width() / 2 - 8, HEIGHT - 92), survive_time=3)
-                self.hasscrolled = False # Reset the scroll variable
+        # If the player has scrolled create a new label
+        if self.has_scrolled:
+            self.make_label()
+
+    def make_label(self) -> None:
+        if self.selected in self.items:
+            self.inventory.kill_label()
+        name = self.items[self.selected].name.replace("_", " ").capitalize()
+        self.inventory.label = TextBox(LayersEnum.INVENTORY_LABELS, name, (WIDTH / 2 - smol_text(name).get_width() / 2 - 8, HEIGHT - 92), survive_time=3)
+        self.has_scrolled = False # Reset the scroll variable
 
     def change_selected(self, new: int) -> None:
         """Change the selected slot
@@ -296,6 +299,7 @@ class Hotbar:
             new (int): The new slot to select
         """
 
+        self.has_scrolled = True
         self.scroll.current = new
         self.selected = new
 
