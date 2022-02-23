@@ -28,7 +28,7 @@
 ## Changes
 
 - Optimized particles with conditional collision testing
-- Text boxes now show the time elapsed since they were created whilst in debug mode and their outer border / rect
+- Text boxes now show their outer border / rect whilst in debug mode
 
 ## Bug Fixes
 
