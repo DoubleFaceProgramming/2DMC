@@ -4,7 +4,7 @@ from pygame import Rect, Surface
 import time
 
 from src.sprite import LayersEnum, Sprite
-from src.utils import smol_text, inttup
+from src.utils import smol_text, inttup, ultra_smol_text
 from src.constants import VEC
 
 class TextBox(Sprite):
@@ -61,9 +61,9 @@ class TextBox(Sprite):
 
     def debug(self, screen, **kwargs) -> None:
         if self.survive_time:
-            debug_text = smol_text(f"Time elapsed: {time.time() - self.start_time:.2f}") # Rounding the time to 2 decimal places
+            debug_text = ultra_smol_text(f"Time elapsed: {time.time() - self.start_time:.2f}") # Rounding the time to 2 decimal places
             debug_text.set_alpha(self.opacity)
-            rect = Rect(self.rect.left, self.rect.top - self.rect.height, debug_text.get_width(), debug_text.get_height())
+            rect = Rect(self.rect.left, self.rect.top - self.rect.height / 2, debug_text.get_width(), debug_text.get_height())
             rect.centerx = self.rect.centerx # Centering the text
             screen.blit(debug_text, rect)
         drawrect(screen, (255, 0, 0), self.rect, width=1) # Drawing an outline rect

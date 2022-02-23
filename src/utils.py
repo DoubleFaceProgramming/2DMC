@@ -11,7 +11,7 @@ import cProfile
 import pstats
 import os
 
-from src.constants import VEC, FONT20, FONT24, BLOCK_SIZE, PROFILE_DIR
+from src.constants import VEC, FONT20, FONT24, FONT10, BLOCK_SIZE, PROFILE_DIR
 
 class CyclicalList:
     def __init__(self, elements: list[Any], start: int = 0) -> None:
@@ -68,6 +68,10 @@ def text(text: str, color: tuple=(0, 0, 0)) -> Surface:
 def smol_text(text: str, color: tuple=(255, 255, 255)) -> Surface:
     """Returns a surface which has the given text argument rendered using font 20 in the given colour (default white)"""
     return FONT20.render(text, True, color)
+
+def ultra_smol_text(text: str, color: tuple=(255, 255, 255)) -> Surface:
+    """Returns a surface which has the given text argument rendered using font 20 in the given colour (default white)"""
+    return FONT10.render(text, True, color)
 
 def block_collide(playerx: int, playery: int, width: float, height: float, detecting: list, block) -> tuple[bool, str]:
     """Checks collision between the player and the given block object.

@@ -34,6 +34,7 @@ PROFILE_DIR = exe.pathof("build/profiles/")
 SCREENSHOTS_DIR = exe.pathof("screenshots/")
 FONT24 = Font(REGULAR_FONT_LOC, 24)
 FONT20 = Font(REGULAR_FONT_LOC, 20)
+FONT10 = Font(REGULAR_FONT_LOC, 10)
 
 BLOCK_DATA = load_block_data()
 STRUCTURES = load_structures()
