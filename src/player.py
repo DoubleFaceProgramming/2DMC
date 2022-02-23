@@ -411,17 +411,6 @@ class Player(Sprite):
                     if is_placeable(self, block_pos, BLOCK_DATA[self.inventory.holding.name], neighbors):
                         set_block(chunks, block_pos, self.inventory.holding.name, neighbors)
 
-    def toggle_inventory(self) -> None:
-        """Toggle the players inventory on and off."""
-
-        # Toggle inventory and mouse visibility
-        self.inventory.visible = not self.inventory.visible
-        pygame.mouse.set_visible(self.inventory.visible)
-        if not self.inventory.visible:
-            if self.inventory.selected: # If an item was being hovered when the inventory was closed:
-                self.inventory += self.inventory.selected.name # Add the item
-                self.inventory.selected = None
-
     def pick_block(self) -> None:
         """Pick the block at the mouse position, with all the functionality in 3D Minecraft."""
 

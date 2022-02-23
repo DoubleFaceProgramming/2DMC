@@ -106,7 +106,7 @@ class Game():
                 if event.key == K_F9:
                     utils.do_profile = True
                 if event.key == K_e:
-                    self.player.toggle_inventory()
+                    self.player.inventory.toggle()
                 if event.key == K_F2:
                     self.manager.screenshot(self)
                 if event.key == K_F3:

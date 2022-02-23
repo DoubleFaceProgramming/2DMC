@@ -85,7 +85,7 @@ class Inventory(Sprite):
 
             # Draw an item label
             if over_inv or self.over_hotbar:
-                if self.hovering != self.old_hovering: # If the player has changed the item they are hovering over
+                if self.hovering != self.old_hovering or (self.hovering and not self.label): # If the player has changed the item they are hovering over
                     if self.hovering in self.items:
                         name = self.items[self.hovering].name.replace("_", " ").capitalize()
                         self.kill_label() # Kill the old label
@@ -168,6 +168,16 @@ class Inventory(Sprite):
             self.player.leg.rect = self.player.leg.image.get_rect(center=(593+self.player.width/2, 140+72))
             screen.blit(self.player.leg.image, self.player.leg.rect.topleft)
 
+    def toggle(self) -> None:
+        # Toggle inventory and mouse visibility
+        self.visible = not self.visible
+        pygame.mouse.set_visible(self.visible)
+        if not self.visible:
+            self.kill_label()
+            if self.selected: # If an item was being hovered when the inventory was closed:
+                self += self.selected.name # Add the item
+                self.selected = None
+
     def kill_label(self) -> None:
         """Kill the nametag or text box or label that shows the name of the item"""
 
@@ -176,6 +186,8 @@ class Inventory(Sprite):
                 self.label.kill()
             except (SpriteNotFoundException, LayerNotFoundException):
                 pass # For some reason these errors got thrown so... catching them ¯\_(ツ)_/¯
+
+            self.label = None # Destroying the label
 
     def set_slot(self, slot: int, item: str) -> None:
         """Set the given slot in the inventory to the given item
