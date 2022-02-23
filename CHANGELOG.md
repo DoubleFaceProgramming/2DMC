@@ -28,6 +28,7 @@
 ## Changes
 
 - Optimized particles with conditional collision testing
+- Text boxes now show the time elapsed since they were created whilst in debug mode
 
 ## Bug Fixes
 
@@ -43,3 +44,4 @@
   - Draw order is defined in an automatic enumeration
   - Sprites can have a custom debug layer (debug information is rendered on a different layer to the sprite) or a regular debug layer (debug information is rendered on the same layer as the sprite)
   - If you want to get a better understanding of this system then you are best off looking at the code (particuarly [sprite.py](src/sprite.py)), be warned the code is kinda gross >.<
+- Made a [text box class](src/text_box.py) to better how text boxes are handled. Text boxes are sprites, and so can be given different layers
