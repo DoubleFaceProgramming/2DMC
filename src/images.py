@@ -3,7 +3,7 @@ from pathlib import Path
 import pygame
 import os
 
-from src.constants import VEC, BLOCK_SIZE
+from src.constants import VEC, MIN_BLOCK_SIZE
 from build.exe_comp import pathof
 
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (50, 50)
@@ -48,5 +48,5 @@ BLOCK_TEXTURES = {}
 for img in os.listdir(pathof("assets/textures/blocks/")):
     BLOCK_TEXTURES[Path(img).stem] = pygame.image.load(os.path.join(pathof("assets/textures/blocks/"), img)).convert()
 for image in BLOCK_TEXTURES:
-    BLOCK_TEXTURES[image] = pygame.transform.scale(BLOCK_TEXTURES[image], (BLOCK_SIZE, BLOCK_SIZE))
+    BLOCK_TEXTURES[image] = pygame.transform.scale(BLOCK_TEXTURES[image], (MIN_BLOCK_SIZE, MIN_BLOCK_SIZE))
     BLOCK_TEXTURES[image].set_colorkey((255, 255, 255))

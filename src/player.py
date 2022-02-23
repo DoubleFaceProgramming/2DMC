@@ -5,7 +5,7 @@ from pygame.math import Vector2
 import pygame
 
 from src.block import Block, BLOCK_DATA, remove_block, is_placeable, set_block, inttup
-from src.constants import MAX_Y, SCR_DIM, SLIDE, GRAVITY, TERMINAL_VEL, CHUNK_SIZE
+from src.constants import MAX_Y, SCR_DIM, SLIDE, GRAVITY, TERMINAL_VEL, CHUNK_SIZE, BLOCK_SIZE
 from src.particle import PlayerFallParticle
 from src.sprite import LayersEnum, Sprite
 from src.utils import block_collide, text

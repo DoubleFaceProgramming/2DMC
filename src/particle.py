@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 import pygame
 import time
 
-from src.constants import VEC, BLOCK_SIZE, GRAVITY, WIDTH, HEIGHT, MAX_Y
+from src.constants import MIN_BLOCK_SIZE, VEC, BLOCK_SIZE, GRAVITY, WIDTH, HEIGHT, MAX_Y
 from src.sprite import LayersEnum, Sprite
 from src.utils import inttup, sign
 
@@ -113,7 +113,7 @@ class BlockParticle(PhysicsParticle):
 
         # Gets a random colour from master and fills its image with it
         self.image = pygame.Surface((self.size, self.size))
-        color = self.master.image.get_at((randint(0, BLOCK_SIZE-1), randint(0, BLOCK_SIZE-1)))
+        color = self.master.image.get_at((randint(0, MIN_BLOCK_SIZE-1), randint(0, MIN_BLOCK_SIZE-1)))
         self.image.fill(color)
 
         # Calculate the time that the particle is going to last for

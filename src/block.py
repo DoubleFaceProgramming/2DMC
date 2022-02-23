@@ -1,6 +1,6 @@
 import pygame
 
-from src.constants import VEC, BLOCK_SIZE, CHUNK_SIZE, BLOCK_DATA
+from src.constants import VEC, MIN_BLOCK_SIZE, BLOCK_SIZE, CHUNK_SIZE, BLOCK_DATA
 from src.particle import BlockParticle
 from src.images import BLOCK_TEXTURES
 from src.utils import inttup
@@ -36,7 +36,7 @@ class Block:
             remove_block(chunks, self.coords, self.data, self.neighbors)
 
     def draw(self, screen, camera):
-        on_chunk_pos = self.pos.x % (CHUNK_SIZE * BLOCK_SIZE), self.pos.y % (CHUNK_SIZE * BLOCK_SIZE)
+        on_chunk_pos = self.pos.x / BLOCK_SIZE % CHUNK_SIZE * MIN_BLOCK_SIZE, self.pos.y / BLOCK_SIZE % CHUNK_SIZE * MIN_BLOCK_SIZE
         screen.blit(self.image, on_chunk_pos)
 
     def kill(self) -> None:
