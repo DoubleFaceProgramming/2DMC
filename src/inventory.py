@@ -47,8 +47,7 @@ class Inventory(Sprite):
         self.items = {}
         self.hotbar = Hotbar(self)
         self.visible = False
-        self.selected = None
-        self.hovering = None
+        self.hovering = self.holding = self.selected = None
         self.old_hovering = VEC(0, 0)
         self.over_hotbar = False
         self.max_items = 36

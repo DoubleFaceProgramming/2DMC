@@ -12,6 +12,7 @@ class LayersEnum(Enum):
     BLOCK_SELECTION = auto()
     DEBUG = auto()
     PLAYER = auto()
+    BLOCKS_DEBUG = auto()
     INVENTORY = auto()
     INVENTORY_LABELS = auto()
     CROSSHAIR = auto()
@@ -134,7 +135,8 @@ class SpriteManager:
             # so would just cause repition.
             # If the next layer is a debug layer, keep on incrementing the layer counter until it is no longer a debug layer
             # The if check in the square brackets is to avoid negative indexing
-            while LayersEnum(list(self.layers)[self.layeriter - 1 if self.layeriter > 1 else 0]).name.endswith("_DEBUG"):
+            while LayersEnum(list(self.layers)[self.layeriter - 1]).name.endswith("_DEBUG"):
+                print(LayersEnum(list(self.layers)[self.layeriter - 1 if self.layeriter > 1 else 0]).name)
                 self.layeriter += 1
 
         return layer[self.spriteiter] # Return the sprite
@@ -204,5 +206,6 @@ class SpriteManager:
     def update(self, dt: float, **kwargs) -> None:
         for sprite in self:
             sprite.update(dt, **kwargs)
+        a = 1
 
 SPRITE_MANAGER = SpriteManager()

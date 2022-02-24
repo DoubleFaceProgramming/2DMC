@@ -292,7 +292,7 @@ class Chunk(Sprite):
 
     def __init__(self, pos: tuple, layer: LayersEnum = LayersEnum.BLOCKS) -> None:
         self.__class__.instances[pos] = self
-        super().__init__(layer)
+        super().__init__(layer, LayersEnum.BLOCKS_DEBUG)
         self.pos = VEC(pos)
         self.previous_block_data = {}
         self.block_data = self.generate(pos[0], pos[1])
