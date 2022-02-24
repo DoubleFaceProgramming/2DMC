@@ -182,6 +182,8 @@ class SpriteManager:
     def remove(self, sprite: Sprite) -> None:
         try: # Remove the sprite
             self.layers[sprite._layer].remove(sprite)
+            if sprite._layer != sprite._debug_layer:
+                self.layers[sprite._debug_layer].remove(sprite)
         except ValueError: # If the sprite was not in its corresponding layer list
             raise SpriteNotFoundException(sprite)
         except KeyError: # If the sprite's layer was not in the layer dict
