@@ -4,8 +4,6 @@ from enum import Enum, auto
 from pygame import Surface
 from typing import Any
 
-from src.utils import sign
-
 class LayersEnum(Enum):
     BACKGROUND = auto()
     ENV_PARTICLES = auto()
@@ -14,7 +12,6 @@ class LayersEnum(Enum):
     BLOCK_SELECTION = auto()
     DEBUG = auto()
     PLAYER = auto()
-    BLOCKS_DEBUG = auto()
     INVENTORY = auto()
     INVENTORY_LABELS = auto()
     CROSSHAIR = auto()
@@ -117,30 +114,33 @@ class SpriteManager:
         # Sorting the layer dict so that the lowest layer (layer that should be drawn first)
         # is first, and the highest is drawn last
         self.layers = dict(sorted(self.layers.items()))
-        self.layeriter = self.spriteiter = 0 # Iteration variables
+        self.layeriter = self.spriteiter = 0
+        self.get_layer = lambda: list(self.layers.values())[self.layeriter-1]
         return self
 
-    def __next__(self) -> tuple[list, Sprite]:
+    # Bad code but i just cba at this point this has taken way too long
+    def __next__(self) -> Sprite:
         # If the current layer is greater than the number of layers, stop the iteration (this exits a for loop)
         if self.layeriter >= len(self.layers):
             raise StopIteration
 
         # The layers dict is keyed by the layer, but we need it to be keyed by its index
         # Ideally this would be in __iter__ but fsr it crashes so.. ¯\_(ツ)_/¯
-        layer = list(self.layers.values())[self.layeriter]
-        self.spriteiter += 1 # Increase the iter variable
-        # Then check if it is greater than the max.
-        if self.spriteiter >= len(layer):
-            self.spriteiter = 0 # Reset the sprite iter variable
-            self.layeriter += 1 # Next iteration, loop through the next layer
-            # We dont want to return sprites in debug layers, as they would be returned in their respective normal layers
-            # so would just cause repition.
-            # If the next layer is a debug layer, keep on incrementing the layer counter until it is no longer a debug layer
-            # "sign(self.layeriter)" will only decrement layeriter if it is greater than 0
-            while LayersEnum(list(self.layers)[self.layeriter - sign(self.layeriter)]).name.endswith("_DEBUG"):
-                self.layeriter += 1
+        layer = self.get_layer()
+        self.spriteiter += 1
+        if self.spriteiter >= len(layer): # Then check if it is greater than it's max.
+            self.spriteiter = 0
 
-        return layer[self.spriteiter] # Return the sprite
+            # We dont want to return sprites in debug layers, as they would be returned in their respective normal layers so would just cause repetition.
+            # If the next layer is a debug layer, keep on incrementing the layer counter until it is no longer a debug layer
+            # This could benefit from a do / while loop :o (python please add it its actually useful)
+            while True:
+                self.layeriter += 1
+                if not LayersEnum(list(self.layers)[self.layeriter - 1]).name.endswith("_DEBUG"):
+                    layer = self.get_layer() # Recalculating layer with the new layer iteration attribute
+                    break
+
+        return layer[self.spriteiter]
 
     def __contains__(self, sprite: Sprite) -> bool:
         try:
@@ -207,6 +207,5 @@ class SpriteManager:
     def update(self, dt: float, **kwargs) -> None:
         for sprite in self:
             sprite.update(dt, **kwargs)
-        a = 1
 
 SPRITE_MANAGER = SpriteManager()
