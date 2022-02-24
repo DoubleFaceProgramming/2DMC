@@ -4,6 +4,8 @@ from enum import Enum, auto
 from pygame import Surface
 from typing import Any
 
+from src.utils import sign
+
 class LayersEnum(Enum):
     BACKGROUND = auto()
     ENV_PARTICLES = auto()
@@ -133,8 +135,8 @@ class SpriteManager:
             # We dont want to return sprites in debug layers, as they would be returned in their respective normal layers
             # so would just cause repition.
             # If the next layer is a debug layer, keep on incrementing the layer counter until it is no longer a debug layer
-            # The if check in the square brackets is to avoid negative indexing
-            while LayersEnum(list(self.layers)[self.layeriter - 1 if self.layeriter > 1 else 0]).name.endswith("_DEBUG"):
+            # "sign(self.layeriter)" will only decrement layeriter if it is greater than 0
+            while LayersEnum(list(self.layers)[self.layeriter - sign(self.layeriter)]).name.endswith("_DEBUG"):
                 self.layeriter += 1
 
         return layer[self.spriteiter] # Return the sprite
