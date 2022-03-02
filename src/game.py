@@ -19,6 +19,7 @@ from src.sprite import LayersEnum, SPRITE_MANAGER
 from src.utils import inttup, text, CyclicalList
 from src.background import Background
 from src.particle import Particle
+from src.text_box import TextBox
 from src.player import Player
 
 import src.utils as utils # For doing utils.do_profile ¯\_(ツ)_/¯
@@ -54,6 +55,7 @@ class GameManager():
 
     def cycle_cinematic(self) -> None:
         self.cinematic = self.__class__.CinematicModes(next(self.cinematic_modes))
+        TextBox(LayersEnum.TOATS, self.cinematic.name.capitalize(), (0, 0), survive_time=3)
 
     class CinematicModes(Enum):
         """An Enum that stores the options for the cinematic modes cycle/toggle

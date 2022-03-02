@@ -15,6 +15,7 @@ class LayersEnum(Enum):
     INVENTORY = auto()
     INVENTORY_LABELS = auto()
     CROSSHAIR = auto()
+    TOATS = auto()
 
 class Sprite:
     """A common baseclass for all sprites."""

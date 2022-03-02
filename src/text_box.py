@@ -3,12 +3,12 @@ from pygame.locals import SRCALPHA
 from pygame import Rect, Surface
 import time
 
+from src.utils import smol_text, ultra_smol_text
 from src.sprite import LayersEnum, Sprite
-from src.utils import smol_text, inttup, ultra_smol_text
-from src.constants import VEC
+from src.constants import VEC, Anchors
 
 class TextBox(Sprite):
-    def __init__(self, layer: LayersEnum, text: str, pos: tuple[int, int], survive_time: float = None, centered: tuple[bool, bool] = (False, False)):
+    def __init__(self, layer: LayersEnum, text: str, pos: tuple[int, int], survive_time: float = None, anchor: Anchors = Anchors.TOPLEFT):
         super().__init__(layer)
 
         # Text attributes
@@ -17,8 +17,9 @@ class TextBox(Sprite):
         text_rect = self.text_surf.get_rect()
 
         # Size and positions attributes (size is slightly bigger than the text)
-        self.size = (text_rect.width + 16, text_rect.height + 8)
-        self.pos = VEC(pos)
+        self.anchor = VEC(anchor.value)
+        self.size = VEC(text_rect.width + 16, text_rect.height + 8)
+        self.pos = VEC(pos) - VEC(self.anchor.x * self.size.x, self.anchor.y * self.size.y) // 2
 
         # Time attributes
         self.survive_time = survive_time
@@ -39,12 +40,6 @@ class TextBox(Sprite):
         self.image.blit(self.text_surf, (8, 4))
         self.rect = self.image.get_rect()
         self.rect.topleft = self.pos
-
-        # Center the text box
-        if centered[0]:
-            self.pos.x -= self.size.width / 2
-        if centered[1]:
-            self.pos.y -= self.size.height / 2
 
     def update(self, dt: float, **kwargs):
         self.rect.topleft = self.pos

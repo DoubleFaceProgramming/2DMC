@@ -52,6 +52,17 @@ class CustomEvents(Enum):
     # AN_EVENT = USEREVENT + auto()
     # ANOTHER_EVENT = USEREVENT + auto()
     # . . . ect
+    
+class Anchors(Enum):
+    TOP = (0, -1)
+    BOTTOM = (0, 1)
+    LEFT = (-1, 0)
+    RIGHT = (1, 0)
+    CENTER = (0, 0)
+    TOPLEFT = (-1, -1)
+    TOPRIGHT = (1, -1)
+    BOTTOMLEFT = (-1, 1)
+    BOTTOMRIGHT = (1, 1)
 
 import src.game as game
 MANAGER = game.GameManager()
