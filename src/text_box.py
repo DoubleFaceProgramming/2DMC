@@ -76,4 +76,4 @@ class InventoryLabelTextBox(GenericTextBox):
 
 class HotbarLabelTextBox(GenericTextBox):
     def __init__(self, text: str, pos: tuple[int, int]) -> None:
-        super().__init__(LayersEnum.INVENTORY_LABELS, text, pos, survive_time=3)
+        super().__init__(LayersEnum.INVENTORY_LABELS, text, pos, survive_time=3, anchor=Anchors.CENTER)
