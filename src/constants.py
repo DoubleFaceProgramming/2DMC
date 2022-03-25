@@ -24,7 +24,7 @@ CHUNK_SIZE = 8
 # Seed for low world gen (loads at 1056) testing: 1561761502
 SEED = randint(-2147483648, 2147483647)
 
-FPS = 1000
+FPS = float("inf")
 VEC = Vector2
 
 REGULAR_FONT_LOC = exe.pathof("assets/fonts/regular.ttf")
