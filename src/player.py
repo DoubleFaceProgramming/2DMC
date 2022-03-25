@@ -5,10 +5,10 @@ from pygame.math import Vector2
 import pygame
 
 from src.block import Block, BLOCK_DATA, remove_block, is_placeable, set_block, inttup
-from src.constants import MAX_Y, SCR_DIM, SLIDE, GRAVITY, TERMINAL_VEL, CHUNK_SIZE, BLOCK_SIZE
+from src.constants import MAX_Y, SCR_DIM, GRAVITY, TERMINAL_VEL, CHUNK_SIZE, BLOCK_SIZE
+from src.utils import block_collide, sign, text, bps
 from src.particle import PlayerFallParticle
 from src.sprite import LayersEnum, Sprite
-from src.utils import block_collide, text
 from src.inventory import Inventory
 import src.constants as constants
 from src.images import *
@@ -31,9 +31,9 @@ class Camera(pygame.sprite.Sprite):
             x_dist, y_dist = mpos[0] - SCR_DIM[0] / 2, mpos[1] - SCR_DIM[1] / 2
         else:
             x_dist, y_dist = 0, 0
-        dist_squared = VEC(x_dist**2 if x_dist > 0 else -x_dist**2, y_dist**2*2.5 if y_dist > 0 else -y_dist**2*2.5)
+        dist_squared = VEC(sign(x_dist) * x_dist ** 2 * 0.6, sign(y_dist) * y_dist ** 2 * 1.2)
 
-        self.pos += (tick_offset / 10 + VEC(dist_squared) / 18000) * dt
+        self.pos += (tick_offset * 2 + VEC(dist_squared) / 300) * dt
 
 class Player(Sprite):
     """Class that contains player methods and attributes."""
@@ -44,13 +44,16 @@ class Player(Sprite):
         self.start_pos = VEC(0, 3) * BLOCK_SIZE # Far lands: 9007199254740993 (aka 2^53)
         self.pos = VEC(self.start_pos)
         self.coords = self.last_standing_coords = self.pos // BLOCK_SIZE
+        self.slide = bps(20)
         self.acc = VEC(0, 0)
         self.vel = VEC(0, 0)
-        # Walking speed: 4.317 bps
-        # Sprinting speed: 5.612 bps
-        # Sprint-jumping speed: 7.127 bps
-        self.max_speed = 5.153
-        self.jumping_max_speed = 6.7
+        # Minecraft:
+        # Walking speed: 4.317 BPS
+        # Sprinting speed: 5.612 BPS
+        # Sprint-jumping speed: 7.127 BPS
+        self.max_speed = bps(4.317)
+        self.jumping_max_speed = bps(5.612)
+        self.jump_vel = bps(-8.4)
         self.rect = pygame.Rect((0, 0, 0.225 * BLOCK_SIZE, 1.8 * BLOCK_SIZE))
         self.bottom_bar = pygame.Rect((self.rect.x + 1, self.rect.bottom), (self.width - 2, 1))
         self.on_ground = False
@@ -114,18 +117,18 @@ class Player(Sprite):
         if keys[K_a] and not self.inventory.visible:
             if self.vel.x > -self.max_speed:
                 # Slow the player down
-                self.vel.x -= SLIDE * dt
+                self.vel.x -= self.slide * dt
         elif self.vel.x < 0:
-            self.vel.x += SLIDE * dt
+            self.vel.x += self.slide * dt
         if keys[K_d] and not self.inventory.visible:
             if self.vel.x < self.max_speed:
                 # Slow the player down but in the other direction
-                self.vel.x += SLIDE * dt
+                self.vel.x += self.slide * dt
         elif self.vel.x > 0:
-            self.vel.x -= SLIDE * dt
+            self.vel.x -= self.slide * dt
         # If the player is on the ground and not in the inventory, jump
         if keys[K_w] and self.on_ground and not self.inventory.visible:
-            self.vel.y = -9.2
+            self.vel.y = self.jump_vel
             # When the player jumps, its x-speed also increases slightly (aka sprint jumping in minecraft)
             self.vel.x *= 1.133
             # Accelerate the player unless its speed is already at the maximum
@@ -133,15 +136,15 @@ class Player(Sprite):
                 self.vel.x = self.jumping_max_speed
             elif self.vel.x < -self.jumping_max_speed:
                 self.vel.x = -self.jumping_max_speed
-        if -SLIDE * dt < self.vel.x < SLIDE * dt:
+        if -self.slide * dt < self.vel.x < self.slide * dt:
             self.vel.x = 0
 
         # Accelerate the player downwards
-        self.acc.y = GRAVITY
+        self.acc.y = bps(GRAVITY)
         self.vel += self.acc * dt
         # Unless the player has reached terminal velocity
-        if self.vel.y > TERMINAL_VEL:
-            self.vel.y = TERMINAL_VEL
+        if self.vel.y > bps(TERMINAL_VEL):
+            self.vel.y = bps(TERMINAL_VEL)
         # Slow the player down if the player walking on the ground
         if self.on_ground:
             if self.vel.x < 0:
@@ -218,7 +221,7 @@ class Player(Sprite):
         self.head.rot = -VEC(self.head.rect.center).angle_to(m_pos-VEC(self.head.rect.center))-25
 
         if self.vel.x != 0:                              # If the player is moving in the horizontal direction
-            self.leg.count += 0.2 * dt                   # A counter for the rotation of legs
+            self.leg.count += 12 * dt                   # A counter for the rotation of legs
             if abs(self.vel.x) > self.max_speed * 1.05:  # If the player is running at full speed
                 self.leg.rot = cos(self.leg.count) * 40  # Rotate the legs out far (40)
             elif abs(self.vel.x) > self.max_speed * 0.5: # If the player is running at normal speed
@@ -248,7 +251,7 @@ class Player(Sprite):
     def move(self, blocks: dict[tuple[int, int], Block], dt: float) -> None:
         """Move the player and test for collision between it and the main dictionary of blocks"""
         # Determine how many sections to split the delta velocity into based on the delta time
-        split = ceil(90 * dt / 62.5 * 1.5)
+        split = int(self.vel.length() * dt) + 1
         flag = False
         detecting_blocks = []
 
@@ -256,7 +259,7 @@ class Player(Sprite):
             # Only detect collision within a 3 by 4 area around the player
             for y in range(4):
                 for x in range(3):
-                    if (block_pos := (int(self.coords.x-1+x), int(self.coords.y-1+y))) in blocks: # If there exists a block at that position
+                    if (block_pos := (int(self.coords.x - 1 + x), int(self.coords.y - 1 + y))) in blocks: # If there exists a block at that position
                         # Get the block object in that position from the main blocks dictionary
                         block = blocks[block_pos]
                         if block.data["collision_box"] == "full": # If the block has a full collision box
@@ -266,7 +269,7 @@ class Player(Sprite):
                             # DaNub is not going to attempt to explain why each "floor" and "ceil" are where they are so deal with it
                             if self.vel.y < 0:
                                 colliding, detecting_blocks = block_collide(
-                                    floor(self.pos.x), floor(self.pos.y+self.vel.y/split),
+                                    floor(self.pos.x), floor(self.pos.y + self.vel.y * dt / split),
                                     self.width, self.height,
                                     detecting_blocks, block)
                                 if colliding:
@@ -276,7 +279,7 @@ class Player(Sprite):
                             elif self.vel.y >= 0:
                                 if self.vel.x <= 0:
                                     colliding, detecting_blocks = block_collide(
-                                        floor(self.pos.x), ceil(self.pos.y+self.vel.y/split),
+                                        floor(self.pos.x), ceil(self.pos.y + self.vel.y * dt / split),
                                         self.width, self.height,
                                         detecting_blocks, block)
                                     if colliding:
@@ -285,7 +288,7 @@ class Player(Sprite):
                                         flag = True
                                 elif self.vel.x > 0:
                                     colliding, detecting_blocks = block_collide(
-                                        ceil(self.pos.x), ceil(self.pos.y+self.vel.y/split),
+                                        ceil(self.pos.x), ceil(self.pos.y + self.vel.y * dt / split),
                                         self.width, self.height,
                                         detecting_blocks, block)
                                     if colliding:
@@ -300,12 +303,12 @@ class Player(Sprite):
         for _ in range(split):
             for y in range(4):
                 for x in range(3):
-                    if (int(self.coords.x-1+x), int(self.coords.y-1+y)) in blocks:
-                        block = blocks[(int(self.coords.x-1+x), int(self.coords.y-1+y))]
+                    if (int(self.coords.x - 1 + x), int(self.coords.y - 1 + y)) in blocks:
+                        block = blocks[(int(self.coords.x - 1 + x), int(self.coords.y - 1 + y))]
                         if block.data["collision_box"] == "full":
                             if self.vel.x < 0:
                                 colliding, detecting_blocks = block_collide(
-                                    floor(self.pos.x+self.vel.x/split), floor(self.pos.y),
+                                    floor(self.pos.x + self.vel.x * dt / split), floor(self.pos.y),
                                     self.width, self.height,
                                     detecting_blocks, block)
                                 if colliding:
@@ -314,7 +317,7 @@ class Player(Sprite):
                                     flag = True
                             elif self.vel.x >= 0:
                                 colliding, detecting_blocks = block_collide(
-                                    ceil(self.pos.x+self.vel.x/split), ceil(self.pos.y),
+                                    ceil(self.pos.x + self.vel.x * dt / split), ceil(self.pos.y),
                                     self.width, self.height,
                                     detecting_blocks, block)
                                 if colliding:

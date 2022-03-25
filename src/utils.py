@@ -115,6 +115,9 @@ def rand_bool(perc: float) -> bool:
 def sign(num: int | float) -> int:
     return (num > 0) - (num < 0)
 
+def bps(blocks: float | VEC) -> float | VEC:
+    return blocks * BLOCK_SIZE
+
 do_profile = False
 def profile(callable: type, *args: tuple) -> Any:
     """Profiles the given callable and saves + prints the results

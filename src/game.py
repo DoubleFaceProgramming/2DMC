@@ -82,8 +82,7 @@ class Game():
         self.running = True
 
     def update(self, mpos) -> None:
-        dt = self.clock.tick_busy_loop(FPS) / 16
-        if dt > 12: dt = 12
+        dt = self.clock.tick_busy_loop(FPS) / 1000
 
         mouse_state = 0
         for event in pygame.event.get():
