@@ -3,22 +3,22 @@ from pygame.locals import SRCALPHA
 from pygame import Rect, Surface
 import time
 
+from src.sprite import LayersEnum, Sprite, LayerNotFoundException, SpriteNotFoundException
 from src.utils import smol_text, ultra_smol_text
-from src.sprite import LayersEnum, Sprite
 from src.constants import VEC, Anchors
 
 class TextBox(Sprite):
-    def __init__(self, layer: LayersEnum, text: str, pos: tuple[int, int], survive_time: float = None, anchor: Anchors = Anchors.TOPLEFT):
+    def __init__(self, layer: LayersEnum, text: str, pos: tuple[int, int], survive_time: float | None = None, anchor: Anchors = Anchors.TOPLEFT) -> None:
         super().__init__(layer)
 
         # Text attributes
         self.text = text
         self.text_surf = smol_text(self.text)
-        text_rect = self.text_surf.get_rect()
+        self.text_rect = self.text_surf.get_rect()
 
         # Size and positions attributes (size is slightly bigger than the text)
         self.anchor = VEC(anchor.value)
-        self.size = VEC(text_rect.width + 16, text_rect.height + 8)
+        self.size = VEC(self.text_rect.width + 16, self.text_rect.height + 8)
         self.pos = VEC(pos) - VEC(self.anchor.x * self.size.x, self.anchor.y * self.size.y) // 2
 
         # Time attributes
@@ -30,13 +30,6 @@ class TextBox(Sprite):
         self.image = Surface(self.size, SRCALPHA)
         self.image.set_alpha(self.opacity)
 
-        # Drawing a magenta border to give it a minecraft feel and blit the text on
-        drawrect(self.image, (0, 0, 0), (2, 0, text_rect.width + 12, text_rect.height + 8))
-        drawrect(self.image, (0, 0, 0), (0, 2, text_rect.width + 16, text_rect.height + 4))
-        drawrect(self.image, (44, 8, 99), (2, 2, text_rect.width + 12, 2))
-        drawrect(self.image, (44, 8, 99), (2, 4 + text_rect.height, text_rect.width + 12, 2))
-        drawrect(self.image, (44, 8, 99), (2, 2, 2, text_rect.height + 4))
-        drawrect(self.image, (44, 8, 99), (12 + text_rect.width, 2, 2, text_rect.height + 4))
         self.image.blit(self.text_surf, (8, 4))
         self.rect = self.image.get_rect()
         self.rect.topleft = self.pos
@@ -51,7 +44,7 @@ class TextBox(Sprite):
             else: # If the text box has lived longer than the survive time, kill it
                 super().kill()
 
-    def draw(self, screen: Surface, **kwargs):
+    def draw(self, screen: Surface, **kwargs) -> None:
         screen.blit(self.image, self.rect)
 
     def debug(self, screen, **kwargs) -> None:
@@ -61,4 +54,26 @@ class TextBox(Sprite):
             rect = Rect(self.rect.left, self.rect.top - self.rect.height / 2, debug_text.get_width(), debug_text.get_height())
             rect.centerx = self.rect.centerx # Centering the text
             screen.blit(debug_text, rect)
+
         drawrect(screen, (255, 0, 0), self.rect, width=1) # Drawing an outline rect
+
+class GenericTextBox(TextBox):
+    def __init__(self, layer: LayersEnum, text: str, pos: tuple[int, int], survive_time: float | None = None, anchor: Anchors = Anchors.TOPLEFT) -> None:
+        super().__init__(layer, text, pos, survive_time, anchor)
+
+        # Drawing a magenta border to give it a minecraft-y feel and blit the text on
+        drawrect(self.image, (0, 0, 0), (2, 0, self.text_rect.width + 12, self.text_rect.height + 8))
+        drawrect(self.image, (0, 0, 0), (0, 2, self.text_rect.width + 16, self.text_rect.height + 4))
+        drawrect(self.image, (44, 8, 99), (2, 2, self.text_rect.width + 12, 2))
+        drawrect(self.image, (44, 8, 99), (2, 4 + self.text_rect.height, self.text_rect.width + 12, 2))
+        drawrect(self.image, (44, 8, 99), (2, 2, 2, self.text_rect.height + 4))
+        drawrect(self.image, (44, 8, 99), (12 + self.text_rect.width, 2, 2, self.text_rect.height + 4))
+        self.image.blit(self.text_surf, (8, 4)) # Reblitting text because it would get covered up by the border ^^
+
+class InventoryLabelTextBox(GenericTextBox):
+    def __init__(self, text: str, pos: tuple[int, int]) -> None:
+        super().__init__(LayersEnum.INVENTORY_LABELS, text, pos, survive_time=None)
+
+class HotbarLabelTextBox(GenericTextBox):
+    def __init__(self, text: str, pos: tuple[int, int]) -> None:
+        super().__init__(LayersEnum.INVENTORY_LABELS, text, pos, survive_time=3)

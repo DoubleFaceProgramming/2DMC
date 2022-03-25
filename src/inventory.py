@@ -5,10 +5,10 @@ import pygame
 import time
 
 from src.images import inventory_img, BLOCK_TEXTURES, hotbar_img, hotbar_selection_img
+from src.text_box import InventoryLabelTextBox, HotbarLabelTextBox
 from src.constants import WIDTH, HEIGHT, SCR_DIM, VEC
 from src.utils import inttup, smol_text, CyclicalList
 import src.constants as constants
-from src.text_box import TextBox
 from src.sprite import Sprite
 
 class Item:
@@ -88,7 +88,8 @@ class Inventory(Sprite):
                     if self.hovering in self.items:
                         name = self.items[self.hovering].name.replace("_", " ").capitalize()
                         self.kill_label() # Kill the old label
-                        self.label = TextBox(LayersEnum.INVENTORY_LABELS, name, (mpos[0] + 12, mpos[1] - 24)) # Make a new label
+                        # self.label = TextBox(LayersEnum.INVENTORY_LABELS, name, (mpos[0] + 12, mpos[1] - 24)) # Make a new label
+                        self.label = InventoryLabelTextBox(name, (mpos[0] + 12, mpos[1] - 24))
                     else: # Ex. if you are hovering over an empty slot
                         self.kill_label()
             else: # Ex. if you are outside the inventory
@@ -300,7 +301,7 @@ class Hotbar:
         if self.selected in self.items:
             self.inventory.kill_label()
         name = self.items[self.selected].name.replace("_", " ").capitalize()
-        self.inventory.label = TextBox(LayersEnum.INVENTORY_LABELS, name, (WIDTH / 2 - smol_text(name).get_width() / 2 - 8, HEIGHT - 92), survive_time=3)
+        self.inventory.label = HotbarLabelTextBox(name, (WIDTH / 2 - smol_text(name).get_width() / 2 - 8, HEIGHT - 92))
         self.has_scrolled = False # Reset the scroll variable
 
     def change_selected(self, new: int) -> None:

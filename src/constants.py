@@ -46,7 +46,7 @@ CONFLICTING_STRUCTURES = {
     ("tuff", ): ["deepslate_coal_ore", "deepslate_iron_ore", "deepslate_lapis_ore", "deepslate_gold_ore", "deepslate_redstone_ore", "deepslate_diamond_ore", "deepslate_emerald_ore"]
 }
 
-# We dont need this yet but if we ever need custom events i realised we could do something like this :P
+# We dont need this yet but if we ever need custom events I realised we could do something like this :P
 class CustomEvents(Enum):
     pass
     # AN_EVENT = USEREVENT + auto()
