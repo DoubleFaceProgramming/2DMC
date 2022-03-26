@@ -10,7 +10,7 @@ from pygame.locals import  (
     K_e, K_F5, K_F9, K_F2, K_F3,
     MOUSEBUTTONDOWN, KEYDOWN,
     HWSURFACE, DOUBLEBUF,
-    QUIT,
+    QUIT, WINDOWMOVED
 )
 
 from src.constants import SCREENSHOTS_DIR, SEED, WIDTH, HEIGHT, FPS, SCR_DIM, VEC, CHUNK_SIZE, BLOCK_SIZE, SPACING, CustomEvents
@@ -80,14 +80,24 @@ class Game():
         self.rendered_chunks = []
         self.debug_bool = False
         self.running = True
+        self.window_moved = True
 
     def update(self, mpos) -> None:
         dt = self.clock.tick_busy_loop(FPS) / 1000
+        if self.window_moved:
+            dt = 0
+            self.window_moved = False
 
         mouse_state = 0
         for event in pygame.event.get():
             if event.type == QUIT:
                 self.running = False
+
+            # We use a variable to keep track of window movement because of the weird fact that
+            # pygame dt gets modified to an extremely big value in the frame AFTER the window gets moved
+            # so we need to set dt to 0 in the frame after the window movement event
+            if event.type == WINDOWMOVED:
+                self.window_moved = True
 
             if event.type == MOUSEBUTTONDOWN:
                 # Placing, breaking and pickblocking blocks
