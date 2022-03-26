@@ -29,11 +29,14 @@
 
 - Optimized particles with conditional collision testing
 - Text boxes now show their outer border / rect whilst in debug mode
+- Velocity now shows up as BPS (blocks per second) in debug
 
 ## Bug Fixes
 
 - Fixed particles occasionally falling into solid blocks
 - Fixed void fog particles spawning in extremely large numbers when the player enters the upper threshold of void fog particles
+- Fixed player being able to tunnel through blocks as FPS gets extremely low
+- Fixed player tunnelling when the window is moved, now, the game will just pause with dt being set to 0
 
 ## Technical Changes
 
@@ -45,3 +48,4 @@
   - Sprites can have a custom debug layer (debug information is rendered on a different layer to the sprite) or a regular debug layer (debug information is rendered on the same layer as the sprite)
   - If you want to get a better understanding of this system then you are best off looking at the code (particuarly [sprite.py](src/sprite.py)), be warned the code is kinda gross >.<
 - Made a [text box class](src/text_box.py) to better how text boxes are handled. Text boxes are sprites, and so can be given different layers
+- Velocity is now set and calculated with BPS (blocks per second)
