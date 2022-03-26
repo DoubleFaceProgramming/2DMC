@@ -6,7 +6,7 @@ import pygame
 
 from src.block import Block, BLOCK_DATA, remove_block, is_placeable, set_block, inttup
 from src.constants import MAX_Y, SCR_DIM, GRAVITY, TERMINAL_VEL, CHUNK_SIZE, BLOCK_SIZE
-from src.utils import block_collide, sign, text, bps
+from src.utils import block_collide, sign, text, pps
 from src.particle import PlayerFallParticle
 from src.sprite import LayersEnum, Sprite
 from src.inventory import Inventory
@@ -44,16 +44,16 @@ class Player(Sprite):
         self.start_pos = VEC(0, 3) * BLOCK_SIZE # Far lands: 9007199254740993 (aka 2^53)
         self.pos = VEC(self.start_pos)
         self.coords = self.last_standing_coords = self.pos // BLOCK_SIZE
-        self.slide = bps(20)
+        self.slide = pps(20)
         self.acc = VEC(0, 0)
         self.vel = VEC(0, 0)
         # Minecraft:
         # Walking speed: 4.317 BPS
         # Sprinting speed: 5.612 BPS
         # Sprint-jumping speed: 7.127 BPS
-        self.max_speed = bps(4.317)
-        self.jumping_max_speed = bps(5.612)
-        self.jump_vel = bps(-8.4)
+        self.max_speed = pps(4.317)
+        self.jumping_max_speed = pps(5.612)
+        self.jump_vel = pps(-8.4)
         self.rect = pygame.Rect((0, 0, 0.225 * BLOCK_SIZE, 1.8 * BLOCK_SIZE))
         self.bottom_bar = pygame.Rect((self.rect.x + 1, self.rect.bottom), (self.width - 2, 1))
         self.on_ground = False
@@ -140,14 +140,14 @@ class Player(Sprite):
             self.vel.x = 0
 
         # Accelerate the player downwards
-        self.acc.y = bps(GRAVITY)
+        self.acc.y = pps(GRAVITY)
         self.vel += self.acc * dt
         # Unless the player has reached terminal velocity
-        if self.vel.y > bps(TERMINAL_VEL):
-            self.vel.y = bps(TERMINAL_VEL)
+        if self.vel.y > pps(TERMINAL_VEL):
+            self.vel.y = pps(TERMINAL_VEL)
         # Slow the player down if the player walking on the ground
         if self.on_ground:
-            self.vel.x += -sign(self.vel.x) * bps(1) * dt
+            self.vel.x += -sign(self.vel.x) * pps(1) * dt
 
         # Move the test for collision
         self.move(kwargs["blocks"], dt)

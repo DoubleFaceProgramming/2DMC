@@ -16,7 +16,7 @@ from pygame.locals import  (
 from src.constants import SCREENSHOTS_DIR, SEED, WIDTH, HEIGHT, FPS, SCR_DIM, VEC, CHUNK_SIZE, BLOCK_SIZE, SPACING, CustomEvents
 from src.world_gen import Chunk, Block, load_chunks
 from src.sprite import LayersEnum, SPRITE_MANAGER
-from src.utils import inttup, text, CyclicalList
+from src.utils import bps, inttup, text, CyclicalList
 from src.background import Background
 from src.particle import Particle
 from src.text_box import TextBox
@@ -139,7 +139,7 @@ class Game():
         debug_values = {
             "FPS": int(self.clock.get_fps()),
             "Seed": SEED,
-            "Velocity": (round(self.player.vel.x, 3), round(self.player.vel.y, 3)),
+            "Velocity": (round(bps(self.player.vel.x), 4), round(bps(self.player.vel.y), 4)),
             "Positon": inttup(self.player.coords),
             "Camera offset": inttup(self.player.pos - self.player.camera.pos - VEC(SCR_DIM) / 2 + self.player.size / 2),
             "Chunk": inttup(self.player.coords // CHUNK_SIZE),

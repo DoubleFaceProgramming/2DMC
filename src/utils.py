@@ -116,9 +116,13 @@ def sign(num: int | float) -> int:
     """Returns the sign of the num (+/-) as -1, 0, or 1"""
     return (num > 0) - (num < 0)
 
-def bps(blocks: int | float | VEC) -> int | float | VEC:
+def pps(blocks: int | float | VEC) -> int | float | VEC:
     """Returns pixels per second equivalent of the input value in blocks per second"""
     return blocks * BLOCK_SIZE
+
+def bps(pixels: int | float | VEC) -> int | float | VEC:
+    """Returns blocks per second equivalent of the input value in pixels per second"""
+    return pixels / BLOCK_SIZE
 
 do_profile = False
 def profile(callable: type, *args: tuple) -> Any:

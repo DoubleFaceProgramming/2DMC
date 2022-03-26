@@ -9,7 +9,7 @@ import time
 
 from src.constants import MIN_BLOCK_SIZE, VEC, BLOCK_SIZE, GRAVITY, WIDTH, HEIGHT, MAX_Y
 from src.sprite import LayersEnum, Sprite
-from src.utils import bps, inttup, sign
+from src.utils import pps, inttup, sign
 
 if TYPE_CHECKING:
     from src.block import Block
@@ -23,7 +23,7 @@ class Particle(Sprite):
         __class__.instances.append(self)
         self.world_pos = VEC(pos)
         self.pos = self.world_pos
-        self.vel = bps(VEC(vel))
+        self.vel = pps(VEC(vel))
         self.coords = self.world_pos // BLOCK_SIZE
         self.survive_time = survive_time
         self.image = image
@@ -81,7 +81,7 @@ class PhysicsParticle(Particle):
 
     def move(self, dt: float) -> None:
         # Fall
-        self.vel.y += bps(GRAVITY) * dt
+        self.vel.y += pps(GRAVITY) * dt
         # X-velocity gets decreased over time
         self.vel.x *= 0.93
 
@@ -91,7 +91,7 @@ class EnvironmentalParticle(Particle):
     def __init__(self, pos: tuple, vel: tuple, survive_time: float, image: Surface, blocks: dict, layer: LayersEnum = LayersEnum.ENV_PARTICLES, master=None) -> None:
         super().__init__(pos, vel, survive_time, image, layer, master)
         self.blocks = blocks
-        self.vel = bps(VEC(vel))
+        self.vel = pps(VEC(vel))
 
     def update(self, dt: float, **kwargs) -> None:
         super().update(dt, **kwargs)
