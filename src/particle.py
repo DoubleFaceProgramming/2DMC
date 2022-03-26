@@ -20,7 +20,7 @@ class Particle(Sprite):
 
     def __init__(self, pos: tuple, vel: tuple, survive_time: float, image: Surface, layer: LayersEnum, master=None) -> None:
         super().__init__(layer)
-        self.__class__.instances.append(self)
+        __class__.instances.append(self)
         self.world_pos = VEC(pos)
         self.pos = self.world_pos
         self.vel = bps(VEC(vel))
@@ -48,7 +48,7 @@ class Particle(Sprite):
         # therefore it is being removed from the list twice, so we catch that here
         super().kill()
         try:
-            self.__class__.instances.remove(self)
+            __class__.instances.remove(self)
             del self
         except ValueError:
             pass

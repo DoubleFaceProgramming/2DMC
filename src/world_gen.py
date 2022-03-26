@@ -28,10 +28,10 @@ class Structure(object):
         self.in_chunks = set([(block_pos[0] // CHUNK_SIZE, block_pos[1] // CHUNK_SIZE) for block_pos in block_data])
         self.blocks_in_chunk = {}
         for chunk in self.in_chunks:
-            if chunk in self.__class__.instances:
-                self.__class__.instances[chunk].append(self)
+            if chunk in __class__.instances:
+                __class__.instances[chunk].append(self)
             else:
-                self.__class__.instances[chunk] = [self]
+                __class__.instances[chunk] = [self]
             self.blocks_in_chunk[chunk] = {}
         for block_pos, block_name in self.block_data.items():
             chunk = (block_pos[0] // CHUNK_SIZE, block_pos[1] // CHUNK_SIZE)
@@ -291,7 +291,7 @@ class Chunk(Sprite):
     instances = {}
 
     def __init__(self, pos: tuple, layer: LayersEnum = LayersEnum.BLOCKS) -> None:
-        self.__class__.instances[pos] = self
+        __class__.instances[pos] = self
         super().__init__(layer)
         self.pos = VEC(pos)
         self.previous_block_data = {}
@@ -354,11 +354,11 @@ class Chunk(Sprite):
                 block_pos = (x * CHUNK_SIZE + x_pos, y * CHUNK_SIZE + y_pos)
 
                 # Generate each block
-                if block_pos in self.__class__.generated_blocks:
-                    block_name = self.__class__.generated_blocks[block_pos]
+                if block_pos in __class__.generated_blocks:
+                    block_name = __class__.generated_blocks[block_pos]
                 else:
                     block_name = generate_block(block_pos[0], block_pos[1])
-                    self.__class__.generated_blocks[block_pos] = block_name
+                    __class__.generated_blocks[block_pos] = block_name
 
                 if block_name != "":
                     chunk_data[block_pos] = block_name

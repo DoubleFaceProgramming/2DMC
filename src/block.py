@@ -10,7 +10,7 @@ class Block:
     instances = {}
 
     def __init__(self, chunk, pos: tuple, name: str):
-        self.__class__.instances[tuple(pos)] = self
+        __class__.instances[tuple(pos)] = self
         self.name = name
         self.data = BLOCK_DATA[self.name]
         self.chunk = chunk
@@ -40,8 +40,8 @@ class Block:
         screen.blit(self.image, on_chunk_pos)
 
     def kill(self) -> None:
-        if inttup(self.coords) in self.__class__.instances:
-            del self.__class__.instances[inttup(self.coords)]
+        if inttup(self.coords) in __class__.instances:
+            del __class__.instances[inttup(self.coords)]
             del self
 
     def calc_pos(self, camera) -> None:

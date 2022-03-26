@@ -25,7 +25,7 @@ class Item:
 #     scale = 0.3
 #     def __init__(self, id: str | Item) -> None:
 #         super().__init__(name)
-#         self.image = scale(BLOCK_TEXTURES[self.name], inttup((BLOCK_SIZE * self.__class__.scale, self.__class__.scale * 0.3)))
+#         self.image = scale(BLOCK_TEXTURES[self.name], inttup((BLOCK_SIZE * __class__.scale, __class__.scale * 0.3)))
 
 class InventoryFullException(Exception):
     def __init__(self, item: Item, message="The inventory was full when trying to add item: ") -> None:

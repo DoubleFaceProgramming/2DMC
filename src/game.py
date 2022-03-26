@@ -39,11 +39,11 @@ class GameManager():
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), HWSURFACE | DOUBLEBUF)
 
-        self.cinematic_modes = iter(CyclicalList([mode.value for mode in self.__class__.CinematicModes]))
-        self.cinematic = self.__class__.CinematicModes.BOTH
+        self.cinematic_modes = iter(CyclicalList([mode.value for mode in __class__.CinematicModes]))
+        self.cinematic = __class__.CinematicModes.BOTH
 
     def new(self):
-        self.__class__.instances.append(game := Game(self))
+        __class__.instances.append(game := Game(self))
         return game
 
     def screenshot(self, game) -> None:
@@ -54,7 +54,7 @@ class GameManager():
         pygame.image.save(game.screen, screenshot_path)
 
     def cycle_cinematic(self) -> None:
-        self.cinematic = self.__class__.CinematicModes(next(self.cinematic_modes))
+        self.cinematic = __class__.CinematicModes(next(self.cinematic_modes))
         TextBox(LayersEnum.TOATS, self.cinematic.name.capitalize(), (0, 0), survive_time=3)
 
     class CinematicModes(Enum):
