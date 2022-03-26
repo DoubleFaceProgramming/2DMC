@@ -113,9 +113,11 @@ def rand_bool(perc: float) -> bool:
     return random() < perc
 
 def sign(num: int | float) -> int:
+    """Returns the sign of the num (+/-) as -1, 0, or 1"""
     return (num > 0) - (num < 0)
 
-def bps(blocks: float | VEC) -> float | VEC:
+def bps(blocks: int | float | VEC) -> int | float | VEC:
+    """Returns pixels per second equivalent of the input value in blocks per second"""
     return blocks * BLOCK_SIZE
 
 do_profile = False

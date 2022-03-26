@@ -147,10 +147,7 @@ class Player(Sprite):
             self.vel.y = bps(TERMINAL_VEL)
         # Slow the player down if the player walking on the ground
         if self.on_ground:
-            if self.vel.x < 0:
-                self.vel.x += 0.03 * dt
-            elif self.vel.x > 0:
-                self.vel.x -= 0.03 * dt
+            self.vel.x += -sign(self.vel.x) * bps(1) * dt
 
         # Move the test for collision
         self.move(kwargs["blocks"], dt)
@@ -250,7 +247,7 @@ class Player(Sprite):
 
     def move(self, blocks: dict[tuple[int, int], Block], dt: float) -> None:
         """Move the player and test for collision between it and the main dictionary of blocks"""
-        # Determine how many sections to split the delta velocity into based on the delta time
+        # Number of steps to cut the movement into inside one frame to prevent tunnelling
         split = int(self.vel.length() * dt) + 1
         flag = False
         detecting_blocks = []
