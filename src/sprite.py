@@ -71,7 +71,10 @@ class Sprite:
 
     def kill(self) -> None:
         """Kill the sprite and handle any cleanup logic"""
-        SPRITE_MANAGER.remove(self)
+        try:
+            SPRITE_MANAGER.remove(self)
+        except SpriteNotFoundException:
+            pass
         del self
 
 class NoLayerAttributeException(Exception):
