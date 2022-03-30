@@ -18,6 +18,7 @@ from src.world_gen import Chunk, Block, load_chunks
 from src.sprite import LayersEnum, SPRITE_MANAGER
 from src.utils import bps, inttup, text, CyclicalList
 from src.background import Background
+from src.images import window_icon
 from src.particle import Particle
 from src.text_box import TextBox
 from src.player import Player
@@ -34,6 +35,7 @@ class GameManager():
 
         os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (50, 50)
         pygame.display.set_caption("2D Minecraft")
+        pygame.display.set_icon(window_icon)
         pygame.mouse.set_visible(False)
         pygame.event.set_allowed([MOUSEBUTTONDOWN, KEYDOWN, QUIT, *[event.value for event in CustomEvents]])
 
