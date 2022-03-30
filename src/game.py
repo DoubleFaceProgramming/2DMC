@@ -20,7 +20,7 @@ from src.utils import bps, inttup, text, CyclicalList
 from src.background import Background
 from src.images import window_icon
 from src.particle import Particle
-from src.text_box import InformationLabel
+from src.text_box import GenericTextBox, InformationLabel
 from src.player import Player
 
 import src.utils as utils # For doing utils.do_profile ¯\_(ツ)_/¯
@@ -57,7 +57,7 @@ class GameManager():
 
     def cycle_cinematic(self) -> None:
         self.cinematic = __class__.CinematicModes(next(self.cinematic_modes))
-        InformationLabel(LayersEnum.TOATS, self.cinematic.name.capitalize(), (0, 0), survive_time=3)
+        GenericTextBox(LayersEnum.TOATS, self.cinematic.name.capitalize(), (10, 10), survive_time=3)
 
     class CinematicModes(Enum):
         """An Enum that stores the options for the cinematic modes cycle/toggle

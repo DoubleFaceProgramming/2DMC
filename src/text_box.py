@@ -21,7 +21,7 @@ class InformationLabel(Sprite):
         # Size and positions attributes (size is slightly bigger than the text)
         self.anchor = VEC(anchor.value)
         self.size = VEC(self.text_rect.width + 16, self.text_rect.height + 8)
-        self.pos = VEC(pos) - VEC(self.anchor.x * self.size.x, self.anchor.y * self.size.y) // 2
+        self.pos = VEC(pos) - VEC((self.anchor.x + 1) * self.size.x, (self.anchor.y + 1) * self.size.y) // 2
 
         # Time attributes
         self.survive_time = survive_time
