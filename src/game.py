@@ -57,7 +57,7 @@ class GameManager():
 
     def cycle_cinematic(self) -> None:
         self.cinematic = __class__.CinematicModes(next(self.cinematic_modes))
-        GenericTextBox(LayersEnum.TOATS, self.cinematic.name.capitalize(), (10, 10), survive_time=3)
+        GenericTextBox(LayersEnum.TOASTS, self.cinematic.name.capitalize(), (10, 10), survive_time=3)
 
     class CinematicModes(Enum):
         """An Enum that stores the options for the cinematic modes cycle/toggle
