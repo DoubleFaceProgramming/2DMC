@@ -3,11 +3,13 @@ from pygame.locals import SRCALPHA
 from pygame import Rect, Surface
 import time
 
-from src.sprite import LayersEnum, Sprite, LayerNotFoundException, SpriteNotFoundException
-from src.utils import smol_text, ultra_smol_text
+from src.utils import smol_text, ultra_smol_text, SingleInstance
+from src.sprite import LayersEnum, Sprite
 from src.constants import VEC, Anchors
 
-class TextBox(Sprite):
+class InformationLabel(Sprite):
+    """A non-functional base class for text boxes. Used only for inheritance"""
+
     def __init__(self, layer: LayersEnum, text: str, pos: tuple[int, int], survive_time: float | None = None, anchor: Anchors = Anchors.TOPLEFT) -> None:
         super().__init__(layer)
 
@@ -57,9 +59,12 @@ class TextBox(Sprite):
 
         drawrect(screen, (255, 0, 0), self.rect, width=1) # Drawing an outline rect
 
-class GenericTextBox(TextBox):
+class GenericTextBox(InformationLabel, SingleInstance):
+    """Text Box with a Minecraft-y magenta border that only supports one instance"""
+
     def __init__(self, layer: LayersEnum, text: str, pos: tuple[int, int], survive_time: float | None = None, anchor: Anchors = Anchors.TOPLEFT) -> None:
-        super().__init__(layer, text, pos, survive_time, anchor)
+        InformationLabel.__init__(self, layer, text, pos, survive_time, anchor)
+        SingleInstance.__init__(self, self)
 
         # Drawing a magenta border to give it a minecraft-y feel and blit the text on
         drawrect(self.image, (0, 0, 0), (2, 0, self.text_rect.width + 12, self.text_rect.height + 8))
@@ -71,9 +76,17 @@ class GenericTextBox(TextBox):
         self.image.blit(self.text_surf, (8, 4)) # Reblitting text because it would get covered up by the border ^^
 
 class InventoryLabelTextBox(GenericTextBox):
+    """Text box class that simplifies inventory label management"""
+
     def __init__(self, text: str, pos: tuple[int, int]) -> None:
         super().__init__(LayersEnum.INVENTORY_LABELS, text, pos, survive_time=None)
 
+    def update(self, dt: float, **kwargs):
+        self.pos = (kwargs["mpos"][0] + 12, kwargs["mpos"][1] - 24) # Update position so label is always to the topleft of cursor
+        super().update(dt, **kwargs)
+
 class HotbarLabelTextBox(GenericTextBox):
+    """Text box class that simplifies hotbar label management"""
+
     def __init__(self, text: str, pos: tuple[int, int]) -> None:
         super().__init__(LayersEnum.INVENTORY_LABELS, text, pos, survive_time=3, anchor=Anchors.CENTER)

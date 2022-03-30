@@ -5,9 +5,9 @@ import pygame
 import time
 
 from src.images import inventory_img, BLOCK_TEXTURES, hotbar_img, hotbar_selection_img
+from src.utils import inttup, smol_text, CyclicalList, SingleInstance
 from src.text_box import InventoryLabelTextBox, HotbarLabelTextBox
 from src.constants import WIDTH, HEIGHT, SCR_DIM, VEC
-from src.utils import inttup, smol_text, CyclicalList
 import src.constants as constants
 from src.sprite import Sprite
 
@@ -82,22 +82,17 @@ class Inventory(Sprite):
             else:
                 self.hovering = None
 
-            # Draw an item label
+            # Draw a label
             if over_inv or self.over_hotbar:
-                if self.hovering != self.old_hovering or (self.hovering and not self.label): # If the player has changed the item they are hovering over
+                if self.hovering != self.old_hovering: # If the player has changed the item they are hovering over
                     if self.hovering in self.items:
                         name = self.items[self.hovering].name.replace("_", " ").capitalize()
-                        self.kill_label() # Kill the old label
-                        # self.label = TextBox(LayersEnum.INVENTORY_LABELS, name, (mpos[0] + 12, mpos[1] - 24)) # Make a new label
-                        self.label = InventoryLabelTextBox(name, (mpos[0] + 12, mpos[1] - 24))
-                    else: # Ex. if you are hovering over an empty slot
-                        self.kill_label()
-            else: # Ex. if you are outside the inventory
-                self.kill_label()
+                        InventoryLabelTextBox(name, (mpos[0] + 12, mpos[1] - 24)) # Make a label
+            else: # If the player has left the bounds of the inventory
+                SingleInstance.remove(InventoryLabelTextBox)
 
+            # Update hovering variable
             self.old_hovering = self.hovering
-            if self.label:
-                self.label.pos = (mpos[0] + 12, mpos[1] - 24)
 
             # If the mouse left button is pressed when it is hovering over a valid slot
             if m_state == 1 and (over_inv or self.over_hotbar):
@@ -173,7 +168,7 @@ class Inventory(Sprite):
         self.visible = not self.visible
         pygame.mouse.set_visible(self.visible)
         if not self.visible:
-            self.kill_label()
+            SingleInstance.remove(InventoryLabelTextBox)
             if self.selected: # If an item was being hovered when the inventory was closed:
                 self += self.selected.name # Add the item
                 self.selected = None
@@ -298,10 +293,10 @@ class Hotbar:
             self.make_label()
 
     def make_label(self) -> None:
-        if self.selected in self.items:
-            self.inventory.kill_label()
+        """Create a new label"""
+
         name = self.items[self.selected].name.replace("_", " ").capitalize()
-        self.inventory.label = HotbarLabelTextBox(name, (WIDTH / 2 - smol_text(name).get_width() / 2 - 8, HEIGHT - 92))
+        HotbarLabelTextBox(name, (WIDTH / 2 - smol_text(name).get_width() / 2 - 8, HEIGHT - 92))
         self.has_scrolled = False # Reset the scroll variable
 
     def change_selected(self, new: int) -> None:

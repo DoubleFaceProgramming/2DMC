@@ -1,5 +1,3 @@
-from pygame.draw import rect as drawrect
-from pygame.locals import SRCALPHA
 from pygame.surface import Surface
 from pygame.math import Vector2
 from random import random
@@ -12,6 +10,7 @@ import pstats
 import os
 
 from src.constants import VEC, FONT20, FONT24, FONT10, BLOCK_SIZE, PROFILE_DIR
+from src.sprite import Sprite
 
 class CyclicalList:
     def __init__(self, elements: list[Any], start: int = 0) -> None:
@@ -52,6 +51,31 @@ class CyclicalList:
     def __next__(self):
         self.__iadd__(1)
         return self.current
+
+
+class SingleInstance:
+    instances: dict[type, Sprite] = {}
+
+    def __init__(self, sprite: Sprite) -> None:
+        """
+        Args:
+            sprite (Sprite): The sprite object to add. This should be passed in as self.
+        """
+
+        # Exploiting the fact self.__class__ is the type of the inherited class not the base class!
+        if self.__class__ in self.__class__.instances:
+            self.__class__.remove(self.__class__) # If there is already an instance remove it
+
+        self.__class__.instances[self.__class__] = sprite # Create a new instance
+
+    @staticmethod
+    def remove(*types):
+        for type in types:
+            try:
+                __class__.instances[type].kill() # Kill and delete the old instance (savage 🔥)
+                del __class__.instances[type]
+            except KeyError:
+                pass
 
 def intv(vector: Vector2) -> Vector2:
     """Returns vector where x and y are integers"""
