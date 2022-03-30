@@ -25,6 +25,10 @@
 
 - Blocks will now physically appear in the player's hand when the player is holding an item
 
+### 2DMC logo
+
+- 2DMC now has... a logo! It will be shown on the top left corner of the game window
+
 ## Changes
 
 - Optimized particles with conditional collision testing

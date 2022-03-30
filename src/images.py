@@ -10,6 +10,8 @@ os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (50, 50)
 pygame.init()
 pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF)
 
+window_icon = pygame.image.load(pathof("assets/logo.png"))
+
 # Load player body parts
 player_head_img = pygame.image.load(pathof("assets/textures/player/head.png")).convert()
 player_body_img = pygame.image.load(pathof("assets/textures/player/body.png")).convert()
