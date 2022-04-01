@@ -173,17 +173,6 @@ class Inventory(Sprite):
                 self += self.selected.name # Add the item
                 self.selected = None
 
-    def kill_label(self) -> None:
-        """Kill the nametag or text box or label that shows the name of the item"""
-
-        if self.label:
-            try:
-                self.label.kill()
-            except (SpriteNotFoundException, LayerNotFoundException):
-                pass # For some reason these errors got thrown so... catching them ¯\_(ツ)_/¯
-
-            self.label = None # Destroying the label
-
     def set_slot(self, slot: int, item: str) -> None:
         """Set the given slot in the inventory to the given item
 
