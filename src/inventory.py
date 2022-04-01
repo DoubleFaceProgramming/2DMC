@@ -6,7 +6,7 @@ import time
 
 from src.images import inventory_img, BLOCK_TEXTURES, hotbar_img, hotbar_selection_img
 from src.utils import inttup, smol_text, CyclicalList, SingleInstance
-from src.text_box import InventoryLabelTextBox, HotbarLabelTextBox
+from src.information_labels import InventoryLabelTextBox, HotbarLabelTextBox
 from src.constants import WIDTH, HEIGHT, SCR_DIM, VEC
 import src.constants as constants
 from src.sprite import Sprite

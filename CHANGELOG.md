@@ -20,6 +20,7 @@
   - Hide both
   - Show crosshair but hide hotbar
   - Show hotbar but hide crosshair
+- The current cinematic mode state will be shown by a popup displayed on the top-right
 
 ### Hand Held Blocks
 
@@ -27,7 +28,10 @@
 
 ### 2DMC logo
 
-- 2DMC now has... a logo! It will be shown on the top left corner of the game window
+- 2DMC now has... a logo! It will be shown on the top left corner of the game window and in Alt+Tab menu!
+- You can see it below:
+
+![logo](https://imgur.com/UNfSbHV.png)
 
 ## Changes
 
@@ -51,5 +55,31 @@
   - Draw order is defined in an automatic enumeration
   - Sprites can have a custom debug layer (debug information is rendered on a different layer to the sprite) or a regular debug layer (debug information is rendered on the same layer as the sprite)
   - If you want to get a better understanding of this system then you are best off looking at the code (particuarly [sprite.py](src/sprite.py)), be warned the code is kinda gross >.<
-- Made a [text box class](src/text_box.py) to better how text boxes are handled. Text boxes are sprites, and so can be given different layers
+
 - Velocity is now set and calculated with BPS (blocks per second)
+- We have implemented a Single Instance Superclass. This class ensures any subclasses can only have 1 instance of themselves at a time.
+  - This is useful, for example for the inventory labels, where whenever you move the mouse a new label will spawn. However, we only want one label to spawn at a time. Previously this required a very complicated and extremely ugly system of kill methods and class attributes and conditional checks which was, in short, [gross](https://github.com/DaNubCoding/2DMC/commit/21970ed4f93699bfecfa0e321f33f127ece247e4?diff=split#r70245084).
+  - This system removes the need for this. Any sprite that inherits from SingleInstance and calls it's constructor will have this handled automatically
+  - Demo (because the constructor is slightly confusing):
+
+  ```python
+  class Foo(Sprite, SingleInstance):
+    def __init__(self, layer: int | LayersEnum) -> None:
+      Sprite.__init__(self, layer)
+      SingleInstance.__init__(self, self) # The second self call passes the instance to SingleInstance, the first is just a __init__ thing ¯\_(ツ)_/¯
+  ```
+
+- We have implemented a new system called "Information Labels"
+  - These labels can be defined as "anything non-permanent that conveys information or any other content".
+  - This includes images, popups, labels, toasts, ect.
+  - Made a [information label class](src/information_label.py) to better how these labels are handled. Labels are considered sprites internally, and so can be given different layers
+  - Labels are designed with OOP in mind. As of 0.2.1 the inheritance tree is as follows:
+
+  ```InheritanceTree
+  InformationLabel
+  └── GenericTextBox
+      ├── InventoryLabelTextBox
+      └── HotbarLabelTextBox
+  ```
+
+  - NOTE: GenericTextBox also inherits from SingleInstance but this is hard to show on an inheritance tree.

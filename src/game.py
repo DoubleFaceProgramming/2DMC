@@ -13,14 +13,14 @@ from pygame.locals import  (
     QUIT, WINDOWMOVED
 )
 
-from src.constants import SCREENSHOTS_DIR, SEED, WIDTH, HEIGHT, FPS, SCR_DIM, VEC, CHUNK_SIZE, BLOCK_SIZE, SPACING, CustomEvents
+from src.constants import SCREENSHOTS_DIR, SEED, WIDTH, HEIGHT, FPS, SCR_DIM, VEC, CHUNK_SIZE, BLOCK_SIZE, SPACING, Anchors, CustomEvents
 from src.world_gen import Chunk, Block, load_chunks
 from src.sprite import LayersEnum, SPRITE_MANAGER
 from src.utils import bps, inttup, text, CyclicalList
 from src.background import Background
 from src.images import window_icon
 from src.particle import Particle
-from src.text_box import GenericTextBox, InformationLabel
+from src.information_labels import GenericTextBox, InformationLabel
 from src.player import Player
 
 import src.utils as utils # For doing utils.do_profile ¯\_(ツ)_/¯
@@ -57,7 +57,7 @@ class GameManager():
 
     def cycle_cinematic(self) -> None:
         self.cinematic = __class__.CinematicModes(next(self.cinematic_modes))
-        GenericTextBox(LayersEnum.TOASTS, self.cinematic.name.capitalize(), (10, 10), survive_time=3)
+        GenericTextBox(LayersEnum.TOASTS, self.cinematic.name.capitalize(), (WIDTH - 10, 10), survive_time=3, anchor=Anchors.TOPRIGHT)
 
     class CinematicModes(Enum):
         """An Enum that stores the options for the cinematic modes cycle/toggle
