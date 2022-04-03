@@ -7,7 +7,7 @@ import time
 from src.images import inventory_img, BLOCK_TEXTURES, hotbar_img, hotbar_selection_img
 from src.utils import inttup, smol_text, CyclicalList, SingleInstance
 from src.information_labels import InventoryLabelTextBox, HotbarLabelTextBox
-from src.constants import WIDTH, HEIGHT, SCR_DIM, VEC
+from src.constants import WIDTH, HEIGHT, SCR_DIM, VEC, Anchors
 import src.constants as constants
 from src.sprite import Sprite
 
@@ -36,8 +36,7 @@ class InventoryFullException(Exception):
         return f"The inventory was full when trying to add item: {self.item.name}"
 
 class Inventory:
-    def __init__(self, inv_type: type, max_items: int) -> None:
-        self.inv_type = inv_type.__class__.__name__
+    def __init__(self, max_items: int) -> None:
         self.items = {}
         self.holding = None
         self.max_items = max_items
@@ -91,8 +90,10 @@ class Inventory:
 
         raise InventoryFullException(item)
 
-class RenderedInventoryManager:
-    def __init__(self, inventory: Inventory) -> None:
+class RenderedInventoryManager(Sprite):
+    def __init__(self, inventory: Inventory, layer=LayersEnum.INVENTORY) -> None:
+        super().__init__(layer)
+
         self.slot_start = VEC(400, 302)
         self.slot_size = (40, 40)
         self.visible = False
@@ -104,6 +105,8 @@ class RenderedInventoryManager:
         self.transparent_background = pygame.Surface((WIDTH, HEIGHT)).convert_alpha()
         self.transparent_background.fill((0, 0, 0, 125))
 
+        self.inventory = inventory
+
     def draw(self, screen: Surface, **kwargs) -> None:
         if self.visible:
             # Draw the dimming layer of background when the inventory opens up
@@ -111,10 +114,10 @@ class RenderedInventoryManager:
             screen.blit(inventory_img, (VEC(SCR_DIM) / 2 - VEC(inventory_img.get_width() / 2, inventory_img.get_height() / 2)))
 
             # Display the item images in the correct slots
-            for slot in self.items:
+            for slot in self.inventory.items:
                 item_img = pygame.transform.scale(BLOCK_TEXTURES[self.items[slot].name], self.slot_size)
                 if slot[1]:
-                    screen.blit(item_img, self.slot_start+VEC(slot[0] * (self.slot_size[0] + 5), (slot[1] - 1) * (self.slot_size[1] + 5)))
+                    screen.blit(item_img, self.slot_start + VEC(slot[0] * (self.slot_size[0] + 5), (slot[1] - 1) * (self.slot_size[1] + 5)))
                 else:
                     screen.blit(item_img, self.slot_start + VEC(0, 190) + VEC(slot[0] * (self.slot_size[0] + 5), (slot[1] - 1) * (self.slot_size[1] + 5)))
 
@@ -130,20 +133,6 @@ class RenderedInventoryManager:
             # Display the item that is picked up but slightly smaller by a factor of 0.9
             if self.selected:
                 screen.blit(pygame.transform.scale(BLOCK_TEXTURES[self.selected.name], inttup(VEC(self.slot_size) * 0.9)), VEC(pygame.mouse.get_pos()) - VEC(self.slot_size) * 0.45)
-
-    def update(self) -> None:
-        pass
-
-class DELETEMEInventory(Sprite):
-    """Class that updates and draws the inventory and manages its contents."""
-
-    def __init__(self, player, layer: LayersEnum = LayersEnum.INVENTORY) -> None:
-        super().__init__(layer)
-
-
-        self.over_hotbar = False
-        self.player = player
-        self.hotbar = Hotbar(self)
 
     def update(self, dt: float, **kwargs) -> None:
         mpos = kwargs["mpos"]
@@ -196,22 +185,33 @@ class DELETEMEInventory(Sprite):
         except KeyError:
             self.holding = None
 
-    def draw(self, screen) -> None:
-        self.hotbar.draw(screen)
+class PlayerInventory(RenderedInventoryManager, Inventory):
+    """Class that updates and draws the inventory and manages its contents."""
 
-        # Draw the player paper doll in the inventory
-        self.player.leg2.rect = self.player.leg2.image.get_rect(center=(593 + self.player.width / 2, 140 + 72))
-        screen.blit(self.player.leg2.image, self.player.leg2.rect.topleft)
-        self.player.arm2.rect = self.player.arm2.image.get_rect(center=(593 + self.player.width / 2, 140 + 35))
-        screen.blit(self.player.arm2.image, self.player.arm2.rect.topleft)
-        self.player.body.rect = self.player.body.image.get_rect(center=(593 + self.player.width / 2, 140 + 51))
-        screen.blit(self.player.body.image, self.player.body.rect.topleft)
-        self.player.arm.rect = self.player.arm.image.get_rect(center=(593 + self.player.width / 2, 140 + 35))
-        screen.blit(self.player.arm.image, self.player.arm.rect.topleft)
-        self.player.head.rect = self.player.head.image.get_rect(center=(593 + self.player.width / 2, 140 + 23))
-        screen.blit(self.player.head.image, self.player.head.rect.topleft)
-        self.player.leg.rect = self.player.leg.image.get_rect(center=(593 + self.player.width / 2, 140 + 72))
-        screen.blit(self.player.leg.image, self.player.leg.rect.topleft)
+    def __init__(self, player) -> None:
+        Inventory.__init__(self, 36)
+        RenderedInventoryManager.__init__(self, self)
+
+        self.hotbar = Hotbar(self)
+        self.player = player
+
+    def draw(self, screen, **kwargs) -> None:
+        super().draw(screen, **kwargs)
+
+        if self.visible:
+            # Draw the player paper doll in the inventory
+            self.player.leg2.rect = self.player.leg2.image.get_rect(center=(593 + self.player.width / 2, 140 + 72))
+            screen.blit(self.player.leg2.image, self.player.leg2.rect.topleft)
+            self.player.arm2.rect = self.player.arm2.image.get_rect(center=(593 + self.player.width / 2, 140 + 35))
+            screen.blit(self.player.arm2.image, self.player.arm2.rect.topleft)
+            self.player.body.rect = self.player.body.image.get_rect(center=(593 + self.player.width / 2, 140 + 51))
+            screen.blit(self.player.body.image, self.player.body.rect.topleft)
+            self.player.arm.rect = self.player.arm.image.get_rect(center=(593 + self.player.width / 2, 140 + 35))
+            screen.blit(self.player.arm.image, self.player.arm.rect.topleft)
+            self.player.head.rect = self.player.head.image.get_rect(center=(593 + self.player.width / 2, 140 + 23))
+            screen.blit(self.player.head.image, self.player.head.rect.topleft)
+            self.player.leg.rect = self.player.leg.image.get_rect(center=(593 + self.player.width / 2, 140 + 72))
+            screen.blit(self.player.leg.image, self.player.leg.rect.topleft)
 
     def toggle(self) -> None:
         # Toggle inventory and mouse visibility
@@ -227,6 +227,8 @@ class Hotbar(Sprite):
     """Class that draws, updates and provides functionality for the hotbar."""
 
     def __init__(self, inventory: Inventory) -> None:
+        super().__init__(LayersEnum.HOTBAR)
+
         self.slot_start = VEC(WIDTH / 2 - hotbar_img.get_width() / 2, HEIGHT - hotbar_img.get_height())
         self.slot_size = (40, 40)
         self.inventory = inventory
@@ -234,13 +236,14 @@ class Hotbar(Sprite):
         for slot in self.inventory.items:
             if slot[1] == 0:
                 items[slot[0]] = self.inventory.items[slot]
+
         self.items = items
         self.selected = 0
         self.fade_timer = 0
         self.scroll = self.HotbarScroll(self)
         self.has_scrolled = False
 
-    def update(self, **kwargs) -> None:
+    def update(self, dt, **kwargs) -> None:
         # Updating the hotbar with items from the inventory
         hotbar_items = {}
         for slot in self.inventory.items:
@@ -257,7 +260,9 @@ class Hotbar(Sprite):
                 if keys[num_key]:
                     self.change_selected(num_key - K_0 - 1) # Minusing the lowest bounds and 1 (because we +1-ed earlier)
                     self.fade_timer = time.time() # Resetting the fade timer
-                    self.make_label()
+
+                    name = self.items[self.selected].name.replace("_", " ").capitalize()
+                    HotbarLabelTextBox(name, (WIDTH / 2 - smol_text(name).get_width() / 2 - 8, HEIGHT - 92))
 
             # Increasing or decreasing scroll object (using a kinda unecessary but cool new feature :D)
             match kwargs["m_state"]:
@@ -267,8 +272,10 @@ class Hotbar(Sprite):
             # If the user has scrolled, reset the fade time and update the scroll obj
             if kwargs["m_state"] in {4, 5}:
                 self.fade_timer = time.time()
-                self.has_scrolled = True
                 self.scroll.update()
+
+                name = self.items[self.selected].name.replace("_", " ").capitalize()
+                HotbarLabelTextBox(name, (WIDTH / 2 - smol_text(name).get_width() / 2 - 8, HEIGHT - 92))
 
     def draw(self, screen: pygame.Surface, **kwargs) -> None:
         if not constants.MANAGER.cinematic.value["HB"]: return
@@ -282,16 +289,6 @@ class Hotbar(Sprite):
             item_img = pygame.transform.scale(BLOCK_TEXTURES[self.items[slot].name], self.slot_size)
             screen.blit(item_img, self.slot_start + VEC(8, 0) + VEC(slot * (self.slot_size[0] + 10), 8))
 
-        # If the player has scrolled create a new label
-        if self.has_scrolled:
-            self.make_label()
-
-    def make_label(self) -> None:
-        """Create a new label"""
-
-        name = self.items[self.selected].name.replace("_", " ").capitalize()
-        HotbarLabelTextBox(name, (WIDTH / 2 - smol_text(name).get_width() / 2 - 8, HEIGHT - 92))
-        self.has_scrolled = False # Reset the scroll variable
 
     def change_selected(self, new: int) -> None:
         """Change the selected slot
@@ -300,7 +297,6 @@ class Hotbar(Sprite):
             new (int): The new slot to select
         """
 
-        self.has_scrolled = True
         self.scroll.current = new
         self.selected = new
 
