@@ -38,6 +38,7 @@
 - Optimized particles with conditional collision testing
 - Text boxes now show their outer border / rect whilst in debug mode
 - Velocity now shows up as BPS (blocks per second) in debug
+- Paperdoll no longer covers held item when in inventory
 
 ## Bug Fixes
 
