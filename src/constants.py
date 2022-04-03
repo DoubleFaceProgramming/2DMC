@@ -4,7 +4,7 @@ from pygame import USEREVENT
 from enum import Enum, auto
 from random import randint
 
-from src.parsing import load_block_data, load_ore_distribution, load_structures
+from src.parsing import load_block_data, load_gui_data, load_ore_distribution, load_structures
 import build.exe_comp as exe
 
 init()
@@ -35,6 +35,7 @@ FONT20 = Font(REGULAR_FONT_LOC, 20)
 FONT10 = Font(REGULAR_FONT_LOC, 10)
 
 BLOCK_DATA = load_block_data()
+GUI_DATA = load_gui_data()
 STRUCTURES = load_structures()
 ORE_DISTRIBUTION = load_ore_distribution()
 
@@ -50,7 +51,7 @@ class CustomEvents(Enum):
     # AN_EVENT = USEREVENT + auto()
     # ANOTHER_EVENT = USEREVENT + auto()
     # . . . ect
-    
+
 class Anchors(Enum):
     TOP = (0, -1)
     BOTTOM = (0, 1)

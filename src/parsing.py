@@ -1,5 +1,7 @@
+from pygame.math import Vector2 as VEC
 from pathlib import Path
 from os.path import join
+from pygame import Rect
 from os import listdir
 import json
 
@@ -13,11 +15,33 @@ def load_block_data() -> dict:
 
     return block_data
 
+def load_gui_data() -> dict:
+    gui_data = {}
+    for file in listdir(pathof("data/gui/")):
+        gui_data[Path(file).stem] = json.loads(open(pathof(join("data/gui/", file)), "r").read())
+
+    # second dict would contain all data + all default data
+    slot_data: dict[str, dict] = {}
+    for gui, data in gui_data.items():
+        slot_data[gui] = data.copy()
+        slot_data[gui]["slots"] = []
+
+        for slot in data["slots"]:
+            for def_data in data["default_slot"]:
+                if def_data not in slot:
+                    slot[def_data] = data["default_slot"][def_data]
+
+            slot["size"] = list(VEC(slot["size"]) * 2.5)
+            slot["rect"] = Rect(*slot["pos"], *slot["size"])
+            slot_data[gui]["slots"].append(slot)
+
+    return slot_data
+
 def load_ore_distribution() -> dict:
     ore_distribution = {}
     for file in listdir(pathof("data/ore_distribution/")):
         ore_distribution[Path(file).stem] = json.loads(open(pathof(join("data/ore_distribution/", file)), "r").read())
-    
+
     return ore_distribution
 
 def load_structures() -> dict:
@@ -27,7 +51,7 @@ def load_structures() -> dict:
         dict: A dictionary containing structure information
     """
 
-    # 104 lines of comments... maybe I went overboard xD
+    # 100+ lines of comments... maybe I went overboard xD
     # I hope I explained the file format well :)
 
     # reference structure file (short_oak_tree.structure)

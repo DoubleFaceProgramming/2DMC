@@ -15,6 +15,7 @@ class LayersEnum(Enum):
     HOTBAR = auto()
     HOTBAR_LABELS = auto()
     INVENTORY = auto()
+    INVENTORY_ITEMS = auto()
     INVENTORY_LABELS = auto()
     CROSSHAIR = auto()
     TOASTS = auto()

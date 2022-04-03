@@ -5,9 +5,9 @@ import pygame
 import time
 
 from src.images import inventory_img, BLOCK_TEXTURES, hotbar_img, hotbar_selection_img
-from src.utils import inttup, smol_text, CyclicalList, SingleInstance
 from src.information_labels import InventoryLabelTextBox, HotbarLabelTextBox
-from src.constants import WIDTH, HEIGHT, SCR_DIM, VEC, Anchors
+from src.utils import inttup, smol_text, CyclicalList, SingleInstance
+from src.constants import GUI_DATA, WIDTH, HEIGHT, SCR_DIM, VEC
 import src.constants as constants
 from src.sprite import Sprite
 
@@ -19,6 +19,42 @@ class Item:
         self.count = 1
         self.nbt = {}
         # NOTE: Add -= and += support for item count decrement and increment
+
+# slots needs its data + its default data
+# 
+
+class Slot(Sprite):
+    hover_surfs: dict[tuple, Surface] = {}
+
+    def __init__(self, gui_type: str, index: int, layer=LayersEnum.INVENTORY_ITEMS) -> None:
+        super().__init__(layer)
+
+        self.gui_type = gui_type
+        self.data = list(GUI_DATA[gui_type]["slots"])[index]
+        self.item: Item | None = None
+        self.hovered = False
+
+        size = tuple(self.data["size"])
+        if size not in __class__.hover_surfs:
+            hover_surf = pygame.surface.Surface(size, pygame.SRCALPHA)
+            hover_surf.fill((255, 255, 255))
+            hover_surf.set_alpha(100)
+
+            __class__.hover_surfs[size] = hover_surf
+
+    def update(self, dt, **kwargs):
+        mpos = VEC(kwargs["mpos"])
+        self.hovered = self.data["rect"].collidepoint(mpos)
+
+    def draw(self, screen, **kwargs):
+        if self.item:
+            screen.blit(BLOCK_TEXTURES[self.item.name], self.data["rect"])
+        if self.hovered:
+            screen.blit(__class__.hover_surfs[tuple(self.data["size"])], self.data["rect"])
+
+    def debug(self, screen: Surface, **kwargs: dict) -> None:
+        self.data["rect"].topleft = self.data["pos"]
+        pygame.draw.rect(screen, (255, 0, 0), self.data["rect"], width=2)
 
 # class HeldItem(Item):
 
@@ -36,10 +72,11 @@ class InventoryFullException(Exception):
         return f"The inventory was full when trying to add item: {self.item.name}"
 
 class Inventory:
-    def __init__(self, max_items: int) -> None:
+    def __init__(self, size: tuple[int, int], name: str) -> None:
+        self.data = GUI_DATA[name]
         self.items = {}
         self.holding = None
-        self.max_items = max_items
+        self.size = size
 
     def __iadd__(self, other):
         self.add_item(other)
@@ -91,21 +128,24 @@ class Inventory:
         raise InventoryFullException(item)
 
 class RenderedInventoryManager(Sprite):
-    def __init__(self, inventory: Inventory, layer=LayersEnum.INVENTORY) -> None:
+    def __init__(self, inventory: Inventory, inventory_type: str, layer=LayersEnum.INVENTORY) -> None:
         super().__init__(layer)
 
         self.slot_start = VEC(400, 302)
         self.slot_size = (40, 40)
         self.visible = False
         self.old_hovering = self.hovering = self.selected = None
-        self.hover_surf = pygame.surface.Surface(self.slot_size, pygame.SRCALPHA)
-        self.hover_surf.fill((255, 255, 255))
-        self.hover_surf.set_alpha(100)
 
         self.transparent_background = pygame.Surface((WIDTH, HEIGHT)).convert_alpha()
         self.transparent_background.fill((0, 0, 0, 125))
 
         self.inventory = inventory
+        self.slots = []
+
+        for index in range(sum(self.inventory.size)):
+            self.slots.append(Slot(inventory_type, index))
+
+
 
     def update(self, dt: float, **kwargs) -> None:
         mpos = kwargs["mpos"]
@@ -180,8 +220,8 @@ class RenderedInventoryManager(Sprite):
             # work, and times it by the size of a slot + 5 because that is the distance between the left side of each slot, there is a 5px border), and
             # another vector that contains (0, 10) if the player is hovering over the hotbar and (0, 5) if not. This is because there is a 10px
             # between the inventory and the hotbar.
-            if self.hovering:
-                screen.blit(self.hover_surf, self.slot_start + ( VEC(self.hovering[0], (self.hovering[1] if not self.over_hotbar else 4) - 1) * (self.slot_size[0] + 5) ) + VEC((0, 10) if self.over_hotbar else (0, 0)))
+            # if self.hovering:
+            #     screen.blit(self.hover_surf, self.slot_start + ( VEC(self.hovering[0], (self.hovering[1] if not self.over_hotbar else 4) - 1) * (self.slot_size[0] + 5) ) + VEC((0, 10) if self.over_hotbar else (0, 0)))
 
             # Display the item that is picked up but slightly smaller by a factor of 0.9
             if self.selected:
@@ -191,8 +231,8 @@ class PlayerInventory(RenderedInventoryManager, Inventory):
     """Class that updates and draws the inventory and manages its contents."""
 
     def __init__(self, player) -> None:
-        Inventory.__init__(self, 36)
-        RenderedInventoryManager.__init__(self, self)
+        Inventory.__init__(self, (9, 3), "player")
+        RenderedInventoryManager.__init__(self, self, "player")
 
         self.hotbar = Hotbar(self)
         self.player = player
@@ -247,7 +287,6 @@ class Hotbar(Sprite):
         self.selected = 0
         self.fade_timer = 0
         self.scroll = self.HotbarScroll(self)
-        self.has_scrolled = False
 
     def update(self, dt, **kwargs) -> None:
         # Updating the hotbar with items from the inventory
