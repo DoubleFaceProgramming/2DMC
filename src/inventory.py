@@ -107,33 +107,6 @@ class RenderedInventoryManager(Sprite):
 
         self.inventory = inventory
 
-    def draw(self, screen: Surface, **kwargs) -> None:
-        if self.visible:
-            # Draw the dimming layer of background when the inventory opens up
-            screen.blit(self.transparent_background, (0, 0))
-            screen.blit(inventory_img, (VEC(SCR_DIM) / 2 - VEC(inventory_img.get_width() / 2, inventory_img.get_height() / 2)))
-
-            # Display the item images in the correct slots
-            for slot in self.inventory.items:
-                item_img = pygame.transform.scale(BLOCK_TEXTURES[self.items[slot].name], self.slot_size)
-                if slot[1]:
-                    screen.blit(item_img, self.slot_start + VEC(slot[0] * (self.slot_size[0] + 5), (slot[1] - 1) * (self.slot_size[1] + 5)))
-                else:
-                    screen.blit(item_img, self.slot_start + VEC(0, 190) + VEC(slot[0] * (self.slot_size[0] + 5), (slot[1] - 1) * (self.slot_size[1] + 5)))
-
-            # Drawing an slightly transparent selection / hovering rectangle behind the mouse cursor
-            # We get the pos by adding the starting position of the inventory to a vector containing the slot the player is hovering over (hotbar
-            # is classed as y0, so we set this to 4 if the user is over the hotbar so it displays correctly. We also -1 because... idk it justs makes it
-            # work, and times it by the size of a slot + 5 because that is the distance between the left side of each slot, there is a 5px border), and
-            # another vector that contains (0, 10) if the player is hovering over the hotbar and (0, 5) if not. This is because there is a 10px
-            # between the inventory and the hotbar.
-            if self.hovering:
-                screen.blit(self.hover_surf, self.slot_start + ( VEC(self.hovering[0], (self.hovering[1] if not self.over_hotbar else 4) - 1) * (self.slot_size[0] + 5) ) + VEC((0, 10) if self.over_hotbar else (0, 0)))
-
-            # Display the item that is picked up but slightly smaller by a factor of 0.9
-            if self.selected:
-                screen.blit(pygame.transform.scale(BLOCK_TEXTURES[self.selected.name], inttup(VEC(self.slot_size) * 0.9)), VEC(pygame.mouse.get_pos()) - VEC(self.slot_size) * 0.45)
-
     def update(self, dt: float, **kwargs) -> None:
         mpos = kwargs["mpos"]
         if self.visible:
@@ -158,6 +131,8 @@ class RenderedInventoryManager(Sprite):
                     if self.hovering in self.items:
                         name = self.items[self.hovering].name.replace("_", " ").capitalize()
                         InventoryLabelTextBox(name, (mpos[0] + 12, mpos[1] - 24)) # Make a label
+                    else: # If the player is not hovering over an item
+                        SingleInstance.remove(InventoryLabelTextBox)
             else: # If the player has left the bounds of the inventory
                 SingleInstance.remove(InventoryLabelTextBox)
 
@@ -184,6 +159,33 @@ class RenderedInventoryManager(Sprite):
             self.holding = self.hotbar.items[self.hotbar.selected]
         except KeyError:
             self.holding = None
+
+    def draw(self, screen: Surface, **kwargs) -> None:
+        if self.visible:
+            # Draw the dimming layer of background when the inventory opens up
+            screen.blit(self.transparent_background, (0, 0))
+            screen.blit(inventory_img, (VEC(SCR_DIM) / 2 - VEC(inventory_img.get_width() / 2, inventory_img.get_height() / 2)))
+
+            # Display the item images in the correct slots
+            for slot in self.inventory.items:
+                item_img = pygame.transform.scale(BLOCK_TEXTURES[self.items[slot].name], self.slot_size)
+                if slot[1]:
+                    screen.blit(item_img, self.slot_start + VEC(slot[0] * (self.slot_size[0] + 5), (slot[1] - 1) * (self.slot_size[1] + 5)))
+                else:
+                    screen.blit(item_img, self.slot_start + VEC(0, 190) + VEC(slot[0] * (self.slot_size[0] + 5), (slot[1] - 1) * (self.slot_size[1] + 5)))
+
+            # Drawing an slightly transparent selection / hovering rectangle behind the mouse cursor
+            # We get the pos by adding the starting position of the inventory to a vector containing the slot the player is hovering over (hotbar
+            # is classed as y0, so we set this to 4 if the user is over the hotbar so it displays correctly. We also -1 because... idk it justs makes it
+            # work, and times it by the size of a slot + 5 because that is the distance between the left side of each slot, there is a 5px border), and
+            # another vector that contains (0, 10) if the player is hovering over the hotbar and (0, 5) if not. This is because there is a 10px
+            # between the inventory and the hotbar.
+            if self.hovering:
+                screen.blit(self.hover_surf, self.slot_start + ( VEC(self.hovering[0], (self.hovering[1] if not self.over_hotbar else 4) - 1) * (self.slot_size[0] + 5) ) + VEC((0, 10) if self.over_hotbar else (0, 0)))
+
+            # Display the item that is picked up but slightly smaller by a factor of 0.9
+            if self.selected:
+                screen.blit(pygame.transform.scale(BLOCK_TEXTURES[self.selected.name], inttup(VEC(self.slot_size) * 0.9)), VEC(pygame.mouse.get_pos()) - VEC(self.slot_size) * 0.45)
 
 class PlayerInventory(RenderedInventoryManager, Inventory):
     """Class that updates and draws the inventory and manages its contents."""
@@ -212,6 +214,10 @@ class PlayerInventory(RenderedInventoryManager, Inventory):
             screen.blit(self.player.head.image, self.player.head.rect.topleft)
             self.player.leg.rect = self.player.leg.image.get_rect(center=(593 + self.player.width / 2, 140 + 72))
             screen.blit(self.player.leg.image, self.player.leg.rect.topleft)
+
+            # Re-blit this texture so the paper doll won't cover the held block if the user hovers and item over it.
+            if self.selected:
+                screen.blit(pygame.transform.scale(BLOCK_TEXTURES[self.selected.name], inttup(VEC(self.slot_size) * 0.9)), VEC(pygame.mouse.get_pos()) - VEC(self.slot_size) * 0.45)
 
     def toggle(self) -> None:
         # Toggle inventory and mouse visibility

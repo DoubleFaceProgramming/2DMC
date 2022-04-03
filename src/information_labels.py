@@ -89,4 +89,4 @@ class HotbarLabelTextBox(GenericTextBox):
     """Text box class that simplifies hotbar label management"""
 
     def __init__(self, text: str, pos: tuple[int, int]) -> None:
-        super().__init__(LayersEnum.INVENTORY_LABELS, text, pos, survive_time=3)
+        super().__init__(LayersEnum.HOTBAR_LABELS, text, pos, survive_time=3)
