@@ -39,7 +39,7 @@ class Player(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.size = VEC(0.225 * BLOCK_SIZE, 1.8 * BLOCK_SIZE)
         self.width, self.height = self.size.x, self.size.y
-        self.start_pos = VEC(0, 50) * BLOCK_SIZE # Far lands: 9007199254740993 (aka 2^53)
+        self.start_pos = VEC(0, 3) * BLOCK_SIZE # Far lands: 9007199254740993 (aka 2^53)
         self.pos = VEC(self.start_pos)
         self.coords = self.pos // BLOCK_SIZE
         self.acc = VEC(0, 0)
@@ -47,8 +47,8 @@ class Player(pygame.sprite.Sprite):
         # Walking speed: 4.317 bps
         # Sprinting speed: 5.612 bps
         # Sprint-jumping speed: 7.127 bps
-        self.max_speed = 20#5.153
-        self.jumping_max_speed = 20#6.7
+        self.max_speed = 5.153
+        self.jumping_max_speed = 6.7
         self.rect = pygame.Rect((0, 0, 0.225 * BLOCK_SIZE, 1.8 * BLOCK_SIZE))
         self.bottom_bar = pygame.Rect((self.rect.x + 1, self.rect.bottom), (self.width - 2, 1))
         self.on_ground = False
@@ -125,7 +125,7 @@ class Player(pygame.sprite.Sprite):
             self.vel.x -= SLIDE * dt
         # If the player is on the ground and not in the inventory, jump
         if keys[K_w] and self.on_ground and not self.inventory.visible:
-            self.vel.y = -16.5#-9.2
+            self.vel.y = -9.2
             # When the player jumps, its x-speed also increases slightly (aka sprint jumping in minecraft)
             self.vel.x *= 1.133
             # Accelerate the player unless its speed is already at the maximum
