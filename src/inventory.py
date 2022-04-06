@@ -284,9 +284,10 @@ class Hotbar:
     def make_label(self) -> None:
         """Create a new label"""
 
-        name = self.items[self.selected].name.replace("_", " ").capitalize()
-        HotbarLabelTextBox(name, (WIDTH / 2 - smol_text(name).get_width() / 2 - 8, HEIGHT - 92))
-        self.has_scrolled = False # Reset the scroll variable
+        if self.selected in self.items:
+            name = self.items[self.selected].name.replace("_", " ").capitalize()
+            HotbarLabelTextBox(name, (WIDTH / 2 - smol_text(name).get_width() / 2 - 8, HEIGHT - 92))
+            self.has_scrolled = False # Reset the scroll variable
 
     def change_selected(self, new: int) -> None:
         """Change the selected slot
