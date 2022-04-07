@@ -168,9 +168,7 @@ class Game():
 
         while self.running:
             mpos = VEC(pygame.mouse.get_pos())
-            from src.utils import profile
-            profile(self.tick, mpos)
-            # self.tick(mpos)
+            self.tick(mpos)
             pygame.display.flip()
 
         self.quit()

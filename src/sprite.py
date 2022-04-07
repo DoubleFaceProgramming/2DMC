@@ -12,6 +12,8 @@ class LayersEnum(Enum):
     BLOCK_SELECTION = auto()
     DEBUG = auto()
     PLAYER = auto()
+    HOTBAR = auto()
+    HOTBAR_LABELS = auto()
     INVENTORY = auto()
     INVENTORY_LABELS = auto()
     CROSSHAIR = auto()
