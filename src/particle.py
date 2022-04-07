@@ -55,18 +55,18 @@ class Particle(Sprite):
 
 class GradualSpawningParticle:
     timer = time.time()
-    
+
     @classmethod
     def spawn(cls, condition, frequency, *args, **kwargs):
         if condition:
-            if (elapsed_time := time.time() - __class__.timer) >= frequency:
-                __class__.timer = time.time()
+            if (elapsed_time := time.time() - cls.timer) >= frequency:
+                cls.timer = time.time()
                 # If the loop took longer than 1 * spawn_frequency,
                 # spawn multiple particles determined by elapsed_time / spawn_frequency
                 for _ in range(round(elapsed_time / frequency)):
                     cls(*args, **kwargs)
         else:
-            __class__.timer = time.time()
+            cls.timer = time.time()
 
 class PhysicsParticle(Particle):
     """A superclass for all particles that have gravity / collision"""
@@ -98,7 +98,7 @@ class PhysicsParticle(Particle):
         # Fall
         self.vel.y += pps(GRAVITY) * dt
         # X-velocity gets decreased over time
-        self.vel.x *= 0.93
+        self.vel.x -= sign(self.vel.x) * 420 * dt
 
 class EnvironmentalParticle(Particle):
     """A superclass for particles that act as enviromental (add atmosphere)"""
@@ -133,7 +133,7 @@ class BlockParticle(PhysicsParticle):
 
         # Calculate the time that the particle is going to last for
         self.survive_time = randint(4, 8) / 10
-        super().__init__(self.pos, (randint(-35, 35) / 10, randint(-30, 5) / 10), self.survive_time, self.image, blocks, layer, master=master)
+        super().__init__(self.pos, (randint(-20, 20) / 10, randint(-30, 5) / 10), self.survive_time, self.image, blocks, layer, master=master)
 
         # If the color is white which is the default blank color, it means that it is a transparent pixel, so don't generate
         if color == (255, 255, 255):
@@ -149,19 +149,30 @@ class PlayerFallParticle(BlockParticle):
 
     def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block) -> None:
         super().__init__(pos, blocks, master)
-        self.vel = VEC(randint(-60, 60) / 10, randint(-70, -20) / 10)
+        self.vel = pps(VEC(randint(-40, 40), randint(-70, -20)) / 10)
 
     @staticmethod
     def spawn(pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block, amount: tuple[int, int], layer: LayersEnum = LayersEnum.REG_PARTICLES):
         for _ in range(randint(*amount)):
             __class__(VEC(pos) * BLOCK_SIZE + VEC(randint(0, BLOCK_SIZE), BLOCK_SIZE-1), blocks, master)
 
+class PlayerWalkingParticle(GradualSpawningParticle, PlayerFallParticle):
+    """Class that handles the particles created when the player is walking on the ground"""
+    max_spawn_frequency = 0.05
+
+    def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block) -> None:
+        super().__init__(pos, blocks, master)
+        self.vel = VEC(randint(-30, 30) / 10, randint(-40, 0) / 10)
+
+    @classmethod
+    def spawn(cls, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block, layer: LayersEnum = LayersEnum.REG_PARTICLES):
+        super().spawn(True, __class__.max_spawn_frequency, pos, blocks, master)
+
 class VoidFogParticle(GradualSpawningParticle, EnvironmentalParticle):
     """Class that handles the void fog particles thats spawn at the bottom of the world"""
 
     max_speed = 12
     max_spawn_frequency = 0.0027
-    timer = time.time()
 
     def __init__(self, pos: tuple[int, int], size: tuple[int, int], blocks: dict[tuple[int, int], Block]) -> None:
         self.vel = randint(-(ms := __class__.max_speed), ms) / 10, randint(-ms, ms) / 10

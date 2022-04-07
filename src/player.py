@@ -7,7 +7,7 @@ import pygame
 from src.block import Block, BLOCK_DATA, remove_block, is_placeable, set_block, inttup
 from src.constants import MAX_Y, SCR_DIM, GRAVITY, TERMINAL_VEL, CHUNK_SIZE, BLOCK_SIZE
 from src.utils import block_collide, sign, text, pps
-from src.particle import PlayerFallParticle
+from src.particle import PlayerFallParticle, PlayerWalkingParticle
 from src.sprite import LayersEnum, Sprite
 from src.inventory import Inventory
 import src.constants as constants
@@ -165,6 +165,8 @@ class Player(Sprite):
                     PlayerFallParticle.spawn(inttup(block.coords - VEC(0, 1)), Block.instances, block, amount)
                 # Update the last standing coords used to calculate the fall distance
                 self.last_standing_coords = self.coords
+                if abs(self.vel.x) > pps(3):
+                    PlayerWalkingParticle.spawn(self.pos + VEC(self.size.x // 2, self.size.y - 1), kwargs["blocks"], block)
                 break
         else:
             self.on_ground = False
