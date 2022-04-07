@@ -84,7 +84,7 @@ class Inventory:
 
         for y in range(4):
             for x in range(9):
-                if not (x, y) in self.items:
+                if (x, y) not in self.items:
                     self.items[(x, y)] = item
                     return
 
