@@ -267,8 +267,11 @@ class Hotbar(Sprite):
                     self.change_selected(num_key - K_0 - 1) # Minusing the lowest bounds and 1 (because we +1-ed earlier)
                     self.fade_timer = time.time() # Resetting the fade timer
 
-                    name = self.items[self.selected].name.replace("_", " ").capitalize()
-                    HotbarLabelTextBox(name, (WIDTH / 2 - smol_text(name).get_width() / 2 - 8, HEIGHT - 92))
+                    if self.selected in self.items:
+                        name = self.items[self.selected].name.replace("_", " ").capitalize()
+                        HotbarLabelTextBox(name, (WIDTH / 2 - smol_text(name).get_width() / 2 - 8, HEIGHT - 92))
+                    else:
+                        SingleInstance.remove(HotbarLabelTextBox)
 
             # Increasing or decreasing scroll object (using a kinda unecessary but cool new feature :D)
             match kwargs["m_state"]:
@@ -280,8 +283,11 @@ class Hotbar(Sprite):
                 self.fade_timer = time.time()
                 self.scroll.update()
 
-                name = self.items[self.selected].name.replace("_", " ").capitalize()
-                HotbarLabelTextBox(name, (WIDTH / 2 - smol_text(name).get_width() / 2 - 8, HEIGHT - 92))
+                if self.selected in self.items:
+                    name = self.items[self.selected].name.replace("_", " ").capitalize()
+                    HotbarLabelTextBox(name, (WIDTH / 2 - smol_text(name).get_width() / 2 - 8, HEIGHT - 92))
+                else:
+                    SingleInstance.remove(HotbarLabelTextBox)
 
     def draw(self, screen: pygame.Surface, **kwargs) -> None:
         if not constants.MANAGER.cinematic.value["HB"]: return
