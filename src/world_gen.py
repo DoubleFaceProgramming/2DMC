@@ -12,7 +12,7 @@ import numpy as np
 
 from src.constants import CHUNK_SIZE, BLOCK_SIZE, ORE_DISTRIBUTION, SEED, VEC, WIDTH, HEIGHT, CONFLICTING_STRUCTURES, MAX_Y, STRUCTURES, BLOCK_DATA, MAX_STRUCTURE_SIZE
 from src.utils import ascii_str_sum, canter_pairing, inttup, rand_bool
-from src.block import Block, set_block
+from src.block import Block, BlockData, set_block
 from src.player import Camera
 from build.exe_comp import pathof
 
@@ -23,8 +23,8 @@ pnoise = Noise(SEED)
 class Structure(object):
     instances = {}
 
-    def __init__(self, name: str, block_data: dict):
-        self.name = name
+    def __init__(self, generator, block_data: dict):
+        self.generator = generator
         self.block_data = block_data
         self.in_chunks = set([(block_pos[0] // CHUNK_SIZE, block_pos[1] // CHUNK_SIZE) for block_pos in block_data])
         self.blocks_in_chunk = {}
@@ -109,7 +109,7 @@ class StructureGenerator(object):
                 case 4:
                     block_data[block_pos] = BLOCK_DATA[block_name]["overwrite_and_change"][block_in_chunk]
 
-        Structure(self.name, block_data)
+        Structure(self, block_data)
         return block_data
 
     def get_block_in_chunk(self, block_pos: tuple) -> str:
@@ -122,13 +122,11 @@ class StructureGenerator(object):
             else:                                                       # If it did not find a structure that has been pre-generated
                 if block_pos not in Chunk.generated_blocks:             # If the block have not been generated anywhere else
                     block_in_chunk = generate_block(*block_pos)         # Generate it
-                    Chunk.generated_blocks[block_pos] = block_in_chunk  # Add the generated block to the list so that it
                 else:                                                   # If the block has already been generated before
                     block_in_chunk = Chunk.generated_blocks[block_pos]  # Grab the block
         else:                                                           # If the structure in a chunk have not been generated
             if block_pos not in Chunk.generated_blocks:                 # Do what it did above and generate or grab the block
                 block_in_chunk = generate_block(*block_pos)
-                Chunk.generated_blocks[block_pos] = block_in_chunk
             else:
                 block_in_chunk = Chunk.generated_blocks[block_pos]
 
@@ -195,7 +193,6 @@ class BlobGenerator(StructureGenerator):
         self.cycles = cycles
         self.get_max_chunks()
 
-    # Cache speeds up numpy array calculations
     @cache
     def CA(self, struct_seed: int, size: tuple, density: int, cycles: int) -> dict:
         """Function for generating a blob with the Cellular Automata algorithm
@@ -277,7 +274,7 @@ class BlobGenerator(StructureGenerator):
                 case 4:
                     block_data[block_pos] = BLOCK_DATA[block]["overwrite_and_change"][block_in_chunk]
 
-        Structure(self.name, block_data)
+        Structure(self, block_data)
         return block_data
 
 class Chunk(object):
@@ -288,7 +285,7 @@ class Chunk(object):
     def __init__(self, pos: tuple) -> None:
         self.__class__.instances[pos] = self
         self.pos = pos
-        self.block_data = self.generate(pos[0], pos[1])
+        self.block_data = BlockData(self.generate(pos[0], pos[1]))
         self.rect = Rect(0, 0, CHUNK_SIZE * BLOCK_SIZE, CHUNK_SIZE * BLOCK_SIZE)
 
     def update(self, camera: Camera) -> None:
@@ -318,7 +315,6 @@ class Chunk(object):
                     block_name = self.__class__.generated_blocks[block_pos]
                 else:
                     block_name = generate_block(block_pos[0], block_pos[1])
-                    self.__class__.generated_blocks[block_pos] = block_name
 
                 if block_name != "":
                     chunk_data[block_pos] = block_name
@@ -410,7 +406,7 @@ def generate_structures(x: int, y: int, chunk_data: dict, name: str, attempts: i
         dict: the chunk data with the structure
     """
 
-    generator = structure_generators[name]
+    generator: StructureGenerator = structure_generators[name]
     if (x, y) not in Structure.instances:
         structs = get_structures(x, y, chunk_data, generator, attempts, chance, dist)
     else:
@@ -428,7 +424,6 @@ def generate_structures(x: int, y: int, chunk_data: dict, name: str, attempts: i
 
     return chunk_data
 
-# Since simplex noise here is generated with a function making use of numpy arrays, cache improves performance
 @cache
 def terrain_generate(x: int) -> tuple[float, float]:
     """Takes the x position of a block and returns the result of the simplex noise and also the height it has to generate at"""
@@ -437,10 +432,11 @@ def terrain_generate(x: int) -> tuple[float, float]:
 
 def cave_generate(coords: tuple) -> float:
     """Takes the coordinates of a block and returns the noise map value for cave generation"""
-    noise_height = pnoise.noise2(coords[0], coords[1])
-    noise_height = noise_height + 0.5 if noise_height > 0 else 0
-    noise_height = int(pow(noise_height * 255, 0.9))
-    return noise_height
+    # noise_height = pnoise.noise2(coords[0], coords[1])
+    # noise_height = noise_height + 0.5 if noise_height > 0 else 0
+    # noise_height = int(pow(noise_height * 255, 0.9))
+    # return noise_height
+    return 1
 
 def blended_blocks_generate(y: int, block: str, blend_y: int, block2: str = "") -> str:
     """Returns a block based on a 5 block blend of two blocks
@@ -470,6 +466,7 @@ def blended_blocks_generate(y: int, block: str, blend_y: int, block2: str = "") 
 
     return block_name
 
+@cache
 def generate_block(x: int, y: int) -> str:
     """Gets the name of the block that would generate (apart from structures) at the given location"""
 

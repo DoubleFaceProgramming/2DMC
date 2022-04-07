@@ -10,6 +10,10 @@ from src.images import BLOCK_TEXTURES
 from src.utils import inttup
 from build.exe_comp import pathof
 
+class BlockData(dict):
+    def __missing__(self, key):
+        return ""
+
 class Block(pygame.sprite.Sprite):
     """Class that handles the managaing, updating and drawing of blocks."""
     instances = {}

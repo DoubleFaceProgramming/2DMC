@@ -47,8 +47,8 @@ class Player(pygame.sprite.Sprite):
         # Walking speed: 4.317 bps
         # Sprinting speed: 5.612 bps
         # Sprint-jumping speed: 7.127 bps
-        self.max_speed = 5.153
-        self.jumping_max_speed = 6.7
+        self.max_speed = 20#5.153
+        self.jumping_max_speed = 20#6.7
         self.rect = pygame.Rect((0, 0, 0.225 * BLOCK_SIZE, 1.8 * BLOCK_SIZE))
         self.bottom_bar = pygame.Rect((self.rect.x + 1, self.rect.bottom), (self.width - 2, 1))
         self.on_ground = False
@@ -125,7 +125,7 @@ class Player(pygame.sprite.Sprite):
             self.vel.x -= SLIDE * dt
         # If the player is on the ground and not in the inventory, jump
         if keys[K_w] and self.on_ground and not self.inventory.visible:
-            self.vel.y = -9.2
+            self.vel.y = -16.5#-9.2
             # When the player jumps, its x-speed also increases slightly (aka sprint jumping in minecraft)
             self.vel.x *= 1.133
             # Accelerate the player unless its speed is already at the maximum
@@ -442,7 +442,7 @@ class Crosshair():
         self.changeover = changeover # Changeover defines the speed that the colour changes from old to new
         self.mpos = VEC(pygame.mouse.get_pos())
         self.block_pos = inttup((self.master.pos + (self.mpos - self.master.rect.topleft)) // BLOCK_SIZE)
-        self.block = None
+        self.block = ""
         self.block_selection = self.BlockSelection(self)
         self.grey = {*range(127 - 30, 127 + 30 + 1)} # A set that contains value from 97 to 157
 
@@ -462,7 +462,7 @@ class Crosshair():
         if self.block_pos in Block.instances:
             self.block = Block.instances[inttup(self.block_pos)]
         else:
-            self.block = None
+            self.block = ""
 
     def draw(self, screen: pygame.Surface) -> None:
         self.new_color = self.get_avg_color(screen) # I know this is cursed it's the easiest way ;-;
