@@ -169,6 +169,7 @@ class PlayerWalkingParticle(GradualSpawningParticle, PlayerFallParticle):
 
     @classmethod
     def spawn(cls, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block, player_x_vel: float, layer: LayersEnum = LayersEnum.REG_PARTICLES):
+        # super() in this case refers to the first specified super class which is GradualSpawningParticle
         super().spawn(abs(player_x_vel) > pps(3), __class__.max_spawn_frequency, pos, blocks, master)
 
 class VoidFogParticle(GradualSpawningParticle, EnvironmentalParticle):
