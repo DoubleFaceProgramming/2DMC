@@ -1,8 +1,8 @@
 from __future__ import annotations
 from math import ceil, floor
 
+from random import randint, choices, uniform
 from pygame import Color, Surface
-from random import randint, choices
 from typing import TYPE_CHECKING
 import pygame
 import time
@@ -134,8 +134,8 @@ class BlockParticle(PhysicsParticle):
         self.image.fill(color)
 
         # Calculate the time that the particle is going to last for
-        self.survive_time = randint(4, 8) / 10
-        super().__init__(self.pos, (randint(-20, 20) / 10, randint(-30, 5) / 10), self.survive_time, self.image, blocks, layer, master=master)
+        self.survive_time = uniform(0.4, 0.8)
+        super().__init__(self.pos, (uniform(-2, 2), uniform(-3, 0.5)), self.survive_time, self.image, blocks, layer, master=master)
 
         # If the color is white which is the default blank color, it means that it is a transparent pixel, so don't generate
         if color == (255, 255, 255):
@@ -152,7 +152,7 @@ class PlayerFallParticle(BlockParticle):
 
     def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block) -> None:
         super().__init__(pos, blocks, master)
-        self.vel = pps(VEC(randint(-40, 40), randint(-70, -20)) / 10)
+        self.vel = pps(VEC(uniform(-40, 40), uniform(-7, -2)))
 
     @classmethod
     def spawn(cls, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block, amount: tuple[int, int], layer: LayersEnum = LayersEnum.REG_PARTICLES):
@@ -165,7 +165,7 @@ class PlayerWalkingParticle(GradualSpawningParticle, PlayerFallParticle):
 
     def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block) -> None:
         super().__init__(pos, blocks, master)
-        self.vel = pps(VEC(randint(-40, 40) / 10, randint(-40, 0) / 10))
+        self.vel = pps(VEC(uniform(-4, 4), uniform(-4, 0)))
 
     @classmethod
     def spawn(cls, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block, player_x_vel: float, layer: LayersEnum = LayersEnum.REG_PARTICLES):
