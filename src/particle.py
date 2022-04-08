@@ -121,6 +121,8 @@ class EnvironmentalParticle(Particle):
             self.kill()
 
 class BlockParticle(PhysicsParticle):
+    subsurface_rect = pygame.Rect(0, 0, MIN_BLOCK_SIZE - 1, MIN_BLOCK_SIZE - 1)
+    
     def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block, layer: LayersEnum = LayersEnum.REG_PARTICLES) -> None:
         self.master = master
         self.pos = pos
@@ -128,7 +130,7 @@ class BlockParticle(PhysicsParticle):
 
         # Gets a random colour from master and fills its image with it
         self.image = pygame.Surface((self.size, self.size))
-        color = self.master.image.get_at((randint(0, MIN_BLOCK_SIZE-1), randint(0, MIN_BLOCK_SIZE-1)))
+        color = self.master.image.get_at((randint(self.__class__.subsurface_rect.left, self.__class__.subsurface_rect.right), randint(self.__class__.subsurface_rect.top, self.__class__.subsurface_rect.bottom)))
         self.image.fill(color)
 
         # Calculate the time that the particle is going to last for
@@ -146,6 +148,7 @@ class BlockParticle(PhysicsParticle):
 
 class PlayerFallParticle(BlockParticle):
     """End class that handles the particles created when falling 4 blocks or more"""
+    subsurface_rect = pygame.Rect(0, 0, MIN_BLOCK_SIZE - 1, 2)
 
     def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block) -> None:
         super().__init__(pos, blocks, master)
