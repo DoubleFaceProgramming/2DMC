@@ -165,8 +165,7 @@ class Player(Sprite):
                     PlayerFallParticle.spawn(inttup(block.coords - VEC(0, 1)), Block.instances, block, amount)
                 # Update the last standing coords used to calculate the fall distance
                 self.last_standing_coords = self.coords
-                if abs(self.vel.x) > pps(3):
-                    PlayerWalkingParticle.spawn(self.pos + VEC(self.size.x // 2, self.size.y - 1), kwargs["blocks"], block)
+                PlayerWalkingParticle.spawn(self.pos + VEC(self.size.x // 2, self.size.y - 1), kwargs["blocks"], block, self.vel.x)
                 break
         else:
             self.on_ground = False

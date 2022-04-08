@@ -22,7 +22,7 @@ class Particle(Sprite):
         super().__init__(layer)
         __class__.instances.append(self)
         self.world_pos = VEC(pos)
-        self.pos = self.world_pos
+        self.pos = VEC(0, 0)
         self.vel = pps(VEC(vel))
         self.coords = self.world_pos // BLOCK_SIZE
         self.survive_time = survive_time
@@ -162,11 +162,11 @@ class PlayerWalkingParticle(GradualSpawningParticle, PlayerFallParticle):
 
     def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block) -> None:
         super().__init__(pos, blocks, master)
-        self.vel = VEC(randint(-30, 30) / 10, randint(-40, 0) / 10)
+        self.vel = pps(VEC(randint(-40, 40) / 10, randint(-40, 0) / 10))
 
     @classmethod
-    def spawn(cls, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block, layer: LayersEnum = LayersEnum.REG_PARTICLES):
-        super().spawn(True, __class__.max_spawn_frequency, pos, blocks, master)
+    def spawn(cls, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block, player_x_vel: float, layer: LayersEnum = LayersEnum.REG_PARTICLES):
+        super().spawn(abs(player_x_vel) > pps(3), __class__.max_spawn_frequency, pos, blocks, master)
 
 class VoidFogParticle(GradualSpawningParticle, EnvironmentalParticle):
     """Class that handles the void fog particles thats spawn at the bottom of the world"""
