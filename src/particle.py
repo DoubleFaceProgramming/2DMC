@@ -141,10 +141,10 @@ class BlockParticle(PhysicsParticle):
         if color == (255, 255, 255):
             self.kill()
 
-    @staticmethod
-    def spawn(pos: tuple[int, int], blocks: dict[tuple[int, int], Block]):
+    @classmethod
+    def spawn(cls, pos: tuple[int, int], blocks: dict[tuple[int, int], Block]):
         for _ in range(randint(18, 26)):
-            BlockParticle(VEC(pos) * BLOCK_SIZE + VEC(randint(0, BLOCK_SIZE), randint(0, BLOCK_SIZE)), blocks, blocks[pos])
+            cls(VEC(pos) * BLOCK_SIZE + VEC(randint(0, BLOCK_SIZE), randint(0, BLOCK_SIZE)), blocks, blocks[pos])
 
 class PlayerFallParticle(BlockParticle):
     """End class that handles the particles created when falling 4 blocks or more"""
@@ -154,10 +154,10 @@ class PlayerFallParticle(BlockParticle):
         super().__init__(pos, blocks, master)
         self.vel = pps(VEC(randint(-40, 40), randint(-70, -20)) / 10)
 
-    @staticmethod
-    def spawn(pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block, amount: tuple[int, int], layer: LayersEnum = LayersEnum.REG_PARTICLES):
+    @classmethod
+    def spawn(cls, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block, amount: tuple[int, int], layer: LayersEnum = LayersEnum.REG_PARTICLES):
         for _ in range(randint(*amount)):
-            __class__(VEC(pos) * BLOCK_SIZE + VEC(randint(0, BLOCK_SIZE), BLOCK_SIZE-1), blocks, master)
+            cls(VEC(pos) * BLOCK_SIZE + VEC(randint(0, BLOCK_SIZE), BLOCK_SIZE-1), blocks, master)
 
 class PlayerWalkingParticle(GradualSpawningParticle, PlayerFallParticle):
     """Class that handles the particles created when the player is walking on the ground"""
