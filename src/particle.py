@@ -152,7 +152,7 @@ class PlayerFallParticle(BlockParticle):
 
     def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block) -> None:
         super().__init__(pos, blocks, master)
-        self.vel = pps(VEC(uniform(-40, 40), uniform(-7, -2)))
+        self.vel = pps(VEC(uniform(-4, 4), uniform(-7, -2)))
 
     @classmethod
     def spawn(cls, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block, amount: tuple[int, int], layer: LayersEnum = LayersEnum.REG_PARTICLES):
@@ -161,7 +161,7 @@ class PlayerFallParticle(BlockParticle):
 
 class PlayerWalkingParticle(GradualSpawningParticle, PlayerFallParticle):
     """Class that handles the particles created when the player is walking on the ground"""
-    max_spawn_frequency = 0.05
+    max_spawn_frequency = 0.1
 
     def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block) -> None:
         super().__init__(pos, blocks, master)
