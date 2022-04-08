@@ -26,6 +26,10 @@
 
 - Blocks will now physically appear in the player's hand when the player is holding an item
 
+### Walking particles
+
+- When the player walks at over 3 blocks per second, block particles would be spawned underneath its feet
+
 ### 2DMC logo
 
 - 2DMC now has... a logo! It will be shown on the top left corner of the game window and in Alt+Tab menu!
