@@ -135,11 +135,11 @@ def is_supported(pos: tuple, data: dict, neighbors: dict, second_block_pos: tupl
     """
 
     if data["support"]:
-        for support in (supports := data["support"]):
+        for support in data["support"]:
             if inttup(support.split(" ")) != inttup(VEC(second_block_pos)-VEC(pos)):
                 # Check if each of the supporting blocks exist in the neighbors
                 if neighbors[support] in Block.instances:
-                    if Block.instances[neighbors[support]].name not in supports[support]:
+                    if Block.instances[neighbors[support]].name not in data["support"][support]:
                         return False
                 else:
                     return False

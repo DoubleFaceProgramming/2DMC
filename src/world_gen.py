@@ -344,7 +344,7 @@ class Chunk(object):
 
         return chunk_data
 
-def get_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerator, attempts: int, chance: int | None, dist: dict) -> list:
+def get_structures(x: int, y: int, generator: StructureGenerator, attempts: int, chance: int | None, dist: dict) -> list:
     """Get structures inside the current chunk (x, y)
 
     Args:
@@ -410,7 +410,7 @@ def generate_structures(x: int, y: int, chunk_data: dict, name: str, attempts: i
 
     generator: StructureGenerator = structure_generators[name]
     if (x, y) not in Structure.instances:
-        structs = get_structures(x, y, chunk_data, generator, attempts, chance, dist)
+        structs = get_structures(x, y, generator, attempts, chance, dist)
     else:
         structs = [structure.block_data for structure in Structure.instances[(x, y)]]
     for struct in structs:
