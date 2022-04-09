@@ -5,6 +5,10 @@ from src.particle import BlockParticle
 from src.images import BLOCK_TEXTURES
 from src.utils import inttup
 
+class BlockData(dict):
+    def __missing__(self, key):
+        return ""
+
 class Block:
     """Class that handles the managaing, updating and drawing of blocks."""
     instances = {}
@@ -74,7 +78,16 @@ def remove_block(chunks: dict, pos: tuple, data: dict, neighbors: dict) -> None:
         if neighbors[neighbor] in Block.instances:
             Block.instances[neighbors[neighbor]].update(chunks)
 
-def set_block(chunks: dict, pos: tuple, name: str, neighbors: dict) -> None:
+def set_block(chunks: dict, pos: tuple, name: str):
+    pos = inttup(pos)
+    # Calculates the position of the chunk the block is in.
+    chunk = (pos[0] // CHUNK_SIZE, pos[1] // CHUNK_SIZE)
+    if chunk in chunks:
+        # Create an entry in the block dictionary that contains a new Block object
+        Block.instances[pos] = Block(chunks[chunk], pos, name)
+        chunks[chunk].block_data[pos] = name
+
+def updated_set_block(chunks: dict, pos: tuple, name: str, neighbors: dict) -> None:
     """Set the block at the position given to the block given
 
     Args:
@@ -84,13 +97,7 @@ def set_block(chunks: dict, pos: tuple, name: str, neighbors: dict) -> None:
         neighbors (dict): THe neighbours of the block
     """
 
-    pos = inttup(pos)
-    # Calculates the position of the chunk the block is in.
-    chunk = (pos[0] // CHUNK_SIZE, pos[1] // CHUNK_SIZE)
-    if chunk in chunks:
-        # Create an entry in the block dictionary that contains a new Block object
-        Block.instances[pos] = Block(chunks[chunk], pos, name)
-        chunks[chunk].block_data[pos] = name
+    set_block(chunks, pos, name)
     for neighbor in neighbors:
         # Update the neighboring blocks
         if neighbors[neighbor] in Block.instances:
@@ -111,7 +118,7 @@ def is_occupied(player, pos: tuple) -> bool:
     if not pygame.Rect(VEC(pos) * BLOCK_SIZE, (BLOCK_SIZE, BLOCK_SIZE)).colliderect(pygame.Rect(player.pos, player.size)):
         if pos in Block.instances: # If there is already a block there:
             # If the "replaceable" key is in the block's data, meaning that the block is directly replaceable (i.e. grass)
-            return not "replaceable" in Block.instances[pos].data # This will return False if the block is replaceable and vice versa
+            return "replaceable" not in Block.instances[pos].data # This will return False if the block is replaceable and vice versa
         else:
             return False
     return True

@@ -18,9 +18,10 @@ TERMINAL_VEL = 24
 MIN_BLOCK_SIZE = 16
 BLOCK_SIZE = 64
 CHUNK_SIZE = 8
+CAVE_PREGEN_BATCH = 4
 
 # Universal seed for profiling/timing: 50687767
-# Seeds for structure gen testing: -1797233725, -301804449
+# Seeds for structure gen testing: -1797233725, -301804449, 1666679850, 1671665804
 # Seed for low world gen (loads at 1056) testing: 1561761502
 SEED = randint(-2147483648, 2147483647)
 
@@ -43,6 +44,7 @@ CONFLICTING_STRUCTURES = {
     ("granite", "diorite", "andesite"): ["coal_ore", "iron_ore", "lapis_ore", "gold_ore", "redstone_ore", "diamond_ore", "emerald_ore"],
     ("tuff", ): ["deepslate_coal_ore", "deepslate_iron_ore", "deepslate_lapis_ore", "deepslate_gold_ore", "deepslate_redstone_ore", "deepslate_diamond_ore", "deepslate_emerald_ore"]
 }
+MAX_STRUCTURE_SIZE = (3, 3)
 
 # We dont need this yet but if we ever need custom events I realised we could do something like this :P
 class CustomEvents(Enum):

@@ -150,6 +150,7 @@ class Game():
             "Block position": inttup((self.player.pos + (mpos - self.player.rect.topleft)) // BLOCK_SIZE),
             "Detecting rects": len(self.player.detecting_blocks),
             "Particles": len(Particle.instances),
+            "Pre-gen cave heightmap": Chunk.cave_pregeneration_pos if Chunk.cave_pregeneration_bool else "Complete"
         }
 
         # Displaying the debug values.

@@ -2,5 +2,6 @@
     "name": "oak_log", 
     "collision_box": "none", 
     "bounding_box": "full", 
-    "support": false
+    "support": false,
+    "overwriteable": ["grass", "tall_grass", "tall_grass_top", "poppy", "dandelion"]
 }

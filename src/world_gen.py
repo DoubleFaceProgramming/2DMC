@@ -6,12 +6,14 @@ from pygame.transform import scale
 from pygame import Rect, Surface
 from functools import cache
 from vnoise import Noise
-from math import ceil
+from os import listdir
+from math import ceil, floor
 import numpy as np
 
-from src.constants import CHUNK_SIZE, MIN_BLOCK_SIZE, BLOCK_SIZE, ORE_DISTRIBUTION, SEED, VEC, WIDTH, HEIGHT, CONFLICTING_STRUCTURES, MAX_Y, STRUCTURES, BLOCK_DATA
-from src.sprite import Sprite, LayersEnum, SpriteNotFoundException, SPRITE_MANAGER
-from src.utils import ascii_str_sum, canter_pairing, rand_bool
+from src.constants import CAVE_PREGEN_BATCH, CHUNK_SIZE, MIN_BLOCK_SIZE, BLOCK_SIZE, ORE_DISTRIBUTION, SEED, VEC, WIDTH, HEIGHT, CONFLICTING_STRUCTURES, MAX_Y, STRUCTURES, BLOCK_DATA, MAX_STRUCTURE_SIZE
+from src.sprite import SPRITE_MANAGER, Sprite, LayersEnum, SpriteNotFoundException
+from src.utils import ascii_str_sum, canter_pairing, inttup, rand_bool
+from src.block import Block, BlockData, set_block
 from src.player import Camera
 from src.block import Block
 
@@ -22,8 +24,8 @@ pnoise = Noise(SEED)
 class Structure(object):
     instances = {}
 
-    def __init__(self, name: str, block_data: dict):
-        self.name = name
+    def __init__(self, generator, block_data: dict):
+        self.generator = generator
         self.block_data = block_data
         self.in_chunks = set([(block_pos[0] // CHUNK_SIZE, block_pos[1] // CHUNK_SIZE) for block_pos in block_data])
         self.blocks_in_chunk = {}
@@ -69,9 +71,9 @@ class StructureGenerator(object):
                 self.chunks_to_check = major_structure_generators[conflicts[0]].chunks_to_check
                 break
         else:
-            self.chunks_to_check = int(ceil((self.max_size[0] + 7) / CHUNK_SIZE)) + 1, int(ceil((self.max_size[1] + 7) / CHUNK_SIZE) + 1)
+            self.chunks_to_check = int(ceil((self.max_size[0] + 7) / CHUNK_SIZE)), int(ceil((self.max_size[1] + 7) / CHUNK_SIZE))
 
-    def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict) -> Structure | None:
+    def generate(self, origin: tuple) -> dict | None:
         """Generates chunk data that includes a structure at the given origin
 
         Args:
@@ -97,7 +99,7 @@ class StructureGenerator(object):
             else:
                 block_name = block
 
-            block_in_chunk = self.get_block_in_chunk(block_pos, chunk_pos, chunk_data)
+            block_in_chunk = self.get_block_in_chunk(block_pos)
             match self.can_generate(block_name, block_in_chunk):
                 case 1:
                     block_data[block_pos] = block_name # Generate the block
@@ -108,32 +110,24 @@ class StructureGenerator(object):
                 case 4:
                     block_data[block_pos] = BLOCK_DATA[block_name]["overwrite_and_change"][block_in_chunk]
 
-        return Structure(self.name, block_data)
+        Structure(self, block_data)
+        return block_data
 
-    def get_block_in_chunk(self, block_pos: tuple, chunk_pos: tuple, chunk_data: dict) -> str:
-        # If the block is inside the chunk the structure originated from
-        if 0 <= block_pos[0] - chunk_pos[0] * CHUNK_SIZE < CHUNK_SIZE and 0 <= block_pos[1] - chunk_pos[1] * CHUNK_SIZE < CHUNK_SIZE:
-            if block_pos in chunk_data:
-                block_in_chunk = chunk_data[block_pos] # Get the block name of the target position in the chunk
-            else:
-                block_in_chunk = "" # If the block does not exist in the chunk, set it to an empty string
-
+    def get_block_in_chunk(self, block_pos: tuple) -> str:
         # real_chunk_pos is the actual chunk position of the current block, not the chunk the structure originates from
         if (real_chunk_pos := (block_pos[0] // CHUNK_SIZE, block_pos[1] // CHUNK_SIZE)) in Structure.instances:
-            for structure in Structure.instances[real_chunk_pos]:       # Check for STRUCTURES that have already been pre-generated
+            for structure in Structure.instances[real_chunk_pos]:       # Check for structures that have already been pre-generated
                 if block_pos in structure.block_data:                   # If the current block overlaps a block in the structure
                     block_in_chunk = structure.block_data[block_pos]    # Set the block in chunk to that block in the structure
                     break
             else:                                                       # If it did not find a structure that has been pre-generated
                 if block_pos not in Chunk.generated_blocks:             # If the block have not been generated anywhere else
                     block_in_chunk = generate_block(*block_pos)         # Generate it
-                    Chunk.generated_blocks[block_pos] = block_in_chunk  # Add the generated block to the list so that it
                 else:                                                   # If the block has already been generated before
                     block_in_chunk = Chunk.generated_blocks[block_pos]  # Grab the block
         else:                                                           # If the structure in a chunk have not been generated
             if block_pos not in Chunk.generated_blocks:                 # Do what it did above and generate or grab the block
                 block_in_chunk = generate_block(*block_pos)
-                Chunk.generated_blocks[block_pos] = block_in_chunk
             else:
                 block_in_chunk = Chunk.generated_blocks[block_pos]
 
@@ -200,7 +194,6 @@ class BlobGenerator(StructureGenerator):
         self.cycles = cycles
         self.get_max_chunks()
 
-    # Cache speeds up numpy array calculations
     @cache
     def CA(self, struct_seed: int, size: tuple, density: int, cycles: int) -> dict:
         """Function for generating a blob with the Cellular Automata algorithm
@@ -251,7 +244,7 @@ class BlobGenerator(StructureGenerator):
 
         return blob_dict
 
-    def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict) -> Structure | None:
+    def generate(self, origin: tuple) -> dict | None:
         """Generates chunk data that includes a structure at the given origin
 
         Args:
@@ -271,7 +264,7 @@ class BlobGenerator(StructureGenerator):
         for offset, block in blob.items():
             # Convert the positions to real world position by adding the origin to the block position (offset)
             block_pos = (origin[0] + offset[0], origin[1] + offset[1])
-            block_in_chunk = self.get_block_in_chunk(block_pos, chunk_pos, chunk_data)
+            block_in_chunk = self.get_block_in_chunk(block_pos)
             match self.can_generate(block, block_in_chunk):
                 case 1:
                     block_data[block_pos] = block # Generate the block
@@ -282,20 +275,23 @@ class BlobGenerator(StructureGenerator):
                 case 4:
                     block_data[block_pos] = BLOCK_DATA[block]["overwrite_and_change"][block_in_chunk]
 
-        return Structure(self.name, block_data)
+        Structure(self, block_data)
+        return block_data
 
 class Chunk(Sprite):
     """The class responsible for updating and drawing chunks."""
 
     generated_blocks = {}
     instances = {}
+    cave_pregeneration_pos = [(-(chunks_to_load := (WIDTH // (CHUNK_SIZE * BLOCK_SIZE) + 2 + 2 * MAX_STRUCTURE_SIZE[0], HEIGHT // (CHUNK_SIZE * BLOCK_SIZE) + 2 + 2 * MAX_STRUCTURE_SIZE[1]))[0] // 2 - 1) * CHUNK_SIZE, (-chunks_to_load[1] // 2 - 1) * CHUNK_SIZE]
+    cave_pregeneration_bool = True
 
     def __init__(self, pos: tuple, layer: LayersEnum = LayersEnum.BLOCKS) -> None:
         __class__.instances[pos] = self
         super().__init__(layer)
         self.pos = VEC(pos)
         self.previous_block_data = {}
-        self.block_data = self.generate(pos[0], pos[1])
+        self.block_data = BlockData(self.generate(pos[0], pos[1]))
         self.rect = Rect(0, 0, CHUNK_SIZE * BLOCK_SIZE, CHUNK_SIZE * BLOCK_SIZE)
         self.image = Surface((MIN_BLOCK_SIZE * CHUNK_SIZE, MIN_BLOCK_SIZE * CHUNK_SIZE), SRCALPHA)
 
@@ -322,7 +318,7 @@ class Chunk(Sprite):
                 self.image = Surface((MIN_BLOCK_SIZE * CHUNK_SIZE, MIN_BLOCK_SIZE * CHUNK_SIZE)).convert()
                 self.image.set_colorkey((0, 0, 0))
                 for block in self.block_data:
-                    if not block in Block.instances:
+                    if block not in Block.instances:
                         Block.instances[block] = Block(self, block, self.block_data[block])
                     Block.instances[block].draw(self.image, kwargs["camera"])
                 self.image = scale(self.image, (BLOCK_SIZE * CHUNK_SIZE, BLOCK_SIZE * CHUNK_SIZE))
@@ -358,7 +354,6 @@ class Chunk(Sprite):
                     block_name = __class__.generated_blocks[block_pos]
                 else:
                     block_name = generate_block(block_pos[0], block_pos[1])
-                    __class__.generated_blocks[block_pos] = block_name
 
                 if block_name != "":
                     chunk_data[block_pos] = block_name
@@ -386,7 +381,7 @@ class Chunk(Sprite):
 
         return chunk_data
 
-def get_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerator, attempts: int, chance: int | None, dist: dict) -> list:
+def get_structures(x: int, y: int, generator: StructureGenerator, attempts: int, chance: int | None, dist: dict) -> list:
     """Get structures inside the current chunk (x, y)
 
     Args:
@@ -402,36 +397,37 @@ def get_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerat
         list: a list containing the block data of each of the structures in the chunk
     """
 
-    out = []
+    structures = []
     seed(SEED + canter_pairing((x, y)) + ascii_str_sum(generator.name))
-    if chance == None: # Has to be ""== None" because chance can also be 0
+
+    if chance is None: # Has to be "is None" because chance can also be 0
         upper = dist["range"][0]
         lower = dist["range"][1]
         slope = dist["slope"]
         rarity = dist["rarity"]
         chance = (((y - upper) if slope == 1 else (lower - y)) / (lower - upper) * rarity) if slope else rarity
+
     for _ in range(attempts):
         if rand_bool(chance / 100):
-            start_x = x * CHUNK_SIZE + randint(0, CHUNK_SIZE)
+            start_x = x * CHUNK_SIZE + randint(0, CHUNK_SIZE - 1)
             if generator.on_surface:
                 # Generate on the surface of the world
                 start_y = terrain_generate(start_x)[1] - 1
                 # If it is cut off by a cave, don't generate
                 if (92.7 < cave_generate((start_x / 70, start_y / 70)) < 103) or (92.7 < cave_generate((start_x / 70, (start_y + 1) / 70)) < 103):
-                    return out
+                    return structures
             else:
                 start_y = y * CHUNK_SIZE + randint(0, CHUNK_SIZE)
 
             # Structures that are not in this chunk
             if not 0 <= start_y - y * CHUNK_SIZE < CHUNK_SIZE:
-                return out
+                return structures
 
-            structure = generator.generate((start_x, start_y), (x, y), chunk_data)
+            structure = generator.generate((start_x, start_y))
             if structure:
-                if structure.block_data:
-                    out.append(structure)
+                structures.append(structure)
 
-    return out
+    return structures
 
 def generate_structures(x: int, y: int, chunk_data: dict, name: str, attempts: int, chance: int | None = None, dist: dict = {}) -> dict:
     """Check the surrounding chunks for structures that generates in the current chunk (x, y), and then returns the chunk data with the structure
@@ -449,27 +445,31 @@ def generate_structures(x: int, y: int, chunk_data: dict, name: str, attempts: i
         dict: the chunk data with the structure
     """
 
-    generator = structure_generators[name]
-    # Check all chunks around the current chunk within the size limit of the structure
-    for ox in range(-generator.chunks_to_check[0], generator.chunks_to_check[0] + 1):
-        for oy in range(-generator.chunks_to_check[1], generator.chunks_to_check[1] + 1):
-            # Get the surrounding STRUCTURES that might protrude into the current chunk
-            structs = get_structures(x + ox, y + oy, chunk_data, generator, attempts, chance, dist)
-            for struct in structs:
-                for block, block_name in struct.block_data.items():
-                    # If there are parts of that structure inside the current chunk, generate that part in this chunk
-                    if 0 <= block[0] - x * CHUNK_SIZE < CHUNK_SIZE and 0 <= block[1] - y * CHUNK_SIZE < CHUNK_SIZE:
-                        chunk_data[block] = block_name
+    generator: StructureGenerator = structure_generators[name]
+    if (x, y) not in Structure.instances:
+        structs = get_structures(x, y, generator, attempts, chance, dist)
+    else:
+        structs = [structure.block_data for structure in Structure.instances[(x, y)]]
+    for struct in structs:
+        for block_pos, block_name in struct.items():
+            block_chunk = (floor(block_pos[0] / CHUNK_SIZE), floor(block_pos[1] / CHUNK_SIZE))
+            if block_chunk[0] == x and block_chunk[1] == y:
+                chunk_data[block_pos] = block_name
+            else:
+                if block_chunk in Chunk.instances:
+                    set_block(Chunk.instances, block_pos, block_name)
+                else:
+                    Chunk.generated_blocks[block_pos] = block_name
 
     return chunk_data
 
-# Since simplex noise here is generated with a function making use of numpy arrays, cache improves performance
 @cache
 def terrain_generate(x: int) -> tuple[float, float]:
     """Takes the x position of a block and returns the result of the simplex noise and also the height it has to generate at"""
     simplex_noise_height = snoise.noise2array(np.array([x * 0.1]), np.array([0]))
     return simplex_noise_height, -int(simplex_noise_height * 5) + 5
 
+@cache
 def cave_generate(coords: tuple) -> float:
     """Takes the coordinates of a block and returns the noise map value for cave generation"""
     noise_height = pnoise.noise2(coords[0], coords[1])
@@ -505,6 +505,7 @@ def blended_blocks_generate(y: int, block: str, blend_y: int, block2: str = "") 
 
     return block_name
 
+@cache
 def generate_block(x: int, y: int) -> str:
     """Gets the name of the block that would generate (apart from structures) at the given location"""
 
@@ -562,26 +563,44 @@ def load_chunks(camera: Camera) -> list:
 
     rendered_chunks = []
     # Load the chunks that show up on the screen
-    for y in range(HEIGHT // (CHUNK_SIZE * BLOCK_SIZE) + 2):
-        for x in range(WIDTH // (CHUNK_SIZE * BLOCK_SIZE) + 2):
+    chunks_to_load = (WIDTH // (CHUNK_SIZE * BLOCK_SIZE) + 2 + 2 * MAX_STRUCTURE_SIZE[0], HEIGHT // (CHUNK_SIZE * BLOCK_SIZE) + 2 + 2 * MAX_STRUCTURE_SIZE[1])
+    for y in range(-chunks_to_load[1] // 2, chunks_to_load[1] // 2):
+        for x in range(-chunks_to_load[0] // 2, chunks_to_load[0] // 2):
             chunk = (
-                x - 1 + int(round(camera.pos.x / (CHUNK_SIZE * BLOCK_SIZE))),
-                y - 1 + int(round(camera.pos.y / (CHUNK_SIZE * BLOCK_SIZE)))
+                int(round(camera.pos.x / (CHUNK_SIZE * BLOCK_SIZE) + 1) + x),
+                int(round(camera.pos.y / (CHUNK_SIZE * BLOCK_SIZE) + 1) + y)
             )
-            rendered_chunks.append(chunk)
+            chunks_to_render = inttup(VEC(chunks_to_load) - VEC(2 * MAX_STRUCTURE_SIZE[0], 2 * MAX_STRUCTURE_SIZE[1]))
+            if y in range(-chunks_to_render[1] // 2, chunks_to_render[1] // 2) and x in range(-chunks_to_render[0] // 2, chunks_to_render[0] // 2):
+                rendered_chunks.append(chunk)
             # If the chunk has not yet been generated, create the chunk object
             if chunk not in Chunk.instances:
                 Chunk.instances[chunk] = Chunk(chunk)
+                Chunk.cave_pregeneration_bool = True
             elif Chunk.instances[chunk] not in SPRITE_MANAGER:
                 SPRITE_MANAGER.add(Chunk.instances[chunk])
 
+    while tuple(VEC(Chunk.cave_pregeneration_pos) // CHUNK_SIZE) in Chunk.instances:
+        Chunk.cave_pregeneration_pos[0] += CHUNK_SIZE
+    if Chunk.cave_pregeneration_pos[0] > (chunks_to_load[0] // 2 + 1) * CHUNK_SIZE:
+        Chunk.cave_pregeneration_pos[1] += 1
+        Chunk.cave_pregeneration_pos[0] = (-chunks_to_load[0] // 2 - 1) * CHUNK_SIZE
+    else:
+        Chunk.cave_pregeneration_pos[0] += CAVE_PREGEN_BATCH
+    if Chunk.cave_pregeneration_pos[1] > (chunks_to_load[1] // 2 + 1) * CHUNK_SIZE:
+        Chunk.cave_pregeneration_pos = [(-chunks_to_load[0] // 2 - 1) * CHUNK_SIZE, (-chunks_to_load[1] // 2 - 1) * CHUNK_SIZE]
+        Chunk.cave_pregeneration_bool = False
+    elif Chunk.cave_pregeneration_bool:
+        for i in range(CAVE_PREGEN_BATCH):
+            cave_generate(tuple((VEC(Chunk.cave_pregeneration_pos) - VEC(i, 0)) / 70))
+
     unrendered_chunks = []
     # Check a bigger area around the camera to see if there are chunks that are still active but shouldn't be
-    for y in range(HEIGHT // (CHUNK_SIZE * BLOCK_SIZE) + 4):
-        for x in range(WIDTH // (CHUNK_SIZE * BLOCK_SIZE) + 4):
+    for y in range(-chunks_to_load[1] // 2 - 2, chunks_to_load[1] // 2 + 2):
+        for x in range(-chunks_to_load[0] // 2 - 2, chunks_to_load[0] // 2 + 2):
             chunk = (
-                x - 2 + int(round(camera.pos.x / (CHUNK_SIZE * BLOCK_SIZE))),
-                y - 2 + int(round(camera.pos.y / (CHUNK_SIZE * BLOCK_SIZE)))
+                x + camera.pos.x // (CHUNK_SIZE * BLOCK_SIZE),
+                y + camera.pos.y // (CHUNK_SIZE * BLOCK_SIZE)
             )
             # Add that chunk to "unrendered_chunks" if it is still being rendered
             if chunk in Chunk.instances:
@@ -596,7 +615,7 @@ def load_chunks(camera: Camera) -> list:
 
 # Major structure means structures that have bigger chunk spans than the rest of its conflicting STRUCTURES
 major_structure_generators = {
-    "oak_tree": StructureGenerator("oak_tree"),
+    "oak_tree": StructureGenerator("oak_tree", obstruction=True),
     "granite": BlobGenerator("granite", (10, 10), 5, 3, obstruction=True),
     "diorite": BlobGenerator("diorite", (10, 10), 5, 3, obstruction=True),
     "andesite": BlobGenerator("andesite", (10, 10), 5, 3, obstruction=True),

@@ -4,8 +4,9 @@ from pygame import Surface, Rect
 from pygame.math import Vector2
 import pygame
 
-from src.block import Block, BLOCK_DATA, remove_block, is_placeable, set_block, inttup
-from src.constants import MAX_Y, SCR_DIM, GRAVITY, TERMINAL_VEL, CHUNK_SIZE, BLOCK_SIZE
+from src.constants import MAX_Y, SCR_DIM, GRAVITY, TERMINAL_VEL, CHUNK_SIZE, BLOCK_SIZE, CHUNK_SIZE
+from src.block import Block, BLOCK_DATA, remove_block, is_placeable, updated_set_block, inttup
+from src.particle import BlockParticle, PlayerFallParticle
 from src.utils import block_collide, sign, text, pps
 from src.particle import PlayerFallParticle
 from src.sprite import LayersEnum, Sprite
@@ -395,7 +396,7 @@ class Player(Sprite):
                             if not is_placeable(self, block_pos, BLOCK_DATA[self.inventory.holding.name], neighbors, second_block_pos=c_pos):
                                 break
                         else:
-                            set_block(chunks, block_pos, self.inventory.holding.name, neighbors)
+                            updated_set_block(chunks, block_pos, self.inventory.holding.name, neighbors)
                             for counterpart in counterparts:
                                 # Get the position of where counterpart would be and ITS neighbors
                                 c_pos = VEC(block_pos) + VEC(inttup(counterpart.split(" ")))
@@ -405,11 +406,11 @@ class Player(Sprite):
                                     "-1 0": inttup((c_pos.x - 1, c_pos.y)),
                                     "1 0": inttup((c_pos.x + 1, c_pos.y))
                                 }
-                                set_block(chunks, VEC(block_pos)+VEC(inttup(counterpart.split(" "))), counterparts[counterpart], c_neighbors)
+                                updated_set_block(chunks, VEC(block_pos)+VEC(inttup(counterpart.split(" "))), counterparts[counterpart], c_neighbors)
                 else:
                     # If the block does not have counterparts, place it if it can be placed
                     if is_placeable(self, block_pos, BLOCK_DATA[self.inventory.holding.name], neighbors):
-                        set_block(chunks, block_pos, self.inventory.holding.name, neighbors)
+                        updated_set_block(chunks, block_pos, self.inventory.holding.name, neighbors)
 
     def pick_block(self) -> None:
         """Pick the block at the mouse position, with all the functionality in 3D Minecraft."""
@@ -442,7 +443,7 @@ class Crosshair(Sprite):
         self.changeover = changeover # Changeover defines the speed that the colour changes from old to new
         self.mpos = VEC(pygame.mouse.get_pos())
         self.block_pos = inttup((self.master.pos + (self.mpos - self.master.rect.topleft)) // BLOCK_SIZE)
-        self.block = None
+        self.block = ""
         self.block_selection = self.BlockSelection(self, LayersEnum.BLOCK_SELECTION)
         self.grey = {*range(127 - 30, 127 + 30 + 1)} # A set that contains value from 97 to 157
 
@@ -462,7 +463,7 @@ class Crosshair(Sprite):
         if self.block_pos in Block.instances:
             self.block = Block.instances[inttup(self.block_pos)]
         else:
-            self.block = None
+            self.block = ""
 
     def draw(self, screen: pygame.Surface, **kwargs) -> None:
         if not constants.MANAGER.cinematic.value["CH"] or self.master.inventory.visible: return
