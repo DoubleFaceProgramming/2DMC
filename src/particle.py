@@ -8,7 +8,7 @@ import pygame
 import time
 
 from src.constants import MIN_BLOCK_SIZE, VEC, BLOCK_SIZE, GRAVITY, WIDTH, HEIGHT, MAX_Y
-from src.sprite import LayersEnum, Sprite, SpriteNotFoundException
+from src.sprite import LayerNotFoundException, LayersEnum, Sprite, SpriteNotFoundException
 from src.utils import pps, inttup, sign
 
 if TYPE_CHECKING:
@@ -46,7 +46,11 @@ class Particle(Sprite):
     def kill(self) -> None:
         # There is a rare bug where the particle is killed twice,
         # therefore it is being removed from the list twice, so we catch that here
-        super().kill()
+        try:
+            super().kill()
+        except (SpriteNotFoundException, LayerNotFoundException):
+            pass
+
         try:
             __class__.instances.remove(self)
             del self

@@ -10,7 +10,7 @@ from src.particle import BlockParticle, PlayerFallParticle
 from src.utils import block_collide, sign, text, pps
 from src.particle import PlayerFallParticle
 from src.sprite import LayersEnum, Sprite
-from src.inventory import Inventory
+from src.inventory import *
 import src.constants as constants
 from src.images import *
 
@@ -74,7 +74,7 @@ class Player(Sprite):
         self.arm2.rot = 0
 
         self.camera = Camera(self)
-        self.inventory = Inventory(self)
+        self.inventory = PlayerInventory(self)
         self.crosshair = Crosshair(self, 1750)
 
         self.inventory += "grass_block"
