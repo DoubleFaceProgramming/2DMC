@@ -243,7 +243,7 @@ class BlobGenerator(StructureGenerator):
 
         return blob_dict
 
-    def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict, save=True) -> dict | None:
+    def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict) -> dict | None:
         """Generates chunk data that includes a structure at the given origin
 
         Args:
@@ -370,7 +370,7 @@ def get_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerat
         
     for _ in range(attempts):
         if rand_bool(chance / 100):
-            start_x = x * CHUNK_SIZE + randint(0, CHUNK_SIZE)
+            start_x = x * CHUNK_SIZE + randint(0, CHUNK_SIZE - 1)
             if generator.on_surface:
                 # Generate on the surface of the world
                 start_y = terrain_generate(start_x)[1] - 1
@@ -430,13 +430,13 @@ def terrain_generate(x: int) -> tuple[float, float]:
     simplex_noise_height = snoise.noise2array(np.array([x * 0.1]), np.array([0]))
     return simplex_noise_height, -int(simplex_noise_height * 5) + 5
 
+@cache
 def cave_generate(coords: tuple) -> float:
     """Takes the coordinates of a block and returns the noise map value for cave generation"""
-    # noise_height = pnoise.noise2(coords[0], coords[1])
-    # noise_height = noise_height + 0.5 if noise_height > 0 else 0
-    # noise_height = int(pow(noise_height * 255, 0.9))
-    # return noise_height
-    return 1
+    noise_height = pnoise.noise2(coords[0], coords[1])
+    noise_height = noise_height + 0.5 if noise_height > 0 else 0
+    noise_height = int(pow(noise_height * 255, 0.9))
+    return noise_height
 
 def blended_blocks_generate(y: int, block: str, blend_y: int, block2: str = "") -> str:
     """Returns a block based on a 5 block blend of two blocks
@@ -536,7 +536,8 @@ def load_chunks(camera: Camera) -> list:
                 rendered_chunks.append(chunk)
             # If the chunk has not yet been generated, create the chunk object
             if chunk not in Chunk.instances:
-                Chunk.instances[chunk] = Chunk(chunk)
+                from src.utils import profile
+                Chunk.instances[chunk] = profile(Chunk, chunk)
 
     unrendered_chunks = []
     # Check a bigger area around the camera to see if there are chunks that are still active but shouldn't be
@@ -562,7 +563,7 @@ def load_chunks(camera: Camera) -> list:
 
 # Major structure means structures that have bigger chunk spans than the rest of its conflicting STRUCTURES
 major_structure_generators = {
-    "oak_tree": StructureGenerator("oak_tree"),
+    "oak_tree": StructureGenerator("oak_tree", obstruction=True),
     "granite": BlobGenerator("granite", (10, 10), 5, 3, obstruction=True),
     "diorite": BlobGenerator("diorite", (10, 10), 5, 3, obstruction=True),
     "andesite": BlobGenerator("andesite", (10, 10), 5, 3, obstruction=True),
