@@ -16,6 +16,7 @@ SPACING = 24
 TERMINAL_VEL = 24
 BLOCK_SIZE = 64
 CHUNK_SIZE = 8
+CAVE_PREGEN_BATCH = 4
 
 # Seeds for structure gen testing: -1797233725, -301804449, 1666679850, 1671665804
 # Seed for low world gen (loads at 1056) testing: 1561761502

@@ -10,7 +10,7 @@ from os import listdir
 from math import ceil, floor
 import numpy as np
 
-from src.constants import CHUNK_SIZE, BLOCK_SIZE, ORE_DISTRIBUTION, SEED, VEC, WIDTH, HEIGHT, CONFLICTING_STRUCTURES, MAX_Y, STRUCTURES, BLOCK_DATA, MAX_STRUCTURE_SIZE
+from src.constants import CAVE_PREGEN_BATCH, CHUNK_SIZE, BLOCK_SIZE, ORE_DISTRIBUTION, SEED, VEC, WIDTH, HEIGHT, CONFLICTING_STRUCTURES, MAX_Y, STRUCTURES, BLOCK_DATA, MAX_STRUCTURE_SIZE
 from src.utils import ascii_str_sum, canter_pairing, inttup, rand_bool
 from src.block import Block, BlockData, set_block
 from src.player import Camera
@@ -548,12 +548,13 @@ def load_chunks(camera: Camera) -> list:
         Chunk.cave_pregeneration_pos[1] += 1
         Chunk.cave_pregeneration_pos[0] = (-chunks_to_load[0] // 2 - 1) * CHUNK_SIZE
     else:
-        Chunk.cave_pregeneration_pos[0] += 1
+        Chunk.cave_pregeneration_pos[0] += CAVE_PREGEN_BATCH
     if Chunk.cave_pregeneration_pos[1] > (chunks_to_load[1] // 2 + 1) * CHUNK_SIZE:
         Chunk.cave_pregeneration_pos = [(-chunks_to_load[0] // 2 - 1) * CHUNK_SIZE, (-chunks_to_load[1] // 2 - 1) * CHUNK_SIZE]
         Chunk.cave_pregeneration_bool = False
     elif Chunk.cave_pregeneration_bool:
-        cave_generate(tuple(VEC(Chunk.cave_pregeneration_pos) / 70))
+        for i in range(CAVE_PREGEN_BATCH):
+            cave_generate(tuple((VEC(Chunk.cave_pregeneration_pos) - VEC(i, 0)) / 70))
 
     unrendered_chunks = []
     # Check a bigger area around the camera to see if there are chunks that are still active but shouldn't be
