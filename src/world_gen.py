@@ -72,7 +72,7 @@ class StructureGenerator(object):
         else:
             self.chunks_to_check = int(ceil((self.max_size[0] + 7) / CHUNK_SIZE)), int(ceil((self.max_size[1] + 7) / CHUNK_SIZE))
 
-    def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict) -> dict | None:
+    def generate(self, origin: tuple) -> dict | None:
         """Generates chunk data that includes a structure at the given origin
 
         Args:
@@ -243,7 +243,7 @@ class BlobGenerator(StructureGenerator):
 
         return blob_dict
 
-    def generate(self, origin: tuple, chunk_pos: tuple, chunk_data: dict) -> dict | None:
+    def generate(self, origin: tuple) -> dict | None:
         """Generates chunk data that includes a structure at the given origin
 
         Args:
@@ -281,6 +281,8 @@ class Chunk(object):
     """The class responsible for updating and drawing chunks."""
     instances = {}
     generated_blocks = {}
+    cave_pregeneration_pos = [(-(chunks_to_load := (WIDTH // (CHUNK_SIZE * BLOCK_SIZE) + 2 + 2 * MAX_STRUCTURE_SIZE[0], HEIGHT // (CHUNK_SIZE * BLOCK_SIZE) + 2 + 2 * MAX_STRUCTURE_SIZE[1]))[0] // 2 - 1) * CHUNK_SIZE, (-chunks_to_load[1] // 2 - 1) * CHUNK_SIZE]
+    cave_pregeneration_bool = True
 
     def __init__(self, pos: tuple) -> None:
         self.__class__.instances[pos] = self
@@ -295,7 +297,7 @@ class Chunk(object):
     def draw(self, camera: Camera, screen: Surface) -> None:
         # Calls the draw function for each of the blocks inside
         for block in self.block_data:
-            if not block in Block.instances:
+            if block not in Block.instances:
                 Block.instances[block] = Block(self, block, self.block_data[block])
             Block.instances[block].draw(camera, screen)
 
@@ -367,7 +369,7 @@ def get_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerat
         slope = dist["slope"]
         rarity = dist["rarity"]
         chance = (((y - upper) if slope == 1 else (lower - y)) / (lower - upper) * rarity) if slope else rarity
-        
+
     for _ in range(attempts):
         if rand_bool(chance / 100):
             start_x = x * CHUNK_SIZE + randint(0, CHUNK_SIZE - 1)
@@ -384,7 +386,7 @@ def get_structures(x: int, y: int, chunk_data: dict, generator: StructureGenerat
             if not 0 <= start_y - y * CHUNK_SIZE < CHUNK_SIZE:
                 return structures
 
-            structure = generator.generate((start_x, start_y), (x, y), chunk_data)
+            structure = generator.generate((start_x, start_y))
             if structure:
                 structures.append(structure)
 
@@ -538,6 +540,20 @@ def load_chunks(camera: Camera) -> list:
             if chunk not in Chunk.instances:
                 from src.utils import profile
                 Chunk.instances[chunk] = profile(Chunk, chunk)
+                Chunk.cave_pregeneration_bool = True
+
+    while tuple(VEC(Chunk.cave_pregeneration_pos) // CHUNK_SIZE) in Chunk.instances:
+        Chunk.cave_pregeneration_pos[0] += CHUNK_SIZE
+    if Chunk.cave_pregeneration_pos[0] > (chunks_to_load[0] // 2 + 1) * CHUNK_SIZE:
+        Chunk.cave_pregeneration_pos[1] += 1
+        Chunk.cave_pregeneration_pos[0] = (-chunks_to_load[0] // 2 - 1) * CHUNK_SIZE
+    else:
+        Chunk.cave_pregeneration_pos[0] += 1
+    if Chunk.cave_pregeneration_pos[1] > (chunks_to_load[1] // 2 + 1) * CHUNK_SIZE:
+        Chunk.cave_pregeneration_pos = [(-chunks_to_load[0] // 2 - 1) * CHUNK_SIZE, (-chunks_to_load[1] // 2 - 1) * CHUNK_SIZE]
+        Chunk.cave_pregeneration_bool = False
+    elif Chunk.cave_pregeneration_bool:
+        cave_generate(tuple(VEC(Chunk.cave_pregeneration_pos) / 70))
 
     unrendered_chunks = []
     # Check a bigger area around the camera to see if there are chunks that are still active but shouldn't be
