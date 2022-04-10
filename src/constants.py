@@ -44,7 +44,7 @@ CONFLICTING_STRUCTURES = {
     ("granite", "diorite", "andesite"): ["coal_ore", "iron_ore", "lapis_ore", "gold_ore", "redstone_ore", "diamond_ore", "emerald_ore"],
     ("tuff", ): ["deepslate_coal_ore", "deepslate_iron_ore", "deepslate_lapis_ore", "deepslate_gold_ore", "deepslate_redstone_ore", "deepslate_diamond_ore", "deepslate_emerald_ore"]
 }
-MAX_STRUCTURE_SIZE = (3, 3)
+MAX_STRUCTURE_SIZE = (2, 2)
 
 # We dont need this yet but if we ever need custom events I realised we could do something like this :P
 class CustomEvents(Enum):
