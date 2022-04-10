@@ -1,6 +1,6 @@
-from pygame.constants import K_a, K_d, K_w
 from math import ceil, floor, degrees, radians, tan, cos, sin
-from pygame import Surface, Rect
+from pygame.constants import K_a, K_d, K_w
+from pygame import K_SPACE, Surface, Rect
 from pygame.math import Vector2
 import pygame
 
@@ -10,8 +10,8 @@ from src.particle import BlockParticle, PlayerFallParticle
 from src.utils import block_collide, sign, text, pps
 from src.particle import PlayerFallParticle
 from src.sprite import LayersEnum, Sprite
-from src.inventory import *
 import src.constants as constants
+from src.inventory import *
 from src.images import *
 
 class Camera(pygame.sprite.Sprite):
@@ -128,7 +128,7 @@ class Player(Sprite):
         elif self.vel.x > 0:
             self.vel.x -= self.slide * dt
         # If the player is on the ground and not in the inventory, jump
-        if keys[K_w] and self.on_ground and not self.inventory.visible:
+        if (keys[K_w] or keys[K_SPACE]) and self.on_ground and not self.inventory.visible:
             self.vel.y = self.jump_vel
             # When the player jumps, its x-speed also increases slightly (aka sprint jumping in minecraft)
             self.vel.x *= 1.133
