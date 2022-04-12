@@ -1,22 +1,27 @@
-from random import randint
-from pathlib import Path
-import pygame
-import json
-import os
+# 2DMC is a passion project to recreate the game "Minecraft" (all credit to Mojang Studios) in 2D.
+# Copyright (C) 2022 Doubleface
+# You can view the terms of the GPL License in LICENSE.md
 
-from src.constants import VEC, BLOCK_SIZE, CHUNK_SIZE, BLOCK_DATA
+# The majority of the game assets are properties of Mojang Studios,
+# you can view their TOS here: https://account.mojang.com/documents/minecraft_eula
+
+import pygame
+
+from src.constants import VEC, MIN_BLOCK_SIZE, BLOCK_SIZE, CHUNK_SIZE, BLOCK_DATA
 from src.particle import BlockParticle
 from src.images import BLOCK_TEXTURES
 from src.utils import inttup
-from build.exe_comp import pathof
 
-class Block(pygame.sprite.Sprite):
+class BlockData(dict):
+    def __missing__(self, key):
+        return ""
+
+class Block:
     """Class that handles the managaing, updating and drawing of blocks."""
     instances = {}
 
     def __init__(self, chunk, pos: tuple, name: str):
-        pygame.sprite.Sprite.__init__(self)
-        self.__class__.instances[tuple(pos)] = self
+        __class__.instances[tuple(pos)] = self
         self.name = name
         self.data = BLOCK_DATA[self.name]
         self.chunk = chunk
@@ -41,9 +46,17 @@ class Block(pygame.sprite.Sprite):
         if not is_supported(self.pos, self.data, self.neighbors):
             remove_block(chunks, self.coords, self.data, self.neighbors)
 
-    def draw(self, camera, screen):
+    def draw(self, screen, camera):
+        on_chunk_pos = self.pos.x / BLOCK_SIZE % CHUNK_SIZE * MIN_BLOCK_SIZE, self.pos.y / BLOCK_SIZE % CHUNK_SIZE * MIN_BLOCK_SIZE
+        screen.blit(self.image, on_chunk_pos)
+
+    def kill(self) -> None:
+        if inttup(self.coords) in __class__.instances:
+            del __class__.instances[inttup(self.coords)]
+            del self
+
+    def calc_pos(self, camera) -> None:
         self.rect.topleft = self.pos - camera.pos
-        screen.blit(self.image, self.rect.topleft)
 
 def remove_block(chunks: dict, pos: tuple, data: dict, neighbors: dict) -> None:
     """Remove the block at the position given
@@ -72,7 +85,16 @@ def remove_block(chunks: dict, pos: tuple, data: dict, neighbors: dict) -> None:
         if neighbors[neighbor] in Block.instances:
             Block.instances[neighbors[neighbor]].update(chunks)
 
-def set_block(chunks: dict, pos: tuple, name: str, neighbors: dict) -> None:
+def set_block(chunks: dict, pos: tuple, name: str):
+    pos = inttup(pos)
+    # Calculates the position of the chunk the block is in.
+    chunk = (pos[0] // CHUNK_SIZE, pos[1] // CHUNK_SIZE)
+    if chunk in chunks:
+        # Create an entry in the block dictionary that contains a new Block object
+        Block.instances[pos] = Block(chunks[chunk], pos, name)
+        chunks[chunk].block_data[pos] = name
+
+def updated_set_block(chunks: dict, pos: tuple, name: str, neighbors: dict) -> None:
     """Set the block at the position given to the block given
 
     Args:
@@ -82,13 +104,7 @@ def set_block(chunks: dict, pos: tuple, name: str, neighbors: dict) -> None:
         neighbors (dict): THe neighbours of the block
     """
 
-    pos = inttup(pos)
-    # Calculates the position of the chunk the block is in.
-    chunk = (pos[0] // CHUNK_SIZE, pos[1] // CHUNK_SIZE)
-    if chunk in chunks:
-        # Create an entry in the block dictionary that contains a new Block object
-        Block.instances[pos] = Block(chunks[chunk], pos, name)
-        chunks[chunk].block_data[pos] = name
+    set_block(chunks, pos, name)
     for neighbor in neighbors:
         # Update the neighboring blocks
         if neighbors[neighbor] in Block.instances:
@@ -109,7 +125,7 @@ def is_occupied(player, pos: tuple) -> bool:
     if not pygame.Rect(VEC(pos) * BLOCK_SIZE, (BLOCK_SIZE, BLOCK_SIZE)).colliderect(pygame.Rect(player.pos, player.size)):
         if pos in Block.instances: # If there is already a block there:
             # If the "replaceable" key is in the block's data, meaning that the block is directly replaceable (i.e. grass)
-            return not "replaceable" in Block.instances[pos].data # This will return False if the block is replaceable and vice versa
+            return "replaceable" not in Block.instances[pos].data # This will return False if the block is replaceable and vice versa
         else:
             return False
     return True
@@ -128,11 +144,11 @@ def is_supported(pos: tuple, data: dict, neighbors: dict, second_block_pos: tupl
     """
 
     if data["support"]:
-        for support in (supports := data["support"]):
+        for support in data["support"]:
             if inttup(support.split(" ")) != inttup(VEC(second_block_pos)-VEC(pos)):
                 # Check if each of the supporting blocks exist in the neighbors
                 if neighbors[support] in Block.instances:
-                    if Block.instances[neighbors[support]].name not in supports[support]:
+                    if Block.instances[neighbors[support]].name not in data["support"][support]:
                         return False
                 else:
                     return False

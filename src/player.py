@@ -1,14 +1,24 @@
+# 2DMC is a passion project to recreate the game "Minecraft" (all credit to Mojang Studios) in 2D.
+# Copyright (C) 2022 Doubleface
+# You can view the terms of the GPL License in LICENSE.md
+
+# The majority of the game assets are properties of Mojang Studios,
+# you can view their TOS here: https://account.mojang.com/documents/minecraft_eula
+
+from math import ceil, floor, degrees, radians, tan, cos, sin
 from pygame.constants import K_a, K_d, K_w
-from math import ceil, cos, floor
-from pygame import Surface, Rect
+from pygame import K_SPACE, Surface, Rect
 from pygame.math import Vector2
 import pygame
 
-from src.block import Block, BLOCK_DATA, remove_block, is_placeable, set_block, inttup
-from src.constants import MAX_Y, SCR_DIM, SLIDE, GRAVITY, TERMINAL_VEL, CHUNK_SIZE
-from src.utils import block_collide, text
+from src.constants import MAX_Y, SCR_DIM, GRAVITY, TERMINAL_VEL, CHUNK_SIZE, BLOCK_SIZE, CHUNK_SIZE
+from src.block import Block, BLOCK_DATA, remove_block, is_placeable, updated_set_block, inttup
 from src.particle import BlockParticle, PlayerFallParticle
-from src.inventory import Inventory
+from src.utils import block_collide, sign, text, pps
+from src.particle import PlayerFallParticle, PlayerWalkingParticle
+from src.sprite import LayersEnum, Sprite
+import src.constants as constants
+from src.inventory import *
 from src.images import *
 
 class Camera(pygame.sprite.Sprite):
@@ -29,31 +39,32 @@ class Camera(pygame.sprite.Sprite):
             x_dist, y_dist = mpos[0] - SCR_DIM[0] / 2, mpos[1] - SCR_DIM[1] / 2
         else:
             x_dist, y_dist = 0, 0
-        dist_squared = VEC(x_dist**2 if x_dist > 0 else -x_dist**2, y_dist**2*2.5 if y_dist > 0 else -y_dist**2*2.5)
+        dist_squared = VEC(sign(x_dist) * x_dist ** 2 * 0.6, sign(y_dist) * y_dist ** 2 * 1.2)
 
-        self.pos += (tick_offset / 10 + VEC(dist_squared) / 18000) * dt
+        self.pos += (tick_offset * 2 + VEC(dist_squared) / 300) * dt
 
-class Player(pygame.sprite.Sprite):
+class Player(Sprite):
     """Class that contains player methods and attributes."""
-    def __init__(self) -> None:
-        pygame.sprite.Sprite.__init__(self)
+    def __init__(self, layer: LayersEnum = LayersEnum.PLAYER) -> None:
+        super().__init__(layer)
         self.size = VEC(0.225 * BLOCK_SIZE, 1.8 * BLOCK_SIZE)
         self.width, self.height = self.size.x, self.size.y
         self.start_pos = VEC(0, 3) * BLOCK_SIZE # Far lands: 9007199254740993 (aka 2^53)
         self.pos = VEC(self.start_pos)
-        self.coords = self.pos // BLOCK_SIZE
+        self.coords = self.last_standing_coords = self.pos // BLOCK_SIZE
+        self.slide = pps(20)
         self.acc = VEC(0, 0)
         self.vel = VEC(0, 0)
-        # Walking speed: 4.317 bps
-        # Sprinting speed: 5.612 bps
-        # Sprint-jumping speed: 7.127 bps
-        self.max_speed = 5.153
-        self.jumping_max_speed = 6.7
+        # Minecraft:
+        # Walking speed: 4.317 BPS
+        # Sprinting speed: 5.612 BPS
+        # Sprint-jumping speed: 7.127 BPS
+        self.max_speed = pps(4.317)
+        self.jumping_max_speed = pps(5.612)
+        self.jump_vel = pps(-8.4)
         self.rect = pygame.Rect((0, 0, 0.225 * BLOCK_SIZE, 1.8 * BLOCK_SIZE))
         self.bottom_bar = pygame.Rect((self.rect.x + 1, self.rect.bottom), (self.width - 2, 1))
         self.on_ground = False
-        self.falling_4_blocks = False # 4 blocks is the minimum fall damage, and min to spawn particles
-        self.last_standing_coords = self.coords
         self.direction = "right"
 
         self.head, self.body, self.leg, self.leg2, self.arm, self.arm2 = [pygame.sprite.Sprite() for _ in range(6)]
@@ -70,7 +81,7 @@ class Player(pygame.sprite.Sprite):
         self.arm2.rot = 0
 
         self.camera = Camera(self)
-        self.inventory = Inventory(self)
+        self.inventory = PlayerInventory(self)
         self.crosshair = Crosshair(self, 1750)
 
         self.inventory += "grass_block"
@@ -106,7 +117,7 @@ class Player(pygame.sprite.Sprite):
         self.inventory += "deepslate_emerald_ore"
         self.inventory += "tuff"
 
-    def update(self, blocks: dict, m_state: int, dt: float) -> None:
+    def update(self, dt: float, **kwargs) -> None:
         self.camera.update(dt)
 
         keys = pygame.key.get_pressed()
@@ -114,18 +125,18 @@ class Player(pygame.sprite.Sprite):
         if keys[K_a] and not self.inventory.visible:
             if self.vel.x > -self.max_speed:
                 # Slow the player down
-                self.vel.x -= SLIDE * dt
+                self.vel.x -= self.slide * dt
         elif self.vel.x < 0:
-            self.vel.x += SLIDE * dt
+            self.vel.x += self.slide * dt
         if keys[K_d] and not self.inventory.visible:
             if self.vel.x < self.max_speed:
                 # Slow the player down but in the other direction
-                self.vel.x += SLIDE * dt
+                self.vel.x += self.slide * dt
         elif self.vel.x > 0:
-            self.vel.x -= SLIDE * dt
+            self.vel.x -= self.slide * dt
         # If the player is on the ground and not in the inventory, jump
-        if keys[K_w] and self.on_ground and not self.inventory.visible:
-            self.vel.y = -9.2
+        if (keys[K_w] or keys[K_SPACE]) and self.on_ground and not self.inventory.visible:
+            self.vel.y = self.jump_vel
             # When the player jumps, its x-speed also increases slightly (aka sprint jumping in minecraft)
             self.vel.x *= 1.133
             # Accelerate the player unless its speed is already at the maximum
@@ -133,29 +144,27 @@ class Player(pygame.sprite.Sprite):
                 self.vel.x = self.jumping_max_speed
             elif self.vel.x < -self.jumping_max_speed:
                 self.vel.x = -self.jumping_max_speed
-        if -SLIDE * dt < self.vel.x < SLIDE * dt:
+        if -self.slide * dt < self.vel.x < self.slide * dt:
             self.vel.x = 0
 
         # Accelerate the player downwards
-        self.acc.y = GRAVITY
+        self.acc.y = pps(GRAVITY)
         self.vel += self.acc * dt
         # Unless the player has reached terminal velocity
-        if self.vel.y > TERMINAL_VEL:
-            self.vel.y = TERMINAL_VEL
+        if self.vel.y > pps(TERMINAL_VEL):
+            self.vel.y = pps(TERMINAL_VEL)
         # Slow the player down if the player walking on the ground
         if self.on_ground:
-            if self.vel.x < 0:
-                self.vel.x += 0.03 * dt
-            elif self.vel.x > 0:
-                self.vel.x -= 0.03 * dt
+            self.vel.x += -sign(self.vel.x) * pps(1) * dt
 
         # Move the test for collision
-        self.move(blocks, dt)
+        self.move(kwargs["blocks"], dt)
 
         # Check if the player is on the ground with a bar at the bottom of the player
         for block in self.detecting_blocks:
             if self.bottom_bar.colliderect(block.rect):
                 self.on_ground = True
+
                 # Calculate the fall distance, how many blocks the player fell
                 # If the player fell for more than or equal to 4 blocks
                 if (fall_dist := abs(int((self.last_standing_coords - self.coords).y))) >= 4:
@@ -164,13 +173,12 @@ class Player(pygame.sprite.Sprite):
                     PlayerFallParticle.spawn(inttup(block.coords - VEC(0, 1)), Block.instances, block, amount)
                 # Update the last standing coords used to calculate the fall distance
                 self.last_standing_coords = self.coords
+                PlayerWalkingParticle.spawn(self.pos + VEC(self.size.x // 2, self.size.y - 1), kwargs["blocks"], block, self.vel.x)
                 break
         else:
             self.on_ground = False
 
         # Update the inventory and the crosshair and animate self
-        self.inventory.update(m_state)
-        self.crosshair.update(dt)
         self.animate(dt)
 
         # Update some position values
@@ -178,7 +186,7 @@ class Player(pygame.sprite.Sprite):
         self.chunk = self.coords // CHUNK_SIZE
         self.rect.topleft = self.pos - self.camera.pos
 
-    def draw(self, screen: Surface) -> None:
+    def draw(self, screen: Surface, **kwargs) -> None:
         self.leg2.rect = self.leg2.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
         screen.blit(self.leg2.image, self.leg2.rect.topleft)
 
@@ -187,6 +195,13 @@ class Player(pygame.sprite.Sprite):
 
         self.body.rect = self.body.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+51))
         screen.blit(self.body.image, self.body.rect.topleft)
+
+        self.leg.rect = self.leg.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
+        screen.blit(self.leg.image, self.leg.rect.topleft)
+
+        if self.inventory.holding:
+            self.held_block = pygame.transform.rotate(pygame.transform.scale(BLOCK_TEXTURES[self.inventory.holding.name], inttup((BLOCK_SIZE * 0.34, BLOCK_SIZE * 0.34))), (self.arm.rot + (45 if abs(self.head.rot) > 90 else -45)) * 0.75)
+            screen.blit(self.held_block, self.held_item_pos - VEC(self.held_block.get_size()) / 2 + VEC(12 if abs(self.head.rot) > 90 else -12, 0))
 
         self.arm.rect = self.arm.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+35))
         screen.blit(self.arm.image, self.arm.rect.topleft)
@@ -197,7 +212,7 @@ class Player(pygame.sprite.Sprite):
         self.leg.rect = self.leg.image.get_rect(center=(self.rect.x+self.width/2, self.rect.y+72))
         screen.blit(self.leg.image, self.leg.rect.topleft)
 
-    def debug(self, screen: Surface) -> None:
+    def debug(self, screen: Surface, **kwargs) -> None:
         self.crosshair.debug(screen)
         pygame.draw.rect(screen, (255, 255, 255), self.rect, width=1)
         # Draw the bottom bar (used to calculate if the player is on the ground)
@@ -212,7 +227,7 @@ class Player(pygame.sprite.Sprite):
         self.head.rot = -VEC(self.head.rect.center).angle_to(m_pos-VEC(self.head.rect.center))-25
 
         if self.vel.x != 0:                              # If the player is moving in the horizontal direction
-            self.leg.count += 0.2 * dt                   # A counter for the rotation of legs
+            self.leg.count += 12 * dt                   # A counter for the rotation of legs
             if abs(self.vel.x) > self.max_speed * 1.05:  # If the player is running at full speed
                 self.leg.rot = cos(self.leg.count) * 40  # Rotate the legs out far (40)
             elif abs(self.vel.x) > self.max_speed * 0.5: # If the player is running at normal speed
@@ -224,6 +239,10 @@ class Player(pygame.sprite.Sprite):
             self.arm2.rot = -self.arm.rot                # Rotate the other arm in the opposite direction
         else:
             self.leg.count = self.leg.rot = self.leg2.rot = self.arm.rot = self.arm2.rot = 0
+
+        y_offset = player_arm_img.get_height() * cos(radians(self.arm.rot) * 0.65)
+        x_offset = player_arm_img.get_height() * sin(radians(self.arm.rot) * 0.65)
+        self.held_item_pos = VEC(self.body.rect.centerx, self.body.rect.top + 14) + VEC(x_offset + (24 if abs(self.head.rot) < 90 else -24), y_offset)
 
         rotate = pygame.transform.rotate
         if abs(self.head.rot) < 90: # If the player is facing right, flip the body and the head to the right
@@ -237,8 +256,8 @@ class Player(pygame.sprite.Sprite):
 
     def move(self, blocks: dict[tuple[int, int], Block], dt: float) -> None:
         """Move the player and test for collision between it and the main dictionary of blocks"""
-        # Determine how many sections to split the delta velocity into based on the delta time
-        split = ceil(90 * dt / 62.5 * 1.5)
+        # Number of steps to cut the movement into inside one frame to prevent tunnelling
+        split = int(self.vel.length() * dt) + 1
         flag = False
         detecting_blocks = []
 
@@ -246,7 +265,7 @@ class Player(pygame.sprite.Sprite):
             # Only detect collision within a 3 by 4 area around the player
             for y in range(4):
                 for x in range(3):
-                    if (block_pos := (int(self.coords.x-1+x), int(self.coords.y-1+y))) in blocks: # If there exists a block at that position
+                    if (block_pos := (int(self.coords.x - 1 + x), int(self.coords.y - 1 + y))) in blocks: # If there exists a block at that position
                         # Get the block object in that position from the main blocks dictionary
                         block = blocks[block_pos]
                         if block.data["collision_box"] == "full": # If the block has a full collision box
@@ -256,7 +275,7 @@ class Player(pygame.sprite.Sprite):
                             # DaNub is not going to attempt to explain why each "floor" and "ceil" are where they are so deal with it
                             if self.vel.y < 0:
                                 colliding, detecting_blocks = block_collide(
-                                    floor(self.pos.x), floor(self.pos.y+self.vel.y/split),
+                                    floor(self.pos.x), floor(self.pos.y + self.vel.y * dt / split),
                                     self.width, self.height,
                                     detecting_blocks, block)
                                 if colliding:
@@ -266,7 +285,7 @@ class Player(pygame.sprite.Sprite):
                             elif self.vel.y >= 0:
                                 if self.vel.x <= 0:
                                     colliding, detecting_blocks = block_collide(
-                                        floor(self.pos.x), ceil(self.pos.y+self.vel.y/split),
+                                        floor(self.pos.x), ceil(self.pos.y + self.vel.y * dt / split),
                                         self.width, self.height,
                                         detecting_blocks, block)
                                     if colliding:
@@ -275,7 +294,7 @@ class Player(pygame.sprite.Sprite):
                                         flag = True
                                 elif self.vel.x > 0:
                                     colliding, detecting_blocks = block_collide(
-                                        ceil(self.pos.x), ceil(self.pos.y+self.vel.y/split),
+                                        ceil(self.pos.x), ceil(self.pos.y + self.vel.y * dt / split),
                                         self.width, self.height,
                                         detecting_blocks, block)
                                     if colliding:
@@ -290,12 +309,12 @@ class Player(pygame.sprite.Sprite):
         for _ in range(split):
             for y in range(4):
                 for x in range(3):
-                    if (int(self.coords.x-1+x), int(self.coords.y-1+y)) in blocks:
-                        block = blocks[(int(self.coords.x-1+x), int(self.coords.y-1+y))]
+                    if (int(self.coords.x - 1 + x), int(self.coords.y - 1 + y)) in blocks:
+                        block = blocks[(int(self.coords.x - 1 + x), int(self.coords.y - 1 + y))]
                         if block.data["collision_box"] == "full":
                             if self.vel.x < 0:
                                 colliding, detecting_blocks = block_collide(
-                                    floor(self.pos.x+self.vel.x/split), floor(self.pos.y),
+                                    floor(self.pos.x + self.vel.x * dt / split), floor(self.pos.y),
                                     self.width, self.height,
                                     detecting_blocks, block)
                                 if colliding:
@@ -304,7 +323,7 @@ class Player(pygame.sprite.Sprite):
                                     flag = True
                             elif self.vel.x >= 0:
                                 colliding, detecting_blocks = block_collide(
-                                    ceil(self.pos.x+self.vel.x/split), ceil(self.pos.y),
+                                    ceil(self.pos.x + self.vel.x * dt / split), ceil(self.pos.y),
                                     self.width, self.height,
                                     detecting_blocks, block)
                                 if colliding:
@@ -385,7 +404,7 @@ class Player(pygame.sprite.Sprite):
                             if not is_placeable(self, block_pos, BLOCK_DATA[self.inventory.holding.name], neighbors, second_block_pos=c_pos):
                                 break
                         else:
-                            set_block(chunks, block_pos, self.inventory.holding.name, neighbors)
+                            updated_set_block(chunks, block_pos, self.inventory.holding.name, neighbors)
                             for counterpart in counterparts:
                                 # Get the position of where counterpart would be and ITS neighbors
                                 c_pos = VEC(block_pos) + VEC(inttup(counterpart.split(" ")))
@@ -395,22 +414,11 @@ class Player(pygame.sprite.Sprite):
                                     "-1 0": inttup((c_pos.x - 1, c_pos.y)),
                                     "1 0": inttup((c_pos.x + 1, c_pos.y))
                                 }
-                                set_block(chunks, VEC(block_pos)+VEC(inttup(counterpart.split(" "))), counterparts[counterpart], c_neighbors)
+                                updated_set_block(chunks, VEC(block_pos)+VEC(inttup(counterpart.split(" "))), counterparts[counterpart], c_neighbors)
                 else:
                     # If the block does not have counterparts, place it if it can be placed
                     if is_placeable(self, block_pos, BLOCK_DATA[self.inventory.holding.name], neighbors):
-                        set_block(chunks, block_pos, self.inventory.holding.name, neighbors)
-
-    def toggle_inventory(self) -> None:
-        """Toggle the players inventory on and off."""
-
-        # Toggle inventory and mouse visibility
-        self.inventory.visible = not self.inventory.visible
-        pygame.mouse.set_visible(self.inventory.visible)
-        if not self.inventory.visible:
-            if self.inventory.selected: # If an item was being hovered when the inventory was closed:
-                self.inventory += self.inventory.selected.name # Add the item
-                self.inventory.selected = None
+                        updated_set_block(chunks, block_pos, self.inventory.holding.name, neighbors)
 
     def pick_block(self) -> None:
         """Pick the block at the mouse position, with all the functionality in 3D Minecraft."""
@@ -432,21 +440,22 @@ class Player(pygame.sprite.Sprite):
                 if len(self.inventory.items) < self.inventory.max_items:                 # Add the old item to the inventory if there is enough space
                     self.inventory += old_slot.name
 
-class Crosshair():
+class Crosshair(Sprite):
     """The class responsible for the drawing and updating of the crosshair"""
 
-    def __init__(self, master: Player, changeover: int) -> None:
+    def __init__(self, master: Player, changeover: int, layer: LayersEnum = LayersEnum.CROSSHAIR) -> None:
+        super().__init__(layer)
         self.master = master
         self.old_color = pygame.Color(0, 0, 0)
         self.new_color = pygame.Color(0, 0, 0)
         self.changeover = changeover # Changeover defines the speed that the colour changes from old to new
         self.mpos = VEC(pygame.mouse.get_pos())
         self.block_pos = inttup((self.master.pos + (self.mpos - self.master.rect.topleft)) // BLOCK_SIZE)
-        self.block = None
-        self.block_selection = self.BlockSelection(self)
+        self.block = ""
+        self.block_selection = self.BlockSelection(self, LayersEnum.BLOCK_SELECTION)
         self.grey = {*range(127 - 30, 127 + 30 + 1)} # A set that contains value from 97 to 157
 
-    def update(self, dt: float) -> None:
+    def update(self, dt: float, **kwargs) -> None:
         if self.new_color.r in self.grey and self.new_color.g in self.grey and self.new_color.b in self.grey:
             self.new_color = pygame.Color(255, 255, 255) # Checks if the colour is grey, and makes it white if it is
 
@@ -462,16 +471,17 @@ class Crosshair():
         if self.block_pos in Block.instances:
             self.block = Block.instances[inttup(self.block_pos)]
         else:
-            self.block = None
+            self.block = ""
 
-    def draw(self, screen: pygame.Surface) -> None:
+    def draw(self, screen: pygame.Surface, **kwargs) -> None:
+        if not constants.MANAGER.cinematic.value["CH"] or self.master.inventory.visible: return
         self.new_color = self.get_avg_color(screen) # I know this is cursed it's the easiest way ;-;
 
         # The 2 boxes that make up the crosshair
         pygame.draw.rect(screen, self.old_color, (self.mpos[0] - 2, self.mpos[1] - 16, 4, 32))
         pygame.draw.rect(screen, self.old_color, (self.mpos[0] - 16, self.mpos[1] - 2, 32, 4))
 
-    def debug(self, screen: Surface) -> None:
+    def debug(self, screen: Surface, **kwargs) -> None:
         if not self.master.inventory.visible:
             if self.block:
                 # Displays the name of the block below the mouse cursor next to the mouse
@@ -495,15 +505,13 @@ class Crosshair():
 
         return color
 
-    class BlockSelection():
-        def __init__(self, crosshair):
+    class BlockSelection(Sprite):
+        def __init__(self, crosshair, layer: LayersEnum = LayersEnum.BLOCK_SELECTION):
+            super().__init__(layer)
             self.crosshair = crosshair
 
-        def update(self):
-            # Not needed as of yet
-            pass
-
-        def draw(self, screen):
+        def draw(self, screen: Surface, **kwargs):
             # Drawing a selection box around the block beneath the mouse (but 2px larger than the block)
+            if not constants.MANAGER.cinematic.value["CH"] or self.crosshair.master.inventory.visible: return
             if self.crosshair.block:
                 pygame.draw.rect(screen, (0, 0, 0), Rect((self.crosshair.block.rect.left - 2, self.crosshair.block.rect.top - 2, BLOCK_SIZE + 4, BLOCK_SIZE + 4)), 2)

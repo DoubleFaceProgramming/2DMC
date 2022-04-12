@@ -1,14 +1,23 @@
+# 2DMC is a passion project to recreate the game "Minecraft" (all credit to Mojang Studios) in 2D.
+# Copyright (C) 2022 Doubleface
+# You can view the terms of the GPL License in LICENSE.md
+
+# The majority of the game assets are properties of Mojang Studios,
+# you can view their TOS here: https://account.mojang.com/documents/minecraft_eula
+
 from pygame.locals import SRCALPHA, HWSURFACE, DOUBLEBUF
 from pathlib import Path
 import pygame
 import os
 
-from src.constants import VEC, BLOCK_SIZE
+from src.constants import VEC, MIN_BLOCK_SIZE
 from build.exe_comp import pathof
 
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (50, 50)
 pygame.init()
 pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF)
+
+window_icon = pygame.image.load(pathof("assets/logo.png"))
 
 # Load player body parts
 player_head_img = pygame.image.load(pathof("assets/textures/player/head.png")).convert()
@@ -48,5 +57,5 @@ BLOCK_TEXTURES = {}
 for img in os.listdir(pathof("assets/textures/blocks/")):
     BLOCK_TEXTURES[Path(img).stem] = pygame.image.load(os.path.join(pathof("assets/textures/blocks/"), img)).convert()
 for image in BLOCK_TEXTURES:
-    BLOCK_TEXTURES[image] = pygame.transform.scale(BLOCK_TEXTURES[image], (BLOCK_SIZE, BLOCK_SIZE))
+    BLOCK_TEXTURES[image] = pygame.transform.scale(BLOCK_TEXTURES[image], (MIN_BLOCK_SIZE, MIN_BLOCK_SIZE))
     BLOCK_TEXTURES[image].set_colorkey((255, 255, 255))
