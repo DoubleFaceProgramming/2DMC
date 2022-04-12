@@ -1,8 +1,8 @@
 from __future__ import annotations
 from math import ceil, floor
 
+from random import randint, choices, uniform
 from pygame import Color, Surface
-from random import randint, choices
 from typing import TYPE_CHECKING
 import pygame
 import time
@@ -22,7 +22,7 @@ class Particle(Sprite):
         super().__init__(layer)
         __class__.instances.append(self)
         self.world_pos = VEC(pos)
-        self.pos = self.world_pos
+        self.pos = VEC(0, 0)
         self.vel = pps(VEC(vel))
         self.coords = self.world_pos // BLOCK_SIZE
         self.survive_time = survive_time
@@ -59,18 +59,18 @@ class Particle(Sprite):
 
 class GradualSpawningParticle:
     timer = time.time()
-    
+
     @classmethod
     def spawn(cls, condition, frequency, *args, **kwargs):
         if condition:
-            if (elapsed_time := time.time() - __class__.timer) >= frequency:
-                __class__.timer = time.time()
+            if (elapsed_time := time.time() - cls.timer) >= frequency:
+                cls.timer = time.time()
                 # If the loop took longer than 1 * spawn_frequency,
                 # spawn multiple particles determined by elapsed_time / spawn_frequency
                 for _ in range(round(elapsed_time / frequency)):
                     cls(*args, **kwargs)
         else:
-            __class__.timer = time.time()
+            cls.timer = time.time()
 
 class PhysicsParticle(Particle):
     """A superclass for all particles that have gravity / collision"""
@@ -102,7 +102,7 @@ class PhysicsParticle(Particle):
         # Fall
         self.vel.y += pps(GRAVITY) * dt
         # X-velocity gets decreased over time
-        self.vel.x *= 0.93
+        self.vel.x -= sign(self.vel.x) * 420 * dt
 
 class EnvironmentalParticle(Particle):
     """A superclass for particles that act as enviromental (add atmosphere)"""
@@ -125,6 +125,8 @@ class EnvironmentalParticle(Particle):
             self.kill()
 
 class BlockParticle(PhysicsParticle):
+    subsurface_rect = pygame.Rect(0, 0, MIN_BLOCK_SIZE - 1, MIN_BLOCK_SIZE - 1)
+    
     def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block, layer: LayersEnum = LayersEnum.REG_PARTICLES) -> None:
         self.master = master
         self.pos = pos
@@ -132,40 +134,53 @@ class BlockParticle(PhysicsParticle):
 
         # Gets a random colour from master and fills its image with it
         self.image = pygame.Surface((self.size, self.size))
-        color = self.master.image.get_at((randint(0, MIN_BLOCK_SIZE-1), randint(0, MIN_BLOCK_SIZE-1)))
+        color = self.master.image.get_at((randint(self.__class__.subsurface_rect.left, self.__class__.subsurface_rect.right), randint(self.__class__.subsurface_rect.top, self.__class__.subsurface_rect.bottom)))
         self.image.fill(color)
 
         # Calculate the time that the particle is going to last for
-        self.survive_time = randint(4, 8) / 10
-        super().__init__(self.pos, (randint(-35, 35) / 10, randint(-30, 5) / 10), self.survive_time, self.image, blocks, layer, master=master)
+        self.survive_time = uniform(0.4, 0.8)
+        super().__init__(self.pos, (uniform(-2, 2), uniform(-3, 0.5)), self.survive_time, self.image, blocks, layer, master=master)
 
         # If the color is white which is the default blank color, it means that it is a transparent pixel, so don't generate
         if color == (255, 255, 255):
             self.kill()
 
-    @staticmethod
-    def spawn(pos: tuple[int, int], blocks: dict[tuple[int, int], Block]):
+    @classmethod
+    def spawn(cls, pos: tuple[int, int], blocks: dict[tuple[int, int], Block]):
         for _ in range(randint(18, 26)):
-            BlockParticle(VEC(pos) * BLOCK_SIZE + VEC(randint(0, BLOCK_SIZE), randint(0, BLOCK_SIZE)), blocks, blocks[pos])
+            cls(VEC(pos) * BLOCK_SIZE + VEC(randint(0, BLOCK_SIZE), randint(0, BLOCK_SIZE)), blocks, blocks[pos])
 
 class PlayerFallParticle(BlockParticle):
     """End class that handles the particles created when falling 4 blocks or more"""
+    subsurface_rect = pygame.Rect(0, 0, MIN_BLOCK_SIZE - 1, 2)
 
     def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block) -> None:
         super().__init__(pos, blocks, master)
-        self.vel = VEC(randint(-60, 60) / 10, randint(-70, -20) / 10)
+        self.vel = pps(VEC(uniform(-4, 4), uniform(-7, -2)))
 
-    @staticmethod
-    def spawn(pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block, amount: tuple[int, int], layer: LayersEnum = LayersEnum.REG_PARTICLES):
+    @classmethod
+    def spawn(cls, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block, amount: tuple[int, int], layer: LayersEnum = LayersEnum.REG_PARTICLES):
         for _ in range(randint(*amount)):
-            __class__(VEC(pos) * BLOCK_SIZE + VEC(randint(0, BLOCK_SIZE), BLOCK_SIZE-1), blocks, master)
+            cls(VEC(pos) * BLOCK_SIZE + VEC(randint(0, BLOCK_SIZE), BLOCK_SIZE-1), blocks, master)
+
+class PlayerWalkingParticle(GradualSpawningParticle, PlayerFallParticle):
+    """Class that handles the particles created when the player is walking on the ground"""
+    max_spawn_frequency = 0.1
+
+    def __init__(self, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block) -> None:
+        super().__init__(pos, blocks, master)
+        self.vel = pps(VEC(uniform(-4, 4), uniform(-4, 0)))
+
+    @classmethod
+    def spawn(cls, pos: tuple[int, int], blocks: dict[tuple[int, int], Block], master: Block, player_x_vel: float, layer: LayersEnum = LayersEnum.REG_PARTICLES):
+        # super() in this case refers to the first specified super class which is GradualSpawningParticle
+        super().spawn(abs(player_x_vel) > pps(3), __class__.max_spawn_frequency, pos, blocks, master)
 
 class VoidFogParticle(GradualSpawningParticle, EnvironmentalParticle):
     """Class that handles the void fog particles thats spawn at the bottom of the world"""
 
     max_speed = 12
     max_spawn_frequency = 0.0027
-    timer = time.time()
 
     def __init__(self, pos: tuple[int, int], size: tuple[int, int], blocks: dict[tuple[int, int], Block]) -> None:
         self.vel = randint(-(ms := __class__.max_speed), ms) / 10, randint(-ms, ms) / 10

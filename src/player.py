@@ -8,7 +8,7 @@ from src.constants import MAX_Y, SCR_DIM, GRAVITY, TERMINAL_VEL, CHUNK_SIZE, BLO
 from src.block import Block, BLOCK_DATA, remove_block, is_placeable, updated_set_block, inttup
 from src.particle import BlockParticle, PlayerFallParticle
 from src.utils import block_collide, sign, text, pps
-from src.particle import PlayerFallParticle
+from src.particle import PlayerFallParticle, PlayerWalkingParticle
 from src.sprite import LayersEnum, Sprite
 import src.constants as constants
 from src.inventory import *
@@ -166,6 +166,7 @@ class Player(Sprite):
                     PlayerFallParticle.spawn(inttup(block.coords - VEC(0, 1)), Block.instances, block, amount)
                 # Update the last standing coords used to calculate the fall distance
                 self.last_standing_coords = self.coords
+                PlayerWalkingParticle.spawn(self.pos + VEC(self.size.x // 2, self.size.y - 1), kwargs["blocks"], block, self.vel.x)
                 break
         else:
             self.on_ground = False
