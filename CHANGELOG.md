@@ -32,7 +32,7 @@
 
 ### 2DMC logo
 
-- 2DMC now has... a logo! It will be shown on the top left corner of the game window and in Alt+Tab menu!
+- 2DMC now has... a logo! It will be shown on the top left corner of the game window and in Alt + Tab menu!
 - You can see it below:
 
 ![logo](https://imgur.com/UNfSbHV.png)
@@ -43,6 +43,7 @@
 - Text boxes now show their outer border / rect whilst in debug mode
 - Velocity now shows up as BPS (blocks per second) in debug
 - Paperdoll no longer covers held item when in inventory
+- Optimized chunk loading and structure generation
 
 ## Bug Fixes
 
@@ -50,6 +51,13 @@
 - Fixed void fog particles spawning in extremely large numbers when the player enters the upper threshold of void fog particles
 - Fixed player being able to tunnel through blocks as FPS gets extremely low
 - Fixed player tunnelling when the window is moved, now, the game will just pause with dt being set to 0
+
+## Licensing
+
+- 2DMC is now an officially Open Source project!
+- It is licensed with the GNU General Public License v3
+- You can view the full license [here](LICENSE.md)!
+- All src/ files now have a short header to reflect this.
 
 ## Technical Changes
 
@@ -88,3 +96,9 @@
   ```
 
   - NOTE: GenericTextBox also inherits from SingleInstance but this is hard to show on an inheritance tree.
+
+- Structure generation and chunk loading is now done slightly differently
+  - Structure that extend into already existing chunks will simply place down the extra blocks directly into the neighboring chunk
+  - Base block generation is now cached by position
+  - Since perlin noise (which is used for cave generation) is very slow, it is now done once per loop instead of 64 times at once
+  - The cave heighmap will be generate block by block while chunks are not loading, so that when chunks load, the heightmap values have already been cached

@@ -1,14 +1,21 @@
+# 2DMC is a passion project to recreate the game "Minecraft" (all credit to Mojang Studios) in 2D.
+# Copyright (C) 2022 Doubleface
+# You can view the terms of the GPL License in LICENSE.md
+
+# The majority of the game assets are properties of Mojang Studios,
+# you can view their TOS here: https://account.mojang.com/documents/minecraft_eula
+
 from __future__ import annotations
-from math import ceil, floor
 
 from random import randint, choices, uniform
 from pygame import Color, Surface
 from typing import TYPE_CHECKING
+from math import ceil, floor
 import pygame
 import time
 
-from src.constants import MIN_BLOCK_SIZE, VEC, BLOCK_SIZE, GRAVITY, WIDTH, HEIGHT, MAX_Y
 from src.sprite import LayerNotFoundException, LayersEnum, Sprite, SpriteNotFoundException
+from src.constants import MIN_BLOCK_SIZE, VEC, BLOCK_SIZE, GRAVITY, WIDTH, HEIGHT, MAX_Y
 from src.utils import pps, inttup, sign
 
 if TYPE_CHECKING:
