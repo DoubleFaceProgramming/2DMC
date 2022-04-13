@@ -44,6 +44,7 @@
 - Velocity now shows up as BPS (blocks per second) in debug
 - Paperdoll no longer covers held item when in inventory
 - Optimized chunk loading and structure generation
+- Spacebar is now also binded to jumping
 
 ## Bug Fixes
 
