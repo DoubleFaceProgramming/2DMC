@@ -5,24 +5,28 @@
 # The majority of the game assets are properties of Mojang Studios,
 # you can view their TOS here: https://account.mojang.com/documents/minecraft_eula
 
+from __future__ import annotations
+
 from random import randint, seed, choices
 from pygame.draw import rect as drawrect
 from opensimplex import OpenSimplex
 from pygame.locals import SRCALPHA
 from pygame.transform import scale
 from pygame import Rect, Surface
+from typing import TYPE_CHECKING
+from math import ceil, floor
 from functools import cache
 from vnoise import Noise
-from os import listdir
-from math import ceil, floor
 import numpy as np
 
-from src.constants import CAVE_PREGEN_BATCH, CHUNK_SIZE, MIN_BLOCK_SIZE, BLOCK_SIZE, ORE_DISTRIBUTION, SEED, VEC, WIDTH, HEIGHT, CONFLICTING_STRUCTURES, MAX_Y, STRUCTURES, BLOCK_DATA, MAX_STRUCTURE_SIZE
+from src.constants import CAVE_PREGEN_BATCH, CHUNK_SIZE, MIN_BLOCK_SIZE, BLOCK_SIZE, ORE_DISTRIBUTION, SEED, VEC, WIDTH, HEIGHT, CONFLICTING_STRUCTURES, MAX_Y, STRUCTURES, BLOCK_DATA, MAX_STRUCTURE_SIZE, WorldSlices
 from src.sprite import SPRITE_MANAGER, Sprite, LayersEnum, SpriteNotFoundException
 from src.utils import ascii_str_sum, canter_pairing, inttup, rand_bool
-from src.block import Block, BlockData, set_block
-from src.player import Camera
+from src.block import Block, BlockData, Location, set_block
 from src.block import Block
+
+if TYPE_CHECKING:
+    from src.player import Camera
 
 seed(SEED)
 snoise = OpenSimplex(seed=SEED)
@@ -327,7 +331,7 @@ class Chunk(Sprite):
                 for block in self.block_data:
                     if block not in Block.instances:
                         Block.instances[block] = Block(self, block, self.block_data[block])
-                    Block.instances[block].draw(self.image, kwargs["camera"])
+                    Block.instances[block].draw(self.image)
                 self.image = scale(self.image, (BLOCK_SIZE * CHUNK_SIZE, BLOCK_SIZE * CHUNK_SIZE))
 
             screen.blit(self.image, self.rect)
@@ -363,13 +367,13 @@ class Chunk(Sprite):
                     block_name = generate_block(block_pos[0], block_pos[1])
 
                 if block_name != "":
-                    chunk_data[block_pos] = block_name
+                    chunk_data[block_pos] = Location(block_pos, MIDDLEGROUND=block_name)
 
         # If the structure has already been pre-generated and saved in another chunk, don't generate it again
         if (x, y) in Structure.instances:
             for structure in Structure.instances[(x, y)]:
                 for block_pos, block_name in structure.blocks_in_chunk[(x, y)].items():
-                    chunk_data[block_pos] = block_name
+                    chunk_data[block_pos] = Location(block_pos, MIDDLEGROUND=block_name)
         else:
             if -1 <= y <= 1: # Surface generations
                 chunk_data = generate_structures(x, y, chunk_data, "oak_tree", 1, chance=33)
@@ -386,7 +390,7 @@ class Chunk(Sprite):
             elif MAX_Y // CHUNK_SIZE >= y >= MAX_Y // CHUNK_SIZE // 2:
                 chunk_data = generate_structures(x, y, chunk_data, "tuff", 2, chance=20)
 
-        return chunk_data
+        return {pos: Location(pos, MIDDLEGROUND=block) for pos, block in chunk_data}
 
 def get_structures(x: int, y: int, generator: StructureGenerator, attempts: int, chance: int | None, dist: dict) -> list:
     """Get structures inside the current chunk (x, y)
@@ -461,12 +465,12 @@ def generate_structures(x: int, y: int, chunk_data: dict, name: str, attempts: i
         for block_pos, block_name in struct.items():
             block_chunk = (floor(block_pos[0] / CHUNK_SIZE), floor(block_pos[1] / CHUNK_SIZE))
             if block_chunk[0] == x and block_chunk[1] == y:
-                chunk_data[block_pos] = block_name
+                chunk_data[block_pos] = Location(block_pos, MIDDLEGROUND=block_name)
             else:
                 if block_chunk in Chunk.instances:
                     set_block(Chunk.instances, block_pos, block_name)
                 else:
-                    Chunk.generated_blocks[block_pos] = block_name
+                    Chunk.generated_blocks[block_pos] = Location(block_pos, MIDDLEGROUND=block_name)
 
     return chunk_data
 

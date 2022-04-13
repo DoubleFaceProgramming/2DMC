@@ -8,31 +8,34 @@
 from sys import exit as sysexit
 from pathlib import Path
 from random import seed
-from enum import Enum
 import datetime
 import pygame
 import os
 
 from pygame.locals import  (
-    K_e, K_F5, K_F9, K_F2, K_F3,
+    K_e, K_F5, K_F9, K_F2, K_F3, K_TAB,
     MOUSEBUTTONDOWN, KEYDOWN,
     HWSURFACE, DOUBLEBUF,
     QUIT, WINDOWMOVED
 )
 
-from src.constants import SCREENSHOTS_DIR, SEED, WIDTH, HEIGHT, FPS, SCR_DIM, VEC, CHUNK_SIZE, BLOCK_SIZE, SPACING, Anchors, CustomEvents
+from src.utils import bps, inttup, text, CyclicalList
 from src.world_gen import Chunk, Block, load_chunks
 from src.sprite import LayersEnum, SPRITE_MANAGER
-from src.utils import bps, inttup, text, CyclicalList
+from src.information_labels import HUDToast
 from src.background import Background
 from src.images import window_icon
 from src.particle import Particle
-from src.information_labels import GenericTextBox, InformationLabel
 from src.player import Player
-
 import src.utils as utils # For doing utils.do_profile ¯\_(ツ)_/¯
 
-class GameManager():
+from src.constants import (
+    VEC, WIDTH, HEIGHT, SCR_DIM, FPS, SCREENSHOTS_DIR,
+    SEED, CHUNK_SIZE, BLOCK_SIZE, SPACING,
+    CustomEvents, CinematicModes, WorldSlices
+)
+
+class GameManager:
     """For ultimate Karen mode"""
 
     instances = []
@@ -48,8 +51,8 @@ class GameManager():
 
         self.screen = pygame.display.set_mode((WIDTH, HEIGHT), HWSURFACE | DOUBLEBUF)
 
-        self.cinematic_modes = iter(CyclicalList([mode.value for mode in __class__.CinematicModes]))
-        self.cinematic = __class__.CinematicModes.BOTH
+        self.cinematic_modes = iter(CyclicalList([mode for mode in CinematicModes]))
+        self.cinematic = CinematicModes.BOTH
 
     def new(self):
         __class__.instances.append(game := Game(self))
@@ -63,16 +66,8 @@ class GameManager():
         pygame.image.save(game.screen, screenshot_path)
 
     def cycle_cinematic(self) -> None:
-        self.cinematic = __class__.CinematicModes(next(self.cinematic_modes))
-        GenericTextBox(LayersEnum.TOASTS, self.cinematic.name.capitalize(), (WIDTH - 10, 10), survive_time=3, anchor=Anchors.TOPRIGHT)
-
-    class CinematicModes(Enum):
-        """An Enum that stores the options for the cinematic modes cycle/toggle
-        CH is whether the crosshair shows, HB is whether the hotbar shows"""
-        BOTH = {"CH": True, "HB": True}
-        NEITHER = {"CH": False, "HB": False}
-        CROSSHAIR = {"CH": True, "HB": False}
-        HOTBAR = {"CH": False, "HB": True}
+        self.cinematic = CinematicModes(next(self.cinematic_modes))
+        HUDToast(self.cinematic.name.capitalize())
 
 class Game():
     """Class that handles events and function calls to other classes to run the game"""
@@ -90,6 +85,9 @@ class Game():
         self.debug_bool = False
         self.running = True
         self.window_moved = True
+
+        self.worldslices = iter(CyclicalList([mode for mode in WorldSlices]))
+        self.current_worldslice = next(self.worldslices)
 
     def update(self, mpos) -> None:
         dt = self.clock.tick_busy_loop(FPS) / 1000
@@ -117,7 +115,7 @@ class Game():
                     elif event.button == 2:
                         self.player.pick_block()
                     elif event.button == 3:
-                        self.player.place_block(Chunk.instances, mpos)
+                        self.player.place_block(Chunk.instances, mpos, self.current_worldslice)
 
             if event.type == KEYDOWN:
                 # Toggles and functionalities
@@ -131,6 +129,9 @@ class Game():
                     self.manager.screenshot(self)
                 if event.key == K_F3:
                     self.manager.cycle_cinematic()
+                if event.key == K_TAB:
+                    self.current_worldslice = next(self.worldslices)
+                    HUDToast(self.current_worldslice.name.capitalize())
 
         # Loading chunks
         self.rendered_chunks = load_chunks(self.player.camera)
@@ -183,5 +184,6 @@ class Game():
 
     def quit(self) -> None:
         """Call quit functions & cleanup."""
+
         pygame.quit()
         sysexit()

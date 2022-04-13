@@ -13,9 +13,9 @@ import pygame
 
 from src.constants import MAX_Y, SCR_DIM, GRAVITY, TERMINAL_VEL, CHUNK_SIZE, BLOCK_SIZE, CHUNK_SIZE
 from src.block import Block, BLOCK_DATA, remove_block, is_placeable, updated_set_block, inttup
-from src.particle import BlockParticle, PlayerFallParticle
 from src.utils import block_collide, sign, text, pps
 from src.particle import PlayerFallParticle, PlayerWalkingParticle
+from src.particle import PlayerFallParticle
 from src.sprite import LayersEnum, Sprite
 import src.constants as constants
 from src.inventory import *
@@ -364,13 +364,15 @@ class Player(Sprite):
     # Please, dear god, never look at this function.
     # We tried it once and we are permanently blinded.
     # Save yourself :(
-    def place_block(self, chunks: dict, mpos: Vector2) -> None:
+    def place_block(self, chunks: dict, mpos: Vector2, worldslice: constants.WorldSlices) -> None:
         """Place a block at the position of the mouse
 
         Args:
             chunks (dict): The main dictionary that contains the list of all chunks in the game
             mpos (Vector2): The position of the mouse
         """
+
+        print(worldslice)
         if self.inventory.holding:
             # Get the coordinates and the neighbors of the block the crosshair is hovering over
             block_pos = inttup((self.pos + (mpos - self.rect.topleft)) // BLOCK_SIZE)

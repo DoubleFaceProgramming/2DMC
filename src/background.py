@@ -10,7 +10,6 @@ from pygame import Surface
 from src.sprite import Sprite, LayersEnum
 from src.constants import MAX_Y, BLUE_SKY
 from src.particle import VoidFogParticle
-from src.player import Camera
 from src.block import Block
 
 class Background(Sprite):

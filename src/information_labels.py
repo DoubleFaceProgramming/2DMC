@@ -12,7 +12,7 @@ import time
 
 from src.utils import smol_text, ultra_smol_text, SingleInstance
 from src.sprite import LayersEnum, Sprite
-from src.constants import VEC, Anchors
+from src.constants import VEC, WIDTH, Anchors
 
 class InformationLabel(Sprite):
     """A non-functional base class for text boxes. Used only for inheritance"""
@@ -82,7 +82,11 @@ class GenericTextBox(InformationLabel, SingleInstance):
         drawrect(self.image, (44, 8, 99), (12 + self.text_rect.width, 2, 2, self.text_rect.height + 4))
         self.image.blit(self.text_surf, (8, 4)) # Reblitting text because it would get covered up by the border ^^
 
-class InventoryLabelTextBox(GenericTextBox):
+class HUDToast(GenericTextBox):
+    def __init__(self, text: str) -> None:
+        super().__init__(LayersEnum.TOASTS, text, (WIDTH - 10, 10), 3, Anchors.TOPRIGHT)
+
+class InventoryLabel(GenericTextBox):
     """Text box class that simplifies inventory label management"""
 
     def __init__(self, text: str, pos: tuple[int, int]) -> None:
@@ -92,7 +96,7 @@ class InventoryLabelTextBox(GenericTextBox):
         self.pos = (kwargs["mpos"][0] + 12, kwargs["mpos"][1] - 24) # Update position so label is always to the topleft of cursor
         super().update(dt, **kwargs)
 
-class HotbarLabelTextBox(GenericTextBox):
+class HotbarLabel(GenericTextBox):
     """Text box class that simplifies hotbar label management"""
 
     def __init__(self, text: str, pos: tuple[int, int]) -> None:

@@ -7,7 +7,7 @@
 
 import pygame
 
-from src.constants import VEC, MIN_BLOCK_SIZE, BLOCK_SIZE, CHUNK_SIZE, BLOCK_DATA
+from src.constants import VEC, MIN_BLOCK_SIZE, BLOCK_SIZE, CHUNK_SIZE, BLOCK_DATA, WorldSlices
 from src.particle import BlockParticle
 from src.images import BLOCK_TEXTURES
 from src.utils import inttup
@@ -46,7 +46,7 @@ class Block:
         if not is_supported(self.pos, self.data, self.neighbors):
             remove_block(chunks, self.coords, self.data, self.neighbors)
 
-    def draw(self, screen, camera):
+    def draw(self, screen):
         on_chunk_pos = self.pos.x / BLOCK_SIZE % CHUNK_SIZE * MIN_BLOCK_SIZE, self.pos.y / BLOCK_SIZE % CHUNK_SIZE * MIN_BLOCK_SIZE
         screen.blit(self.image, on_chunk_pos)
 
@@ -58,7 +58,48 @@ class Block:
     def calc_pos(self, camera) -> None:
         self.rect.topleft = self.pos - camera.pos
 
-def remove_block(chunks: dict, pos: tuple, data: dict, neighbors: dict) -> None:
+class Location:
+    instances: dict[tuple[int, int], Block] = {}
+
+    def __init__(self, pos, **kwargs: dict[str, str]) -> None:
+        self.pos = pos
+        for worldslice, block in kwargs.items():
+            self[worldslice] = block
+
+    def __setitem__(self, key: WorldSlices, value: Block):
+        setattr(self, key.name.lower(), value)
+
+    def __getitem__(self, key: WorldSlices):
+        getattr(self, key.name.lower(), "")
+
+    def __contains__(self, key: WorldSlices):
+        return getattr(self, key.name.lower(), False)
+
+    def __delitem__(self, key: WorldSlices):
+        delattr(self, key.name.lower())
+
+    def is_empty(self) -> bool:
+        return all([getattr(self, worldslice.name.lower(), None) for worldslice in WorldSlices])
+
+    def get_if_in(self, key):
+        if key in self:
+            return self[key]
+
+    # TODO: use tag system for transparency
+    def draw(self, screen):
+        get = self.get_if_in # Makes it a tad cleaner
+        for block in {get(WorldSlices.FOREGROUND), get(WorldSlices.MIDDLEGROUND), get(WorldSlices.BACKGROUND)}:
+            block.draw(screen)
+
+            if block.name != "glass": # <- use tags here :P
+                break
+
+    def update(self, chunks):
+        get = self.get_if_in # Makes it a tad cleaner
+        for block in {get(WorldSlices.FOREGROUND), get(WorldSlices.MIDDLEGROUND), get(WorldSlices.BACKGROUND)}:
+            block.update(chunks)
+
+def remove_block(chunks: dict, pos: tuple, data: dict, neighbors: dict, worldslice: WorldSlices) -> None:
     """Remove the block at the position given
 
     Args:
@@ -72,27 +113,34 @@ def remove_block(chunks: dict, pos: tuple, data: dict, neighbors: dict) -> None:
     # Create a random number of particles
     BlockParticle.spawn(pos, Block.instances)
     chunk = (pos[0] // CHUNK_SIZE, pos[1] // CHUNK_SIZE)
+    # TODO: Remove next layers and use worldslices instead :D
     # If the block is layered, instead of removing the block completely, change that block to the next layer
     if "next_layer" in data:
-        Block.instances[pos] = Block(chunk, pos, data["next_layer"])
-        chunks[chunk].block_data[pos] = data["next_layer"]
+        Location.instances[pos][worldslice] = Block(chunk, pos, data["next_layer"])
+        # chunks[chunk].block_data[pos][worldslice] = data["next_layer"] <- shouldnt be necessary
     else:
         # Remove the block from both the blocks dictionary AND the chunk information
-        del Block.instances[pos]
-        del chunks[chunk].block_data[pos]
+        del Location.instances[pos][worldslice]
+        del chunks[chunk].block_data[pos][worldslice]
+        if chunks[chunk].block_data[pos].is_empty():
+            del Location.instances[pos]
+        # --------------------------------------------------------------------------------------------
     # After the block breaks, update its neighbors
     for neighbor in neighbors:
         if neighbors[neighbor] in Block.instances:
             Block.instances[neighbors[neighbor]].update(chunks)
 
-def set_block(chunks: dict, pos: tuple, name: str):
-    pos = inttup(pos)
+def set_block(chunks: dict, block_pos: tuple, block_name: str, worldslice: WorldSlices):
+    block_pos = inttup(block_pos)
     # Calculates the position of the chunk the block is in.
-    chunk = (pos[0] // CHUNK_SIZE, pos[1] // CHUNK_SIZE)
+    chunk = (block_pos[0] // CHUNK_SIZE, block_pos[1] // CHUNK_SIZE)
     if chunk in chunks:
         # Create an entry in the block dictionary that contains a new Block object
-        Block.instances[pos] = Block(chunks[chunk], pos, name)
-        chunks[chunk].block_data[pos] = name
+        Block.instances[block_pos] = Block(chunks[chunk], block_pos, block_name)
+        if block_pos in chunks[chunk].block_data:
+            chunks[chunk].block_data[block_pos][worldslice] = block_name
+        else:
+            chunks[chunk].block_data[block_pos] = Location(block_pos, **{worldslice: block_name})
 
 def updated_set_block(chunks: dict, pos: tuple, name: str, neighbors: dict) -> None:
     """Set the block at the position given to the block given

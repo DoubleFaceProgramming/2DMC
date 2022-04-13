@@ -59,7 +59,20 @@ class CustomEvents(Enum):
     # AN_EVENT = USEREVENT + auto()
     # ANOTHER_EVENT = USEREVENT + auto()
     # . . . ect
-    
+
+class WorldSlices(Enum):
+    BACKGROUND = auto()
+    MIDDLEGROUND = auto()
+    FOREGROUND = auto()
+
+class CinematicModes(Enum):
+    """An Enum that stores the options for the cinematic modes cycle/toggle
+    CH is whether the crosshair shows, HB is whether the hotbar shows"""
+    BOTH = {"CH": True, "HB": True}
+    NEITHER = {"CH": False, "HB": False}
+    CROSSHAIR = {"CH": True, "HB": False}
+    HOTBAR = {"CH": False, "HB": True}
+
 class Anchors(Enum):
     TOP = (0, -1)
     BOTTOM = (0, 1)

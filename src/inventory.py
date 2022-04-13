@@ -13,7 +13,7 @@ import time
 
 from src.images import inventory_img, BLOCK_TEXTURES, hotbar_img, hotbar_selection_img
 from src.utils import inttup, smol_text, CyclicalList, SingleInstance
-from src.information_labels import InventoryLabelTextBox, HotbarLabelTextBox
+from src.information_labels import InventoryLabel, HotbarLabel
 from src.constants import WIDTH, HEIGHT, SCR_DIM, VEC, Anchors
 import src.constants as constants
 from src.sprite import Sprite
@@ -137,11 +137,11 @@ class RenderedInventoryManager(Sprite):
                 if self.hovering != self.old_hovering: # If the player has changed the item they are hovering over
                     if self.hovering in self.items:
                         name = self.items[self.hovering].name.replace("_", " ").capitalize()
-                        InventoryLabelTextBox(name, (mpos[0] + 12, mpos[1] - 24)) # Make a label
+                        InventoryLabel(name, (mpos[0] + 12, mpos[1] - 24)) # Make a label
                     else: # If the player is not hovering over an item
-                        SingleInstance.remove(InventoryLabelTextBox)
+                        SingleInstance.remove(InventoryLabel)
             else: # If the player has left the bounds of the inventory
-                SingleInstance.remove(InventoryLabelTextBox)
+                SingleInstance.remove(InventoryLabel)
 
             # Update hovering variable
             self.old_hovering = self.hovering
@@ -231,7 +231,7 @@ class PlayerInventory(RenderedInventoryManager, Inventory):
         self.visible = not self.visible
         pygame.mouse.set_visible(self.visible)
         if not self.visible:
-            SingleInstance.remove(InventoryLabelTextBox)
+            SingleInstance.remove(InventoryLabel)
             if self.selected: # If an item was being hovered when the inventory was closed:
                 self += self.selected.name # Add the item
                 self.selected = None
@@ -276,9 +276,9 @@ class Hotbar(Sprite):
 
                     if self.selected in self.items:
                         name = self.items[self.selected].name.replace("_", " ").capitalize()
-                        HotbarLabelTextBox(name, (WIDTH / 2 - smol_text(name).get_width() / 2 - 8, HEIGHT - 92))
+                        HotbarLabel(name, (WIDTH / 2 - smol_text(name).get_width() / 2 - 8, HEIGHT - 92))
                     else:
-                        SingleInstance.remove(HotbarLabelTextBox)
+                        SingleInstance.remove(HotbarLabel)
 
             # Increasing or decreasing scroll object (using a kinda unecessary but cool new feature :D)
             match kwargs["m_state"]:
@@ -292,9 +292,9 @@ class Hotbar(Sprite):
 
                 if self.selected in self.items:
                     name = self.items[self.selected].name.replace("_", " ").capitalize()
-                    HotbarLabelTextBox(name, (WIDTH / 2 - smol_text(name).get_width() / 2 - 8, HEIGHT - 92))
+                    HotbarLabel(name, (WIDTH / 2 - smol_text(name).get_width() / 2 - 8, HEIGHT - 92))
                 else:
-                    SingleInstance.remove(HotbarLabelTextBox)
+                    SingleInstance.remove(HotbarLabel)
 
     def draw(self, screen: pygame.Surface, **kwargs) -> None:
         if not constants.MANAGER.cinematic.value["HB"]: return
