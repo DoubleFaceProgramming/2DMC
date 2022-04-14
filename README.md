@@ -17,10 +17,12 @@ Enjoy ^-^
 ## Instructions
 
 - 'a' and 'd' to move left and right
-- 'w' to jump
+- 'w' or SPACE to jump
 - RMB to place blocks
 - LMB to remove blocks
 - MMB to pickblock
 - 'e' to open inventory
+- F2 to screenshot
+- F3 to toggle cinematic modes
 - F5 to open debug
 - F9 to profile, if active (see v0.2.0 CHANGELOG.md)
