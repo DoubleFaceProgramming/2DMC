@@ -388,7 +388,7 @@ class Player(Sprite):
                     counterparts = BLOCK_DATA[self.inventory.holding.name]["counterparts"]
                     for counterpart in counterparts:
                         # Get the position of where counterpart would be and ITS neighbors
-                        c_pos = VEC(block_pos)+VEC(inttup(counterpart.split(" ")))
+                        c_pos = VEC(block_pos) + VEC(inttup(counterpart.split(" ")))
                         c_neighbors = {
                             "0 -1": inttup((c_pos.x, c_pos.y - 1)),
                             "0 1": inttup((c_pos.x, c_pos.y + 1)),

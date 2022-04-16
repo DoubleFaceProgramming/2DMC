@@ -78,12 +78,12 @@ class Location:
     def __delitem__(self, key: WorldSlices):
         delattr(self, key.name.lower())
 
-    def is_empty(self) -> bool:
-        return all([getattr(self, worldslice.name.lower(), None) for worldslice in WorldSlices])
-
     def get_if_in(self, key):
         if key in self:
             return self[key]
+
+    def __bool__(self):
+        return any([worldslice.name in self for worldslice in WorldSlices])
 
     # TODO: use tag system for transparency
     def draw(self, screen):
@@ -122,13 +122,13 @@ def remove_block(chunks: dict, pos: tuple, data: dict, neighbors: dict, worldsli
         # Remove the block from both the blocks dictionary AND the chunk information
         del Location.instances[pos][worldslice]
         del chunks[chunk].block_data[pos][worldslice]
-        if chunks[chunk].block_data[pos].is_empty():
+        if not chunks[chunk].block_data[pos]: # check __bool__
             del Location.instances[pos]
-        # --------------------------------------------------------------------------------------------
+
     # After the block breaks, update its neighbors
     for neighbor in neighbors:
         if neighbors[neighbor] in Block.instances:
-            Block.instances[neighbors[neighbor]].update(chunks)
+            Location.instances[pos][worldslice].update(chunks)
 
 def set_block(chunks: dict, block_pos: tuple, block_name: str, worldslice: WorldSlices):
     block_pos = inttup(block_pos)
@@ -140,9 +140,9 @@ def set_block(chunks: dict, block_pos: tuple, block_name: str, worldslice: World
         if block_pos in chunks[chunk].block_data:
             chunks[chunk].block_data[block_pos][worldslice] = block_name
         else:
-            chunks[chunk].block_data[block_pos] = Location(block_pos, **{worldslice: block_name})
+            chunks[chunk].block_data[block_pos] = Location(block_pos, **{worldslice.value: block_name})
 
-def updated_set_block(chunks: dict, pos: tuple, name: str, neighbors: dict) -> None:
+def updated_set_block(chunks: dict, pos: tuple, name: str, neighbors: dict, worldslice: WorldSlices) -> None:
     """Set the block at the position given to the block given
 
     Args:
@@ -152,13 +152,13 @@ def updated_set_block(chunks: dict, pos: tuple, name: str, neighbors: dict) -> N
         neighbors (dict): THe neighbours of the block
     """
 
-    set_block(chunks, pos, name)
+    set_block(chunks, pos, name, worldslice)
     for neighbor in neighbors:
         # Update the neighboring blocks
         if neighbors[neighbor] in Block.instances:
             Block.instances[neighbors[neighbor]].update(chunks)
 
-def is_occupied(player, pos: tuple) -> bool:
+def is_occupied(player, pos: tuple, worldslice: WorldSlices) -> bool:
     """Check if a block or the player overlaps with the position given
 
     Args:
@@ -168,15 +168,28 @@ def is_occupied(player, pos: tuple) -> bool:
     Returns:
         bool: Whether the given position is occupied or not
     """
+
     pos = inttup(pos)
     # Check if the player's rect is overlapping with the position of the block that is trying to be placed
     if not pygame.Rect(VEC(pos) * BLOCK_SIZE, (BLOCK_SIZE, BLOCK_SIZE)).colliderect(pygame.Rect(player.pos, player.size)):
-        if pos in Block.instances: # If there is already a block there:
-            # If the "replaceable" key is in the block's data, meaning that the block is directly replaceable (i.e. grass)
-            return "replaceable" not in Block.instances[pos].data # This will return False if the block is replaceable and vice versa
+        if pos in Location.instances: # If there is already a block there:
+            if worldslice in Location.instances[pos]:
+                # If the "replaceable" key is in the block's data, meaning that the block is directly replaceable (i.e. grass)
+                return "replaceable" not in Location.instances[pos][worldslice].data # This will return False if the block is replaceable and vice versa
+            else:
+                return False
         else:
             return False
     return True
+
+    # pos = inttup(pos)
+    # if pygame.Rect(VEC(pos) * BLOCK_SIZE, (BLOCK_SIZE, BLOCK_SIZE)).colliderect(pygame.Rect(player.pos, player.size)):
+    #     return True
+
+    # if pos in Location.instances and worldslice in Location.instances[pos]:
+    #     return "replaceable" not in Location.instances[pos][worldslice].data
+
+    # return False
 
 def is_supported(pos: tuple, data: dict, neighbors: dict, second_block_pos: tuple=False) -> bool:
     """Checks if the given block data (data) of the block can be supported at the given position
@@ -191,9 +204,21 @@ def is_supported(pos: tuple, data: dict, neighbors: dict, second_block_pos: tupl
         bool: Whether the block will be supported at the given position
     """
 
+    # tall grass in world
+    # break top half
+    # bottom half needs to be destroyed
+    # bottom half needs support above (above = tallgrass top, spec. in json)
+    # when you place tallgrass the bottom checks support, needs block abve to be tallgras stop
+    # top doesnt exist
+
+    # bottom half cannot exist without top
+    # when bottom placed check if top exists
+    # no -> place top
+    # second_b.p. fixes this?!?!?!?!?!??!
+
     if data["support"]:
         for support in data["support"]:
-            if inttup(support.split(" ")) != inttup(VEC(second_block_pos)-VEC(pos)):
+            if inttup(support.split(" ")) != inttup(VEC(second_block_pos) - VEC(pos)):
                 # Check if each of the supporting blocks exist in the neighbors
                 if neighbors[support] in Block.instances:
                     if Block.instances[neighbors[support]].name not in data["support"][support]:
@@ -204,7 +229,7 @@ def is_supported(pos: tuple, data: dict, neighbors: dict, second_block_pos: tupl
                 return True
     return True
 
-def is_placeable(player, pos: tuple, data: dict, neighbors:dict, second_block_pos: tuple=False) -> bool:
+def is_placeable(player, pos: tuple, data: dict, neighbors: dict, worldslice: WorldSlices, second_block_pos: tuple=False) -> bool:
     """Evaluates if a block is placeable at a given position
 
     Args:
@@ -219,6 +244,6 @@ def is_placeable(player, pos: tuple, data: dict, neighbors:dict, second_block_po
     """
 
     # Checking if the position occupied and supported.
-    if not is_occupied(player, pos) and is_supported(pos, data, neighbors, second_block_pos=second_block_pos):
+    if not is_occupied(player, pos, worldslice) and is_supported(pos, data, neighbors, second_block_pos=second_block_pos):
         return True
     return False
