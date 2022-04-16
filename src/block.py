@@ -130,7 +130,7 @@ def is_occupied(player, pos: tuple) -> bool:
             return False
     return True
 
-def is_supported(pos: tuple, data: dict, neighbors: dict, second_block_pos: tuple=False) -> bool:
+def is_supported(pos: tuple, data: dict, neighbors: dict) -> bool:
     """Checks if the given block data (data) of the block can be supported at the given position
 
     Args:
@@ -145,18 +145,14 @@ def is_supported(pos: tuple, data: dict, neighbors: dict, second_block_pos: tupl
 
     if data["support"]:
         for support in data["support"]:
-            if inttup(support.split(" ")) != inttup(VEC(second_block_pos)-VEC(pos)):
-                # Check if each of the supporting blocks exist in the neighbors
-                if neighbors[support] in Block.instances:
-                    if Block.instances[neighbors[support]].name not in data["support"][support]:
-                        return False
-                else:
+            if neighbors[support] in Block.instances:
+                if Block.instances[neighbors[support]].name not in data["support"][support]:
                     return False
             else:
-                return True
+                return False
     return True
 
-def is_placeable(player, pos: tuple, data: dict, neighbors:dict, second_block_pos: tuple=False) -> bool:
+def is_placeable(player, pos: tuple, data: dict, neighbors: dict) -> bool:
     """Evaluates if a block is placeable at a given position
 
     Args:
@@ -171,6 +167,6 @@ def is_placeable(player, pos: tuple, data: dict, neighbors:dict, second_block_po
     """
 
     # Checking if the position occupied and supported.
-    if not is_occupied(player, pos) and is_supported(pos, data, neighbors, second_block_pos=second_block_pos):
+    if not is_occupied(player, pos) and is_supported(pos, data, neighbors):
         return True
     return False

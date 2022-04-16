@@ -128,6 +128,16 @@ def block_collide(playerx: int, playery: int, width: float, height: float, detec
         return True, detecting
     return False, detecting
 
+def generate_neighbours(block_pos):
+    neighbors = {
+        "0 -1": inttup((block_pos[0], block_pos[1] - 1)),
+        "0 1": inttup((block_pos[0], block_pos[1] + 1)),
+        "-1 0": inttup((block_pos[0] - 1, block_pos[1])),
+        "1 0": inttup((block_pos[0] + 1, block_pos[1]))
+    }
+
+    return neighbors
+
 def canter_pairing(tup: tuple) -> int:
     """Uses the Canter Pairing function to get a unique integer from a unique interger pair"""
     # Deal with negative numbers by turning positives into positive evens and negatives into positive odds
