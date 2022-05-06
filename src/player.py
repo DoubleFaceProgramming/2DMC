@@ -345,12 +345,7 @@ class Player(Sprite):
             mpos (Vector2): The position of the mouse
         """
         block_pos = inttup((self.pos + (mpos - self.rect.topleft)) // BLOCK_SIZE)
-        neighbors = {
-            "0 -1": inttup((block_pos[0], block_pos[1]-1)),
-            "0 1": inttup((block_pos[0], block_pos[1]+1)),
-            "-1 0": inttup((block_pos[0]-1, block_pos[1])),
-            "1 0": inttup((block_pos[0]+1, block_pos[1]))
-        }
+        neighbors = generate_neighbours(block_pos)
 
         # If the block exists:
         if block_pos in Block.instances:
@@ -422,51 +417,60 @@ class Player(Sprite):
     def place_block(self, chunks, mpos: Vector2) -> None:
         if self.inventory.holding:
             block_pos = inttup((self.pos + (mpos - self.rect.topleft)) // BLOCK_SIZE)
+            if block_pos[1] > MAX_Y: return
+
             block_name = self.inventory.holding.name
             neighbors = generate_neighbours(block_pos)
             data = BLOCK_DATA[block_name]
 
-            if block_pos[1] > MAX_Y: return
-            if is_placeable(self, block_pos, data, neighbors):
-                if "counterparts" in data:
-                    all_counterparts_placeable = True
-                    for counterpart in data["counterparts"]:
-                        counterpart_pos = inttup(counterpart.split(" "))
-                        counterpart_data = BLOCK_DATA[data["counterparts"][counterpart]]
-                        counterpart_neighbors = generate_neighbours(counterpart_pos)
-                        if not is_placeable(self, counterpart_pos, counterpart_data, counterpart_neighbors):
-                            all_counterparts_placeable = False
-                            break
+            # if is_placeable(self, block_pos, data, neighbors):
+            # For singular components blocks (ex. dirt)
+            if "counterparts" not in data:
+                updated_set_block(chunks, block_pos, block_name, neighbors)
+                return
 
-                    if all_counterparts_placeable:
-                        for counterpart in data["counterparts"]:
-                            counterpart_pos = inttup(counterpart.split(" "))
-                            counterpart_name = data["counterparts"][counterpart]
-                            counterpart_neighbors = generate_neighbours(counterpart_pos)
-                            updated_set_block(chunks, counterpart_pos, counterpart_name, counterpart_neighbors)
-                        updated_set_block(chunks, block_pos, block_name, neighbors)
-                else:
-                    updated_set_block(chunks, block_pos, block_name, neighbors)
+            # For blocks with more than 1 component (ex. tall grass)
+            # Checking whether it can be placed
+            all_counterparts_placeable = True
+            for counterpart in data["counterparts"]:
+                counterpart_offset = VEC(inttup(counterpart.split(" ")))
+                counterpart_pos = VEC(block_pos) + counterpart_offset
+                counterpart_data = BLOCK_DATA[data["counterparts"][counterpart]]
+                counterpart_neighbors = generate_neighbours(counterpart_pos)
+                if not is_placeable(self, counterpart_pos, counterpart_data, counterpart_neighbors, counterpart_offset):
+                    all_counterparts_placeable = False
+                    break
+
+            # Actually placing it
+            if all_counterparts_placeable:
+                for counterpart in data["counterparts"]:
+                    counterpart_pos = VEC(block_pos) + inttup(counterpart.split(" "))
+                    counterpart_name = data["counterparts"][counterpart]
+                    counterpart_neighbors = generate_neighbours(counterpart_pos)
+                    updated_set_block(chunks, counterpart_pos, counterpart_name, counterpart_neighbors)
+
+                updated_set_block(chunks, block_pos, block_name, neighbors)
 
     def pick_block(self) -> None:
         """Pick the block at the mouse position, with all the functionality in 3D Minecraft."""
 
-        if block := self.crosshair.block:
-            if "unpickblockable" in BLOCK_DATA[block.name]: return
-            old_slot = self.inventory.holding  # Saving the original hotbar item
-            if block.name in [item.name for item in self.inventory.items.values()]: # Checking if the desired item is in the inventory
-                # Finding the inventory position of the desired item
-                inventory_pos = [pos for pos, item in self.inventory.items.items() if item.name == block.name][0]
-                if self.inventory.hotbar.selected in self.inventory.hotbar.items:
-                    self.inventory.set_slot((self.inventory.hotbar.selected, 0), block.name) # Setting the hotbar slot to the desired item
-                    self.inventory.set_slot(inventory_pos, old_slot.name)                    # Setting the original hotbar item to the old inventory position
-                else:
-                    self.inventory.set_slot((self.inventory.hotbar.selected, 0), block.name) # Setting the hotbar slot to the desired item
-                    self.inventory.clear_slot(inventory_pos)                                 # Removing the item from the inventory position
+        if not (block := self.crosshair.block): return
+        if "unpickblockable" in BLOCK_DATA[block.name]: return
+
+        old_slot = self.inventory.holding  # Saving the original hotbar item
+        if block.name in [item.name for item in self.inventory.items.values()]: # Checking if the desired item is in the inventory
+            # Finding the inventory position of the desired item
+            inventory_pos = [pos for pos, item in self.inventory.items.items() if item.name == block.name][0]
+            if self.inventory.hotbar.selected in self.inventory.hotbar.items:
+                self.inventory.set_slot((self.inventory.hotbar.selected, 0), block.name) # Setting the hotbar slot to the desired item
+                self.inventory.set_slot(inventory_pos, old_slot.name)                    # Setting the original hotbar item to the old inventory position
             else:
-                self.inventory.set_slot((self.inventory.hotbar.selected, 0), block.name) # Set the hotbar slot to the desired block
-                if len(self.inventory.items) < self.inventory.max_items:                 # Add the old item to the inventory if there is enough space
-                    self.inventory += old_slot.name
+                self.inventory.set_slot((self.inventory.hotbar.selected, 0), block.name) # Setting the hotbar slot to the desired item
+                self.inventory.clear_slot(inventory_pos)                                 # Removing the item from the inventory position
+        else:
+            self.inventory.set_slot((self.inventory.hotbar.selected, 0), block.name) # Set the hotbar slot to the desired block
+            if len(self.inventory.items) < self.inventory.max_items:                 # Add the old item to the inventory if there is enough space
+                self.inventory += old_slot.name
 
 class Crosshair(Sprite):
     """The class responsible for the drawing and updating of the crosshair"""

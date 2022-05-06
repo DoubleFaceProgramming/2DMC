@@ -122,7 +122,7 @@ def block_collide(playerx: int, playery: int, width: float, height: float, detec
 
     player_rect = Rect(playerx, playery, width, height) # Rect that represents the player
     block_rect = Rect(block.pos.x, block.pos.y, BLOCK_SIZE, BLOCK_SIZE) # Rect that represents the block
-    if not block.rect in detecting:
+    if block.rect not in detecting:
         detecting.append(block) # Adding the block rect to player.detecting_rects
     if player_rect.colliderect(block_rect): # Checking if the player is colliding with the block
         return True, detecting

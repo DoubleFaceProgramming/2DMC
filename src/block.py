@@ -130,7 +130,18 @@ def is_occupied(player, pos: tuple) -> bool:
             return False
     return True
 
-def is_supported(pos: tuple, data: dict, neighbors: dict) -> bool:
+# - get block that needs counterparts
+# - check if all counterparts will be supported in this arrangement by
+#   including the counterparts in the calculations
+# - loop through every counterpart and check if can be placed (check for
+#   occupation ect, not counterparts)
+# - if all preliminary checks pass place every counterpart, if any fail exit
+
+def ahhhhhhhhh(countparts):
+    for counterpart in countparts:
+        pass
+
+def is_supported(pos, data: dict, neighbors: dict[str, tuple[int, int]], counterpart_offset: None | VEC = None) -> bool:
     """Checks if the given block data (data) of the block can be supported at the given position
 
     Args:
@@ -143,16 +154,21 @@ def is_supported(pos: tuple, data: dict, neighbors: dict) -> bool:
         bool: Whether the block will be supported at the given position
     """
 
-    if data["support"]:
+    if "support" in data and data["support"]:
         for support in data["support"]:
             if neighbors[support] in Block.instances:
                 if Block.instances[neighbors[support]].name not in data["support"][support]:
                     return False
             else:
+                if counterpart_offset:
+                    support_vec = VEC(inttup(support.split(" ")))
+                    if inttup(-support_vec) == inttup(counterpart_offset):
+                        print("yes")
+                        return True
                 return False
     return True
 
-def is_placeable(player, pos: tuple, data: dict, neighbors: dict) -> bool:
+def is_placeable(player, pos: tuple, data: dict, neighbors: dict, counterpart_offset: None | VEC = None) -> bool:
     """Evaluates if a block is placeable at a given position
 
     Args:
@@ -167,6 +183,6 @@ def is_placeable(player, pos: tuple, data: dict, neighbors: dict) -> bool:
     """
 
     # Checking if the position occupied and supported.
-    if not is_occupied(player, pos) and is_supported(pos, data, neighbors):
-        return True
-    return False
+    return not is_occupied(player, pos) and is_supported(pos, data, neighbors, counterpart_offset)
+        # return True
+    # return False
