@@ -371,7 +371,8 @@ class Player(Sprite):
 
         # For singular components blocks (ex. dirt), aka it doesn't have counterparts
         if "counterparts" not in data:
-            updated_set_block(chunks, block_pos, block_name, neighbors) # Place down the block and update neighbors
+            if is_placeable(self, block_pos, data, neighbors): # If the block is placeable according to its neighbors and data
+                updated_set_block(chunks, block_pos, block_name, neighbors) # Place down the block and update neighbors
             return
 
         # For blocks with more than 1 component (ex. tall grass)

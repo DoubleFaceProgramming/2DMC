@@ -43,7 +43,7 @@ class Block:
 
     def update(self, chunks):
         # Check if the block is supported, if not then remove the block
-        if not is_supported(self.pos, self.data, self.neighbors):
+        if not is_supported(self.data, self.neighbors):
             remove_block(chunks, self.coords, self.data, self.neighbors)
 
     def draw(self, screen, camera):
