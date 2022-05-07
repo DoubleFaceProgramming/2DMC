@@ -83,7 +83,6 @@ class Player(Sprite):
         self.inventory = PlayerInventory(self)
         self.crosshair = Crosshair(self, 1750)
 
-        self.inventory += "tall_grass"
         self.inventory += "grass_block"
         self.inventory += "dirt"
         self.inventory += "stone"
@@ -93,6 +92,7 @@ class Player(Sprite):
         self.inventory += "oak_planks"
         self.inventory += "cobblestone"
         self.inventory += "glass"
+        self.inventory += "tall_grass"
         self.inventory += "poppy"
         self.inventory += "dandelion"
         self.inventory += "granite"
