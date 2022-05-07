@@ -130,43 +130,32 @@ def is_occupied(player, pos: tuple) -> bool:
             return False
     return True
 
-# - get block that needs counterparts
-# - check if all counterparts will be supported in this arrangement by
-#   including the counterparts in the calculations
-# - loop through every counterpart and check if can be placed (check for
-#   occupation ect, not counterparts)
-# - if all preliminary checks pass place every counterpart, if any fail exit
-
-def ahhhhhhhhh(countparts):
-    for counterpart in countparts:
-        pass
-
-def is_supported(pos, data: dict, neighbors: dict[str, tuple[int, int]], counterpart_offset: None | VEC = None) -> bool:
+def is_supported(data: dict, neighbors: dict[str, tuple[int, int]], ignored_block_offset: None | VEC = None) -> bool:
     """Checks if the given block data (data) of the block can be supported at the given position
 
     Args:
-        pos (tuple): The position to check
         data (dict): The data information of the block
         neighbors (dict): The block's neighbours
-        second_block_pos (tuple, optional): I don't know why this needs to exist but it does. Defaults to False.
+        ignored_block_offset (None or VEC): The offset of the supporting block to be ignored (used for counterpart/multi-block placing)
 
     Returns:
         bool: Whether the block will be supported at the given position
     """
 
-    if "support" in data and data["support"]:
-        for support in data["support"]:
-            if neighbors[support] in Block.instances:
+    if "support" in data and data["support"]: # If the block requires support
+        for support in data["support"]: # Check every required supporting block
+            if neighbors[support] in Block.instances: # If the required support position has a block there
+                # If the block is not the required supporting block
                 if Block.instances[neighbors[support]].name not in data["support"][support]:
                     return False
-            else:
-                if counterpart_offset:
-                    support_vec = VEC(inttup(support.split(" ")))
-                    if inttup(-support_vec) == inttup(counterpart_offset):
-                        print("yes")
+            else: # If the required support position doesn't have a block there
+                if ignored_block_offset: # If there's a required support position to be ignored
+                    support_vec = VEC(inttup(support.split()))
+                    # If the ignored offset refers to the same block pos as the required support block pos, then it is placeable
+                    if inttup(-support_vec) == inttup(ignored_block_offset):
                         return True
-                return False
-    return True
+                return False # If there are no ignored blocks, it is not placeable
+    return True # If it doesn't require support, then it is placeable
 
 def is_placeable(player, pos: tuple, data: dict, neighbors: dict, counterpart_offset: None | VEC = None) -> bool:
     """Evaluates if a block is placeable at a given position
@@ -183,6 +172,4 @@ def is_placeable(player, pos: tuple, data: dict, neighbors: dict, counterpart_of
     """
 
     # Checking if the position occupied and supported.
-    return not is_occupied(player, pos) and is_supported(pos, data, neighbors, counterpart_offset)
-        # return True
-    # return False
+    return not is_occupied(player, pos) and is_supported(data, neighbors, counterpart_offset)
