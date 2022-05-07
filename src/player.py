@@ -5,7 +5,7 @@
 # The majority of the game assets are properties of Mojang Studios,
 # you can view their TOS here: https://account.mojang.com/documents/minecraft_eula
 
-from math import ceil, floor, degrees, radians, tan, cos, sin
+from math import ceil, floor, radians, cos, sin
 from pygame.constants import K_a, K_d, K_w
 from pygame import K_SPACE, Surface, Rect
 from pygame.math import Vector2
@@ -13,7 +13,7 @@ import pygame
 
 from src.constants import MAX_Y, SCR_DIM, GRAVITY, TERMINAL_VEL, CHUNK_SIZE, BLOCK_SIZE, CHUNK_SIZE
 from src.block import Block, BLOCK_DATA, remove_block, is_placeable, updated_set_block, inttup
-from src.utils import block_collide, sign, text, pps
+from src.utils import block_collide, sign, text, pps, generate_neighbours
 from src.particle import PlayerFallParticle, PlayerWalkingParticle
 from src.particle import PlayerFallParticle
 from src.sprite import LayersEnum, Sprite
@@ -84,6 +84,7 @@ class Player(Sprite):
         self.inventory = PlayerInventory(self)
         self.crosshair = Crosshair(self, 1750)
 
+        self.inventory += "tall_grass"
         self.inventory += "grass_block"
         self.inventory += "dirt"
         self.inventory += "stone"
@@ -95,7 +96,6 @@ class Player(Sprite):
         self.inventory += "glass"
         self.inventory += "poppy"
         self.inventory += "dandelion"
-        self.inventory += "tall_grass"
         self.inventory += "granite"
         self.inventory += "diorite"
         self.inventory += "andesite"
@@ -346,12 +346,7 @@ class Player(Sprite):
             mpos (Vector2): The position of the mouse
         """
         block_pos = inttup((self.pos + (mpos - self.rect.topleft)) // BLOCK_SIZE)
-        neighbors = {
-            "0 -1": inttup((block_pos[0], block_pos[1]-1)),
-            "0 1": inttup((block_pos[0], block_pos[1]+1)),
-            "-1 0": inttup((block_pos[0]-1, block_pos[1])),
-            "1 0": inttup((block_pos[0]+1, block_pos[1]))
-        }
+        neighbors = generate_neighbours(block_pos)
 
         # If the block exists:
         if block_pos in Block.instances:
@@ -361,86 +356,77 @@ class Player(Sprite):
             # Remove it!
             remove_block(chunks, block_pos, Block.instances[block_pos].data, neighbors)
 
-    # Please, dear god, never look at this function.
-    # We tried it once and we are permanently blinded.
-    # Save yourself :(
-    def place_block(self, chunks: dict, mpos: Vector2, worldslice: constants.WorldSlices) -> None:
-        """Place a block at the position of the mouse
+    def place_block(self, chunks, mpos: Vector2) -> None:
+        if not self.inventory.holding: return # If the player isn't holding any block, just skip everything
 
-        Args:
-            chunks (dict): The main dictionary that contains the list of all chunks in the game
-            mpos (Vector2): The position of the mouse
-        """
+        # In the following comments in this function:
+        # when I say "original block", it means the block that is originally placed (ex. the bottom of a tall grass)
+        # And "counterpart" means the blocks that are consequently placed when the original block is placed (ex. tall_grass_top)
 
-        print(worldslice)
-        if self.inventory.holding:
-            # Get the coordinates and the neighbors of the block the crosshair is hovering over
-            block_pos = inttup((self.pos + (mpos - self.rect.topleft)) // BLOCK_SIZE)
-            if block_pos[1] < MAX_Y: # If the block is above the max y (there is bedrock there but why not /shrug)
-                neighbors = {
-                    "0 -1": inttup((block_pos[0], block_pos[1] - 1)),
-                    "0 1": inttup((block_pos[0], block_pos[1] + 1)),
-                    "-1 0": inttup((block_pos[0] - 1, block_pos[1])),
-                    "1 0": inttup((block_pos[0] + 1, block_pos[1]))
-                }
-                # If a block has a counterpart (i.e. tall grass)
-                if "counterparts" in BLOCK_DATA[self.inventory.holding.name]:
-                    counterparts = BLOCK_DATA[self.inventory.holding.name]["counterparts"]
-                    for counterpart in counterparts:
-                        # Get the position of where counterpart would be and ITS neighbors
-                        c_pos = VEC(block_pos) + VEC(inttup(counterpart.split(" ")))
-                        c_neighbors = {
-                            "0 -1": inttup((c_pos.x, c_pos.y - 1)),
-                            "0 1": inttup((c_pos.x, c_pos.y + 1)),
-                            "-1 0": inttup((c_pos.x - 1, c_pos.y)),
-                            "1 0": inttup((c_pos.x + 1, c_pos.y))
-                        }
-                        # If the counterpart cannot be placed, break the entire loop and don't even place the original block
-                        if not is_placeable(self, c_pos, BLOCK_DATA[counterparts[counterpart]], c_neighbors, second_block_pos=block_pos):
-                            break
-                    else: # If the for loop executed successfully without "break", continue on with placing the block
-                        # Some "sec_block_pos" weirdness << descriptive commenting /j
-                        # Note: DaNub forgot how this works so deal with it
-                        # Note: trevor CBA to figure out how it works so deal with it
-                        for counterpart in counterparts:
-                            if not is_placeable(self, block_pos, BLOCK_DATA[self.inventory.holding.name], neighbors, second_block_pos=c_pos):
-                                break
-                        else:
-                            updated_set_block(chunks, block_pos, self.inventory.holding.name, neighbors)
-                            for counterpart in counterparts:
-                                # Get the position of where counterpart would be and ITS neighbors
-                                c_pos = VEC(block_pos) + VEC(inttup(counterpart.split(" ")))
-                                c_neighbors = {
-                                    "0 -1": inttup((c_pos.x, c_pos.y - 1)),
-                                    "0 1": inttup((c_pos.x, c_pos.y + 1)),
-                                    "-1 0": inttup((c_pos.x - 1, c_pos.y)),
-                                    "1 0": inttup((c_pos.x + 1, c_pos.y))
-                                }
-                                updated_set_block(chunks, VEC(block_pos)+VEC(inttup(counterpart.split(" "))), counterparts[counterpart], c_neighbors)
-                else:
-                    # If the block does not have counterparts, place it if it can be placed
-                    if is_placeable(self, block_pos, BLOCK_DATA[self.inventory.holding.name], neighbors):
-                        updated_set_block(chunks, block_pos, self.inventory.holding.name, neighbors)
+        block_pos = inttup((self.pos + (mpos - self.rect.topleft)) // BLOCK_SIZE) # The position of the block to be placed
+        if block_pos[1] > MAX_Y: return # If the block is below the lowest world limit, don't place
+
+        block_name = self.inventory.holding.name # The name of the block to be placed
+        neighbors = generate_neighbours(block_pos) # Generate the neighbors of the block (dict[offset-in-string, world-pos-in-tuple])
+        data = BLOCK_DATA[block_name] # The data/information of the block from json files
+
+        # For singular components blocks (ex. dirt), aka it doesn't have counterparts
+        if "counterparts" not in data:
+            if is_placeable(self, block_pos, data, neighbors): # If the block is placeable according to its neighbors and data
+                updated_set_block(chunks, block_pos, block_name, neighbors) # Place down the block and update neighbors
+            return
+
+        # For blocks with more than 1 component (ex. tall grass)
+        # Checking whether the counterparts (extensions) of the block can be placed (ex. tall_grass_top when placing a tall grass)
+        for counterpart in data["counterparts"]:
+            counterpart_offset = VEC(inttup(counterpart.split(" "))) # The offset of the counterpart from the original block (ex. (0, 1) means below)
+            counterpart_pos = VEC(block_pos) + counterpart_offset # The real world position of the counterpart block
+            counterpart_data = BLOCK_DATA[data["counterparts"][counterpart]] # The data of the counterpart block
+            counterpart_neighbors = generate_neighbours(counterpart_pos) # The neighbors of the counterpart block
+
+            # Checks whether the counterpart is placeable ignoring that it needs the original block to exist (as it doesn't exist yet)
+            # This is done by passing the offset of the counterpart into is_placeable,
+            # which would be checked if the block that should support the counterpart is at the position of the original block
+            # if so, it means that the block that should support the counterpart IS the original block, thus needs to be ignored
+            if not is_placeable(self, counterpart_pos, counterpart_data, counterpart_neighbors, counterpart_offset):
+                return
+            # Checks if the original block can be placed or not, using "counterpart_offset" to ignore counterparts that
+            # are required for the original block to exist, but are not yet placed
+            # similar concept as the explanation above, but the other way around
+            # (checking for the original block instead of the counterparts)
+            if not is_placeable(self, block_pos, data, neighbors, -counterpart_offset):
+                return
+
+        # Actually placing the original block's counterparts
+        for counterpart in data["counterparts"]:
+            counterpart_pos = VEC(block_pos) + inttup(counterpart.split(" ")) # Real world position of the counterpart block
+            counterpart_name = data["counterparts"][counterpart] # The block name of the counterpart
+            counterpart_neighbors = generate_neighbours(counterpart_pos) # Generate neighbors of the counterpart block
+            updated_set_block(chunks, counterpart_pos, counterpart_name, counterpart_neighbors) # Place down the counterpart
+
+        # Place down the original block
+        updated_set_block(chunks, block_pos, block_name, neighbors)
 
     def pick_block(self) -> None:
         """Pick the block at the mouse position, with all the functionality in 3D Minecraft."""
 
-        if block := self.crosshair.block:
-            if "unpickblockable" in BLOCK_DATA[block.name]: return
-            old_slot = self.inventory.holding  # Saving the original hotbar item
-            if block.name in [item.name for item in self.inventory.items.values()]: # Checking if the desired item is in the inventory
-                # Finding the inventory position of the desired item
-                inventory_pos = [pos for pos, item in self.inventory.items.items() if item.name == block.name][0]
-                if self.inventory.hotbar.selected in self.inventory.hotbar.items:
-                    self.inventory.set_slot((self.inventory.hotbar.selected, 0), block.name) # Setting the hotbar slot to the desired item
-                    self.inventory.set_slot(inventory_pos, old_slot.name)                    # Setting the original hotbar item to the old inventory position
-                else:
-                    self.inventory.set_slot((self.inventory.hotbar.selected, 0), block.name) # Setting the hotbar slot to the desired item
-                    self.inventory.clear_slot(inventory_pos)                                 # Removing the item from the inventory position
+        if not (block := self.crosshair.block): return
+        if "unpickblockable" in BLOCK_DATA[block.name]: return
+
+        old_slot = self.inventory.holding  # Saving the original hotbar item
+        if block.name in [item.name for item in self.inventory.items.values()]: # Checking if the desired item is in the inventory
+            # Finding the inventory position of the desired item
+            inventory_pos = [pos for pos, item in self.inventory.items.items() if item.name == block.name][0]
+            if self.inventory.hotbar.selected in self.inventory.hotbar.items:
+                self.inventory.set_slot((self.inventory.hotbar.selected, 0), block.name) # Setting the hotbar slot to the desired item
+                self.inventory.set_slot(inventory_pos, old_slot.name)                    # Setting the original hotbar item to the old inventory position
             else:
-                self.inventory.set_slot((self.inventory.hotbar.selected, 0), block.name) # Set the hotbar slot to the desired block
-                if len(self.inventory.items) < self.inventory.max_items:                 # Add the old item to the inventory if there is enough space
-                    self.inventory += old_slot.name
+                self.inventory.set_slot((self.inventory.hotbar.selected, 0), block.name) # Setting the hotbar slot to the desired item
+                self.inventory.clear_slot(inventory_pos)                                 # Removing the item from the inventory position
+        else:
+            self.inventory.set_slot((self.inventory.hotbar.selected, 0), block.name) # Set the hotbar slot to the desired block
+            if len(self.inventory.items) < self.inventory.max_items:                 # Add the old item to the inventory if there is enough space
+                self.inventory += old_slot.name
 
 class Crosshair(Sprite):
     """The class responsible for the drawing and updating of the crosshair"""

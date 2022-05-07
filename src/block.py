@@ -43,7 +43,7 @@ class Block:
 
     def update(self, chunks):
         # Check if the block is supported, if not then remove the block
-        if not is_supported(self.pos, self.data, self.neighbors):
+        if not is_supported(self.data, self.neighbors):
             remove_block(chunks, self.coords, self.data, self.neighbors)
 
     def draw(self, screen):
@@ -182,54 +182,34 @@ def is_occupied(player, pos: tuple, worldslice: WorldSlices) -> bool:
             return False
     return True
 
-    # pos = inttup(pos)
-    # if pygame.Rect(VEC(pos) * BLOCK_SIZE, (BLOCK_SIZE, BLOCK_SIZE)).colliderect(pygame.Rect(player.pos, player.size)):
-    #     return True
-
-    # if pos in Location.instances and worldslice in Location.instances[pos]:
-    #     return "replaceable" not in Location.instances[pos][worldslice].data
-
-    # return False
-
-def is_supported(pos: tuple, data: dict, neighbors: dict, second_block_pos: tuple=False) -> bool:
+def is_supported(data: dict, neighbors: dict[str, tuple[int, int]], ignored_block_offset: None | VEC = None) -> bool:
     """Checks if the given block data (data) of the block can be supported at the given position
 
     Args:
-        pos (tuple): The position to check
         data (dict): The data information of the block
         neighbors (dict): The block's neighbours
-        second_block_pos (tuple, optional): I don't know why this needs to exist but it does. Defaults to False.
+        ignored_block_offset (None or VEC): The offset of the supporting block to be ignored (used for counterpart/multi-block placing)
 
     Returns:
         bool: Whether the block will be supported at the given position
     """
 
-    # tall grass in world
-    # break top half
-    # bottom half needs to be destroyed
-    # bottom half needs support above (above = tallgrass top, spec. in json)
-    # when you place tallgrass the bottom checks support, needs block abve to be tallgras stop
-    # top doesnt exist
-
-    # bottom half cannot exist without top
-    # when bottom placed check if top exists
-    # no -> place top
-    # second_b.p. fixes this?!?!?!?!?!??!
-
-    if data["support"]:
-        for support in data["support"]:
-            if inttup(support.split(" ")) != inttup(VEC(second_block_pos) - VEC(pos)):
-                # Check if each of the supporting blocks exist in the neighbors
-                if neighbors[support] in Block.instances:
-                    if Block.instances[neighbors[support]].name not in data["support"][support]:
-                        return False
-                else:
+    if "support" in data and data["support"]: # If the block requires support
+        for support in data["support"]: # Check every required supporting block
+            if neighbors[support] in Block.instances: # If the required support position has a block there
+                # If the block is not the required supporting block
+                if Block.instances[neighbors[support]].name not in data["support"][support]:
                     return False
-            else:
-                return True
-    return True
+            else: # If the required support position doesn't have a block there
+                if ignored_block_offset: # If there's a required support position to be ignored
+                    support_vec = VEC(inttup(support.split()))
+                    # If the ignored offset refers to the same block pos as the required support block pos, then it is placeable
+                    if inttup(-support_vec) == inttup(ignored_block_offset):
+                        return True
+                return False # If there are no ignored blocks, it is not placeable
+    return True # If it doesn't require support, then it is placeable
 
-def is_placeable(player, pos: tuple, data: dict, neighbors: dict, worldslice: WorldSlices, second_block_pos: tuple=False) -> bool:
+def is_placeable(player, pos: tuple, data: dict, neighbors: dict, counterpart_offset: None | VEC = None) -> bool:
     """Evaluates if a block is placeable at a given position
 
     Args:
@@ -244,6 +224,4 @@ def is_placeable(player, pos: tuple, data: dict, neighbors: dict, worldslice: Wo
     """
 
     # Checking if the position occupied and supported.
-    if not is_occupied(player, pos, worldslice) and is_supported(pos, data, neighbors, second_block_pos=second_block_pos):
-        return True
-    return False
+    return not is_occupied(player, pos) and is_supported(data, neighbors, counterpart_offset)
