@@ -8,9 +8,12 @@
 import pygame
 
 from src.constants import VEC, MIN_BLOCK_SIZE, BLOCK_SIZE, CHUNK_SIZE, BLOCK_DATA, WorldSlices
+from src.utils import inttup, generate_neighbours
 from src.particle import BlockParticle
 from src.images import BLOCK_TEXTURES
-from src.utils import inttup
+
+# class Chunk:
+#     instances = {}
 
 class BlockData(dict):
     def __missing__(self, key):
@@ -20,51 +23,52 @@ class Block:
     """Class that handles the managaing, updating and drawing of blocks."""
     instances = {}
 
-    def __init__(self, chunk, pos: tuple, name: str):
+    def __init__(self, name: str, worldslice: WorldSlices):
         __class__.instances[tuple(pos)] = self
         self.name = name
         self.data = BLOCK_DATA[self.name]
-        self.chunk = chunk
-        self.coords = VEC(pos)
-        self.pos = self.coords * BLOCK_SIZE
-        self.neighbors = {
-            "0 -1": inttup((self.coords.x, self.coords.y-1)),
-            "0 1": inttup((self.coords.x, self.coords.y+1)),
-            "-1 0": inttup((self.coords.x-1, self.coords.y)),
-            "1 0": inttup((self.coords.x+1, self.coords.y))
-        }
+        self.worldslice = worldslice
         self.image = BLOCK_TEXTURES[self.name]
+
+        pos *= BLOCK_SIZE
 
         # Different hitbox types (currently only two)
         if self.data["collision_box"] == "full":
-            self.rect = pygame.Rect(self.pos, (BLOCK_SIZE, BLOCK_SIZE))
+            self.rect = pygame.Rect(pos, (BLOCK_SIZE, BLOCK_SIZE))
         elif self.data["collision_box"] == "none":
-            self.rect = pygame.Rect(self.pos, (0, 0))
+            self.rect = pygame.Rect(pos, (0, 0))
 
     def update(self, chunks):
         # Check if the block is supported, if not then remove the block
         if not is_supported(self.data, self.neighbors):
-            remove_block(chunks, self.coords, self.data, self.neighbors)
+            remove_block(chunks, self.coords, self.data, self.neighbors, self.worldslice)
 
-    def draw(self, screen):
-        on_chunk_pos = self.pos.x / BLOCK_SIZE % CHUNK_SIZE * MIN_BLOCK_SIZE, self.pos.y / BLOCK_SIZE % CHUNK_SIZE * MIN_BLOCK_SIZE
-        screen.blit(self.image, on_chunk_pos)
+    # def draw(self, screen):
+    #     on_chunk_pos = self.pos.x / BLOCK_SIZE % CHUNK_SIZE * MIN_BLOCK_SIZE, self.pos.y / BLOCK_SIZE % CHUNK_SIZE * MIN_BLOCK_SIZE
+    #     screen.blit(self.image, on_chunk_pos)
 
     def kill(self) -> None:
         if inttup(self.coords) in __class__.instances:
             del __class__.instances[inttup(self.coords)]
             del self
 
-    def calc_pos(self, camera) -> None:
-        self.rect.topleft = self.pos - camera.pos
+    # def calc_pos(self, camera) -> None:
+    #     self.rect.topleft = self.pos - camera.pos
 
 class Location:
     instances: dict[tuple[int, int], Block] = {}
 
-    def __init__(self, pos, **kwargs: dict[str, str]) -> None:
+    def __init__(self, pos: tuple[int, int], chunks: dict, new_blocks: dict[WorldSlices, str]) -> None:
         self.pos = pos
-        for worldslice, block in kwargs.items():
-            self[worldslice] = block
+        for worldslice, block in new_blocks.items():
+            self[worldslice] = Block(block, worldslice)
+
+        self.chunk = chunks[(self.pos[0] // CHUNK_SIZE, self.pos[1] // CHUNK_SIZE)]
+        self.coords = VEC(pos)
+        self.pos = self.coords * BLOCK_SIZE # TODO: <-- Check if this is useless
+        self.neighbors = generate_neighbours(self.pos)
+
+        self.image = pygame.Surface((MIN_BLOCK_SIZE, MIN_BLOCK_SIZE))
 
     def __setitem__(self, key: WorldSlices, value: Block):
         setattr(self, key.name.lower(), value)
@@ -78,26 +82,53 @@ class Location:
     def __delitem__(self, key: WorldSlices):
         delattr(self, key.name.lower())
 
+    def __bool__(self):
+        return any([worldslice.name in self for worldslice in WorldSlices])
+
     def get_if_in(self, key):
         if key in self:
             return self[key]
 
-    def __bool__(self):
-        return any([worldslice.name in self for worldslice in WorldSlices])
-
     # TODO: use tag system for transparency
-    def draw(self, screen):
-        get = self.get_if_in # Makes it a tad cleaner
+    def highest_opaque_block(self):
+        get = self.get_if_in
         for block in {get(WorldSlices.FOREGROUND), get(WorldSlices.MIDDLEGROUND), get(WorldSlices.BACKGROUND)}:
-            block.draw(screen)
+            if block.name not in {"glass", "tall_grass", "tall_grass_top", "grass", "dandelion", "poppy"}: # <- tags go here
+                return block
 
-            if block.name != "glass": # <- use tags here :P
-                break
+    # Get top most opaque block or the background block
+    # Blit this block
+    # Go forward from this layer, blitting every block
+    # 
+
+    def draw(self, screen):
+        # If there are no opaque blocks use the background
+        block = self.highest_opaque_block() or self[WorldSlices.BACKGROUND]
+
+        # Get the integer value of every layer, then slice it to get the values of layers from the block
+        # above forward
+        for worldslice in [worldslice.value for worldslice in WorldSlices][block.worldslice.value:]:
+            # Get the block at these worldslices
+            block = self[WorldSlices(worldslice)]
+            # Blit the block
+            self.image.blit(block.image, (0, 0))
 
     def update(self, chunks):
         get = self.get_if_in # Makes it a tad cleaner
         for block in {get(WorldSlices.FOREGROUND), get(WorldSlices.MIDDLEGROUND), get(WorldSlices.BACKGROUND)}:
             block.update(chunks)
+
+    @staticmethod
+    def new(pos: tuple[int, int], chunks: dict, new_blocks_dict):
+        new_blocks: dict[WorldSlices, str] = dict(map(WorldSlices, new_blocks_dict), new_blocks_dict.values())
+        chunk = (pos[0] // CHUNK_SIZE, pos[1] // CHUNK_SIZE)
+
+        if pos in chunks[chunk].block_data:
+            for worldslice, block_name in new_blocks.items():
+                chunks[chunk].block_data[pos][worldslice] = block_name
+            return
+
+        chunks[chunk].block_data[pos] = Location(pos, **{worldslice: name for worldslice, name in new_blocks})
 
 def remove_block(chunks: dict, pos: tuple, data: dict, neighbors: dict, worldslice: WorldSlices) -> None:
     """Remove the block at the position given
@@ -116,7 +147,7 @@ def remove_block(chunks: dict, pos: tuple, data: dict, neighbors: dict, worldsli
     # TODO: Remove next layers and use worldslices instead :D
     # If the block is layered, instead of removing the block completely, change that block to the next layer
     if "next_layer" in data:
-        Location.instances[pos][worldslice] = Block(chunk, pos, data["next_layer"])
+        Location.instances[pos][worldslice] = Block(chunk, pos, data["next_layer"], worldslice)
         # chunks[chunk].block_data[pos][worldslice] = data["next_layer"] <- shouldnt be necessary
     else:
         # Remove the block from both the blocks dictionary AND the chunk information
@@ -135,6 +166,7 @@ def set_block(chunks: dict, block_pos: tuple, block_name: str, worldslice: World
     # Calculates the position of the chunk the block is in.
     chunk = (block_pos[0] // CHUNK_SIZE, block_pos[1] // CHUNK_SIZE)
     if chunk in chunks:
+        Location.new(block_pos, chunks, worldslice=block_name)
         # Create an entry in the block dictionary that contains a new Block object
         Block.instances[block_pos] = Block(chunks[chunk], block_pos, block_name)
         if block_pos in chunks[chunk].block_data:
@@ -209,7 +241,7 @@ def is_supported(data: dict, neighbors: dict[str, tuple[int, int]], ignored_bloc
                 return False # If there are no ignored blocks, it is not placeable
     return True # If it doesn't require support, then it is placeable
 
-def is_placeable(player, pos: tuple, data: dict, neighbors: dict, counterpart_offset: None | VEC = None) -> bool:
+def is_placeable(player, pos: tuple, data: dict, neighbors: dict, worldslice: WorldSlices, ignored_block_offset: None | VEC = None) -> bool:
     """Evaluates if a block is placeable at a given position
 
     Args:
@@ -217,11 +249,11 @@ def is_placeable(player, pos: tuple, data: dict, neighbors: dict, counterpart_of
         pos (tuple): The position to check
         data (dict): The block data
         neighbors (dict): The block's neighbours
-        second_block_pos (tuple, optional): Passed into is_supported for some unknown magical reason. Defaults to False.
+        ignored_block_offset (None or VEC): Passed into is_supported, for a known reason (:D), check docstring of is_supported for more information
 
     Returns:
         bool: If you can place the block or not
     """
 
     # Checking if the position occupied and supported.
-    return not is_occupied(player, pos) and is_supported(data, neighbors, counterpart_offset)
+    return not is_occupied(player, pos, worldslice) and is_supported(data, neighbors, ignored_block_offset)
