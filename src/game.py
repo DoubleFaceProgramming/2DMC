@@ -113,7 +113,7 @@ class Game():
                 mouse_state = event.button
                 if not self.player.inventory.visible:
                     if event.button == 1:
-                        self.player.break_block(Chunk.instances, mpos)
+                        self.player.break_block(Chunk.instances, mpos, self.current_worldslice)
                     elif event.button == 2:
                         self.player.pick_block()
                     elif event.button == 3:
@@ -138,7 +138,15 @@ class Game():
         # Loading chunks
         self.rendered_chunks = load_chunks(self.player.camera)
         # Calling relevant update functions.
-        SPRITE_MANAGER.update(dt, m_state=mouse_state, locations=Location.instances, camera=self.player.camera, rendered_chunks=self.rendered_chunks, player_y=self.player.coords.y, mpos=mpos)
+        SPRITE_MANAGER.update(dt,
+            m_state=mouse_state,
+            locations=Location.instances,
+            camera=self.player.camera,
+            rendered_chunks=self.rendered_chunks,
+            player_y=self.player.coords.y,
+            mpos=mpos,
+            worldslice=self.current_worldslice
+        )
 
     def draw(self) -> None:
         # Drawing all sprites!

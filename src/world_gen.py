@@ -310,13 +310,14 @@ class Chunk(Sprite):
     def update(self, dt: float, **kwargs) -> None:
         if self.pos not in kwargs["rendered_chunks"]: return
 
-        if (block_positions := list(self.location_data.keys())):
-            if block_positions[0] not in Block.instances:
-                for block in self.location_data:
-                    Block.instances[block] = Block(self, block, self.location_data[block])
+        # if (loc_positions := list(self.location_data.keys())):
+        #     if loc_positions[0] not in Location.instances:
+        #         for location in self.location_data:
+        #             Location.instances[location] = Block(self, location, self.location_data[location])
 
-        for block in self.location_data:
-            Block.instances[block].calc_pos(kwargs["camera"])
+        for location in self.location_data:
+            if location in Location.instances:
+                Location.instances[location].calc_pos(kwargs["camera"])
 
         self.rect.topleft = (self.pos[0] * CHUNK_SIZE * BLOCK_SIZE - kwargs["camera"].pos[0],
                              self.pos[1] * CHUNK_SIZE * BLOCK_SIZE - kwargs["camera"].pos[1],)
@@ -470,10 +471,11 @@ def generate_structures(x: int, y: int, chunk_data: dict, name: str, attempts: i
                 Location.new(block_pos, Chunk.instances, {WorldSlices.MIDGROUND: block_name})
             else:
                 if block_chunk in Chunk.instances:
-                    set_block(Chunk.instances, block_pos, block_name)
+                    set_block(Chunk.instances, block_pos, block_name, WorldSlices.MIDGROUND)
                 else:
                     Location.new(block_pos, Chunk.instances, {WorldSlices.MIDGROUND: block_name})
-                    Chunk.generated_blocks[block_pos] = Location.instances[block_pos]
+                    # Chunk.generated_blocks[block_pos] = Location.instances[block_pos]
+                    # Chunk.generated_blocks[block_pos] = Location.instances[block_pos]
 
     return chunk_data
 

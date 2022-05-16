@@ -34,9 +34,9 @@ class Block:
 
         # Different hitbox types (currently only two)
         if self.data["collision_box"] == "full":
-            self.rect = pygame.Rect(coords * BLOCKSIZE, (BLOCK_SIZE, BLOCK_SIZE))
+            self.rect = pygame.Rect(VEC(coords) * BLOCK_SIZE, (BLOCK_SIZE, BLOCK_SIZE))
         elif self.data["collision_box"] == "none":
-            self.rect = pygame.Rect((coords * BLOCKSIZE), (0, 0))
+            self.rect = pygame.Rect(VEC(coords) * BLOCK_SIZE, (0, 0))
 
     def update(self, chunks):
         # Check if the block is supported, if not then remove the block
@@ -58,14 +58,15 @@ class Block:
 class Location:
     instances: dict[tuple[int, int], Location] = {}
 
-    def __init__(self, pos: tuple[int, int], chunks: dict, new_blocks: dict[WorldSlices, str]) -> None:
+    def __init__(self, coords: tuple[int, int], chunks: dict, new_blocks: dict[WorldSlices, str]) -> None:
         for worldslice, block in new_blocks.items():
-            self[worldslice] = Block(block, pos, worldslice)
+            self[worldslice] = Block(block, coords, worldslice)
 
-        self.chunk = chunks[(self.pos[0] // CHUNK_SIZE, self.pos[1] // CHUNK_SIZE)]
-        self.coords = VEC(pos)
+        self.coords = VEC(coords)
+        self.chunk = chunks[(self.coords[0] // CHUNK_SIZE, self.coords[1] // CHUNK_SIZE)]
         self.pos = self.coords * BLOCK_SIZE # TODO: <-- Check if this is useless
         self.neighbors = generate_neighbours(self.pos)
+        self.screen_pos = self.pos * BLOCK_SIZE
 
         self.image = pygame.Surface((MIN_BLOCK_SIZE, MIN_BLOCK_SIZE))
         self.__class__.instances[inttup(self.coords)] = self
@@ -77,7 +78,7 @@ class Location:
         getattr(self, key.name.lower(), "")
 
     def __contains__(self, key: WorldSlices):
-        return getattr(self, key.name.lower(), False)
+        return bool(getattr(self, key.name.lower(), False))
 
     def __delitem__(self, key: WorldSlices):
         delattr(self, key.name.lower())
@@ -93,8 +94,9 @@ class Location:
     def highest_opaque_block(self):
         get = self.get_if_in
         for block in {get(WorldSlices.FOREGROUND), get(WorldSlices.MIDGROUND), get(WorldSlices.BACKGROUND)}:
-            if block.name not in {"glass", "tall_grass", "tall_grass_top", "grass", "dandelion", "poppy"}: # <- tags go here
-                return block
+            if block:
+                if block.name not in {"glass", "tall_grass", "tall_grass_top", "grass", "dandelion", "poppy"}: # <- tags go here
+                    return block
 
     def draw(self, screen: pygame.Surface, camera):
         # If there are no opaque blocks use the background
@@ -102,14 +104,15 @@ class Location:
 
         # Get the integer value of every layer, then slice it to get the values of layers from the block
         # above forward
-        for worldslice in [worldslice.value for worldslice in WorldSlices][block.worldslice.value:]:
-            # Get the block at these worldslices
-            block = self[WorldSlices(worldslice)]
-            # Blit the block
-            self.image.blit(block.image, (0, 0))
+        if block:
+            for worldslice in [worldslice.value for worldslice in WorldSlices][block.worldslice.value:]:
+                # Get the block at these worldslices
+                block = self[WorldSlices(worldslice)]
+                # Blit the block
+                self.image.blit(block.image, (0, 0))
 
-        on_chunk_pos = self.pos.x / BLOCK_SIZE % CHUNK_SIZE * MIN_BLOCK_SIZE, self.pos.y / BLOCK_SIZE % CHUNK_SIZE * MIN_BLOCK_SIZE
-        screen.blit(self.image, on_chunk_pos)
+            on_chunk_pos = self.pos.x / BLOCK_SIZE % CHUNK_SIZE * MIN_BLOCK_SIZE, self.pos.y / BLOCK_SIZE % CHUNK_SIZE * MIN_BLOCK_SIZE
+            screen.blit(self.image, on_chunk_pos)
 
     def update(self, chunks):
         get = self.get_if_in # Makes it a tad cleaner
@@ -121,17 +124,21 @@ class Location:
             del __class__.instances[inttup(self.coords)]
             del self
 
+    def calc_pos(self, camera) -> None:
+        self.screen_pos = self.pos - camera.pos
+
     @staticmethod
     def new(pos: tuple[int, int], chunks: dict, new_blocks_dict):
         chunk = (pos[0] // CHUNK_SIZE, pos[1] // CHUNK_SIZE)
 
+        # if chunk in chunks: # <-- might be bad
         if pos in chunks[chunk].location_data:
             for worldslice, block_name in new_blocks_dict.items():
-                chunks[chunk].block_data[pos][worldslice] = block_name
+                chunks[chunk].location_data[pos][worldslice] = block_name
             return
 
         # chunks[chunk].block_data[pos] = Location(pos, {worldslice: name for worldslice, name in new_blocks_dict.items()})
-        chunks[chunk].block_data[pos] = Location(pos, chunks, new_blocks_dict)
+        chunks[chunk].location_data[pos] = Location(pos, chunks, new_blocks_dict)
 
 def remove_block(chunks: dict, pos: tuple, data: dict, neighbors: dict, worldslice: WorldSlices) -> None:
     """Remove the block at the position given
@@ -155,8 +162,8 @@ def remove_block(chunks: dict, pos: tuple, data: dict, neighbors: dict, worldsli
     else:
         # Remove the block from both the blocks dictionary AND the chunk information
         del Location.instances[pos][worldslice]
-        del chunks[chunk].block_data[pos][worldslice]
-        if not chunks[chunk].block_data[pos]: # check __bool__
+        del chunks[chunk].location_data[pos][worldslice]
+        if not chunks[chunk].location_data[pos]: # check __bool__
             del Location.instances[pos]
 
     # After the block breaks, update its neighbors
@@ -169,13 +176,13 @@ def set_block(chunks: dict, block_pos: tuple, block_name: str, worldslice: World
     # Calculates the position of the chunk the block is in.
     chunk = (block_pos[0] // CHUNK_SIZE, block_pos[1] // CHUNK_SIZE)
     if chunk in chunks:
-        Location.new(block_pos, chunks, worldslice=block_name)
+        Location.new(block_pos, chunks, {worldslice: block_name})
         # Create an entry in the block dictionary that contains a new Block object
-        Block.instances[block_pos] = Block(chunks[chunk], block_pos, block_name)
-        if block_pos in chunks[chunk].block_data:
-            chunks[chunk].block_data[block_pos][worldslice] = block_name
+        Location.instances[block_pos][worldslice] = Block(block_name, block_pos, worldslice)
+        if block_pos in chunks[chunk].location_data:
+            chunks[chunk].location_data[block_pos][worldslice] = block_name
         else:
-            chunks[chunk].block_data[block_pos] = Location(block_pos, chunks, {worldslice.value: block_name})
+            chunks[chunk].location_data[block_pos] = Location(block_pos, chunks, {worldslice.value: block_name})
 
 def updated_set_block(chunks: dict, pos: tuple, name: str, neighbors: dict, worldslice: WorldSlices) -> None:
     """Set the block at the position given to the block given
@@ -190,7 +197,7 @@ def updated_set_block(chunks: dict, pos: tuple, name: str, neighbors: dict, worl
     set_block(chunks, pos, name, worldslice)
     for neighbor in neighbors:
         # Update the neighboring blocks
-        if neighbors[neighbor] in Block.instances:
+        if neighbors[neighbor] in Location.instances:
             Location.instances[neighbors[neighbor]][worldslice].update(chunks)
 
 def is_occupied(player, pos: tuple, worldslice: WorldSlices) -> bool:
@@ -217,7 +224,7 @@ def is_occupied(player, pos: tuple, worldslice: WorldSlices) -> bool:
             return False
     return True
 
-def is_supported(data: dict, neighbors: dict[str, tuple[int, int]], ignored_block_offset: None | VEC = None) -> bool:
+def is_supported(data: dict, neighbors: dict[str, tuple[int, int]], worldslice: WorldSlices, ignored_block_offset: None | VEC = None) -> bool:
     """Checks if the given block data (data) of the block can be supported at the given position
 
     Args:
@@ -231,9 +238,11 @@ def is_supported(data: dict, neighbors: dict[str, tuple[int, int]], ignored_bloc
 
     if "support" in data and data["support"]: # If the block requires support
         for support in data["support"]: # Check every required supporting block
-            if neighbors[support] in Block.instances: # If the required support position has a block there
+            if neighbors[support] in Location.instances: # If the required support position has a block there
+                # if Block.instances[neighbors[support]].name not in data["support"][support]:
                 # If the block is not the required supporting block
-                if Block.instances[neighbors[support]].name not in data["support"][support]:
+                if worldslice not in Location.instances[neighbors[support]]: return False
+                if Location.instances[neighbors[support]][worldslice].name not in data["support"][support]:
                     return False
             else: # If the required support position doesn't have a block there
                 if ignored_block_offset: # If there's a required support position to be ignored

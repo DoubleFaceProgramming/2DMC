@@ -268,6 +268,7 @@ class Player(Sprite):
                     if (block_pos := (int(self.coords.x - 1 + x), int(self.coords.y - 1 + y))) in locations: # If there exists a block at that position
                         # Get the block object in that position from the main blocks dictionary
                         block = locations[block_pos][WorldSlices.MIDGROUND]
+                        if not block: continue
                         if block.data["collision_box"] == "full": # If the block has a full collision box
                             # Here is some code for solving some rounding problems/bugs
                             # Bug description here vvv
@@ -311,6 +312,7 @@ class Player(Sprite):
                 for x in range(3):
                     if (int(self.coords.x - 1 + x), int(self.coords.y - 1 + y)) in locations:
                         block = locations[(int(self.coords.x - 1 + x), int(self.coords.y - 1 + y))][WorldSlices.MIDGROUND]
+                        if not block: continue
                         if block.data["collision_box"] == "full":
                             if self.vel.x < 0:
                                 colliding, detecting_blocks = block_collide(
@@ -338,7 +340,7 @@ class Player(Sprite):
         # Recalculating the position of the bottom bar
         self.bottom_bar.topleft = (self.rect.left + 1, self.rect.bottom)
 
-    def break_block(self, chunks: dict, mpos: pygame.math.Vector2) -> None:
+    def break_block(self, chunks: dict, mpos: pygame.math.Vector2, worldslice) -> None:
         """Break the block at the position of the mouse
 
         Args:
@@ -349,12 +351,14 @@ class Player(Sprite):
         neighbors = generate_neighbours(block_pos)
 
         # If the block exists:
-        if block_pos in Block.instances:
-            if "unbreakable" in BLOCK_DATA[Block.instances[block_pos].name]: # And the block does not have the unbreakable tag:
-                if BLOCK_DATA[Block.instances[block_pos].name]["unbreakable"]:
+        if block_pos in Location.instances:
+            block = Location.instances[block_pos][worldslice]
+            if not block: return # NOTE COULD BREAK STUFF!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            if "unbreakable" in BLOCK_DATA[block.name]: # And the block does not have the unbreakable tag:
+                if BLOCK_DATA[Location.instances[block_pos][worldslice].name]["unbreakable"]:
                     return
             # Remove it!
-            remove_block(chunks, block_pos, Block.instances[block_pos].data, neighbors)
+            remove_block(chunks, block_pos, Location.instances[block_pos][worldslice].data, neighbors)
 
     def place_block(self, chunks, mpos: Vector2, worldslice: WorldSlices) -> None:
         if not self.inventory.holding: return # If the player isn't holding any block, just skip everything
@@ -372,7 +376,7 @@ class Player(Sprite):
 
         # For singular components blocks (ex. dirt), aka it doesn't have counterparts
         if "counterparts" not in data:
-            if is_placeable(self, block_pos, data, neighbors): # If the block is placeable according to its neighbors and data
+            if is_placeable(self, block_pos, data, neighbors, worldslice): # If the block is placeable according to its neighbors and data
                 updated_set_block(chunks, block_pos, block_name, neighbors, worldslice) # Place down the block and update neighbors
             return
 
@@ -388,7 +392,7 @@ class Player(Sprite):
             # This is done by passing the offset of the counterpart into is_placeable,
             # which would be checked if the block that should support the counterpart is at the position of the original block
             # if so, it means that the block that should support the counterpart IS the original block, thus needs to be ignored
-            if not is_placeable(self, counterpart_pos, counterpart_data, counterpart_neighbors, counterpart_offset):
+            if not is_placeable(self, counterpart_pos, counterpart_data, counterpart_neighbors, worldslice, counterpart_offset):
                 return
             # Checks if the original block can be placed or not, using "counterpart_offset" to ignore counterparts that
             # are required for the original block to exist, but are not yet placed
@@ -457,7 +461,7 @@ class Crosshair(Sprite):
         self.mpos = VEC(pygame.mouse.get_pos())
         self.block_pos = inttup((self.master.pos + (self.mpos - self.master.rect.topleft)) // BLOCK_SIZE)
         if self.block_pos in Location.instances:
-            self.block = Location.instances[inttup(self.block_pos)][kwargs["location"]]
+            self.block = Location.instances[inttup(self.block_pos)][kwargs["worldslice"]]
         else:
             self.block = ""
 
