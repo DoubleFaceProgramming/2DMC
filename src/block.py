@@ -5,15 +5,19 @@
 # The majority of the game assets are properties of Mojang Studios,
 # you can view their TOS here: https://account.mojang.com/documents/minecraft_eula
 
+from __future__ import annotations
+from tarfile import BLOCKSIZE
+
 import pygame
 
 from src.constants import VEC, MIN_BLOCK_SIZE, BLOCK_SIZE, CHUNK_SIZE, BLOCK_DATA, WorldSlices
 from src.utils import inttup, generate_neighbours
 from src.particle import BlockParticle
 from src.images import BLOCK_TEXTURES
+from typing import TYPE_CHECKING
 
-# class Chunk:
-#     instances = {}
+if TYPE_CHECKING:
+    from src.player import Player
 
 class BlockData(dict):
     def __missing__(self, key):
@@ -21,22 +25,18 @@ class BlockData(dict):
 
 class Block:
     """Class that handles the managaing, updating and drawing of blocks."""
-    instances = {}
 
-    def __init__(self, name: str, worldslice: WorldSlices):
-        __class__.instances[tuple(pos)] = self
+    def __init__(self, name: str, coords, worldslice: WorldSlices):
         self.name = name
         self.data = BLOCK_DATA[self.name]
         self.worldslice = worldslice
         self.image = BLOCK_TEXTURES[self.name]
 
-        pos *= BLOCK_SIZE
-
         # Different hitbox types (currently only two)
         if self.data["collision_box"] == "full":
-            self.rect = pygame.Rect(pos, (BLOCK_SIZE, BLOCK_SIZE))
+            self.rect = pygame.Rect(coords * BLOCKSIZE, (BLOCK_SIZE, BLOCK_SIZE))
         elif self.data["collision_box"] == "none":
-            self.rect = pygame.Rect(pos, (0, 0))
+            self.rect = pygame.Rect((coords * BLOCKSIZE), (0, 0))
 
     def update(self, chunks):
         # Check if the block is supported, if not then remove the block
@@ -56,12 +56,11 @@ class Block:
     #     self.rect.topleft = self.pos - camera.pos
 
 class Location:
-    instances: dict[tuple[int, int], Block] = {}
+    instances: dict[tuple[int, int], Location] = {}
 
     def __init__(self, pos: tuple[int, int], chunks: dict, new_blocks: dict[WorldSlices, str]) -> None:
-        self.pos = pos
         for worldslice, block in new_blocks.items():
-            self[worldslice] = Block(block, worldslice)
+            self[worldslice] = Block(block, pos, worldslice)
 
         self.chunk = chunks[(self.pos[0] // CHUNK_SIZE, self.pos[1] // CHUNK_SIZE)]
         self.coords = VEC(pos)
@@ -69,6 +68,7 @@ class Location:
         self.neighbors = generate_neighbours(self.pos)
 
         self.image = pygame.Surface((MIN_BLOCK_SIZE, MIN_BLOCK_SIZE))
+        self.__class__.instances[inttup(self.coords)] = self
 
     def __setitem__(self, key: WorldSlices, value: Block):
         setattr(self, key.name.lower(), value)
@@ -92,16 +92,11 @@ class Location:
     # TODO: use tag system for transparency
     def highest_opaque_block(self):
         get = self.get_if_in
-        for block in {get(WorldSlices.FOREGROUND), get(WorldSlices.MIDDLEGROUND), get(WorldSlices.BACKGROUND)}:
+        for block in {get(WorldSlices.FOREGROUND), get(WorldSlices.MIDGROUND), get(WorldSlices.BACKGROUND)}:
             if block.name not in {"glass", "tall_grass", "tall_grass_top", "grass", "dandelion", "poppy"}: # <- tags go here
                 return block
 
-    # Get top most opaque block or the background block
-    # Blit this block
-    # Go forward from this layer, blitting every block
-    # 
-
-    def draw(self, screen):
+    def draw(self, screen: pygame.Surface, camera):
         # If there are no opaque blocks use the background
         block = self.highest_opaque_block() or self[WorldSlices.BACKGROUND]
 
@@ -113,22 +108,30 @@ class Location:
             # Blit the block
             self.image.blit(block.image, (0, 0))
 
+        on_chunk_pos = self.pos.x / BLOCK_SIZE % CHUNK_SIZE * MIN_BLOCK_SIZE, self.pos.y / BLOCK_SIZE % CHUNK_SIZE * MIN_BLOCK_SIZE
+        screen.blit(self.image, on_chunk_pos)
+
     def update(self, chunks):
         get = self.get_if_in # Makes it a tad cleaner
-        for block in {get(WorldSlices.FOREGROUND), get(WorldSlices.MIDDLEGROUND), get(WorldSlices.BACKGROUND)}:
+        for block in {get(WorldSlices.FOREGROUND), get(WorldSlices.MIDGROUND), get(WorldSlices.BACKGROUND)}:
             block.update(chunks)
+
+    def kill(self) -> None:
+        if inttup(self.coords) in __class__.instances:
+            del __class__.instances[inttup(self.coords)]
+            del self
 
     @staticmethod
     def new(pos: tuple[int, int], chunks: dict, new_blocks_dict):
-        new_blocks: dict[WorldSlices, str] = dict(map(WorldSlices, new_blocks_dict), new_blocks_dict.values())
         chunk = (pos[0] // CHUNK_SIZE, pos[1] // CHUNK_SIZE)
 
-        if pos in chunks[chunk].block_data:
-            for worldslice, block_name in new_blocks.items():
+        if pos in chunks[chunk].location_data:
+            for worldslice, block_name in new_blocks_dict.items():
                 chunks[chunk].block_data[pos][worldslice] = block_name
             return
 
-        chunks[chunk].block_data[pos] = Location(pos, **{worldslice: name for worldslice, name in new_blocks})
+        # chunks[chunk].block_data[pos] = Location(pos, {worldslice: name for worldslice, name in new_blocks_dict.items()})
+        chunks[chunk].block_data[pos] = Location(pos, chunks, new_blocks_dict)
 
 def remove_block(chunks: dict, pos: tuple, data: dict, neighbors: dict, worldslice: WorldSlices) -> None:
     """Remove the block at the position given
@@ -142,7 +145,7 @@ def remove_block(chunks: dict, pos: tuple, data: dict, neighbors: dict, worldsli
 
     pos = inttup(pos)
     # Create a random number of particles
-    BlockParticle.spawn(pos, Block.instances)
+    BlockParticle.spawn(pos, Location.instances)
     chunk = (pos[0] // CHUNK_SIZE, pos[1] // CHUNK_SIZE)
     # TODO: Remove next layers and use worldslices instead :D
     # If the block is layered, instead of removing the block completely, change that block to the next layer
@@ -172,7 +175,7 @@ def set_block(chunks: dict, block_pos: tuple, block_name: str, worldslice: World
         if block_pos in chunks[chunk].block_data:
             chunks[chunk].block_data[block_pos][worldslice] = block_name
         else:
-            chunks[chunk].block_data[block_pos] = Location(block_pos, **{worldslice.value: block_name})
+            chunks[chunk].block_data[block_pos] = Location(block_pos, chunks, {worldslice.value: block_name})
 
 def updated_set_block(chunks: dict, pos: tuple, name: str, neighbors: dict, worldslice: WorldSlices) -> None:
     """Set the block at the position given to the block given
@@ -188,7 +191,7 @@ def updated_set_block(chunks: dict, pos: tuple, name: str, neighbors: dict, worl
     for neighbor in neighbors:
         # Update the neighboring blocks
         if neighbors[neighbor] in Block.instances:
-            Block.instances[neighbors[neighbor]].update(chunks)
+            Location.instances[neighbors[neighbor]][worldslice].update(chunks)
 
 def is_occupied(player, pos: tuple, worldslice: WorldSlices) -> bool:
     """Check if a block or the player overlaps with the position given

@@ -10,7 +10,7 @@ from pygame import Surface
 from src.sprite import Sprite, LayersEnum
 from src.constants import MAX_Y, BLUE_SKY
 from src.particle import VoidFogParticle
-from src.block import Block
+from src.block import Location
 
 class Background(Sprite):
     """Container class for drawing the background (sky)"""
@@ -28,7 +28,7 @@ class Background(Sprite):
         self.sun.update()
         self.moon.update()
 
-        VoidFogParticle.spawn(kwargs["camera"].pos, Block.instances, kwargs["player_y"])
+        VoidFogParticle.spawn(kwargs["camera"].pos, Location.instances, kwargs["player_y"])
 
     def draw(self, screen: Surface, **kwargs) -> None:
         self.sky.draw(screen)

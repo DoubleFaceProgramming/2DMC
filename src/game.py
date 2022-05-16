@@ -5,6 +5,7 @@
 # The majority of the game assets are properties of Mojang Studios,
 # you can view their TOS here: https://account.mojang.com/documents/minecraft_eula
 
+from re import L
 from sys import exit as sysexit
 from pathlib import Path
 from random import seed
@@ -19,6 +20,7 @@ from pygame.locals import  (
     QUIT, WINDOWMOVED
 )
 
+from src.block import Location
 from src.utils import bps, inttup, text, CyclicalList
 from src.world_gen import Chunk, Block, load_chunks
 from src.sprite import LayersEnum, SPRITE_MANAGER
@@ -136,7 +138,7 @@ class Game():
         # Loading chunks
         self.rendered_chunks = load_chunks(self.player.camera)
         # Calling relevant update functions.
-        SPRITE_MANAGER.update(dt, m_state=mouse_state, blocks=Block.instances, camera=self.player.camera, rendered_chunks=self.rendered_chunks, player_y=self.player.coords.y, mpos=mpos)
+        SPRITE_MANAGER.update(dt, m_state=mouse_state, locations=Location.instances, camera=self.player.camera, rendered_chunks=self.rendered_chunks, player_y=self.player.coords.y, mpos=mpos)
 
     def draw(self) -> None:
         # Drawing all sprites!
@@ -154,7 +156,7 @@ class Game():
             "Camera offset": inttup(self.player.pos - self.player.camera.pos - VEC(SCR_DIM) / 2 + self.player.size / 2),
             "Chunk": inttup(self.player.coords // CHUNK_SIZE),
             "Chunks loaded": len(Chunk.instances),
-            "Rendered blocks": len(Block.instances),
+            "Rendered blocks": len(Location.instances),
             "Block position": inttup((self.player.pos + (mpos - self.player.rect.topleft)) // BLOCK_SIZE),
             "Detecting rects": len(self.player.detecting_blocks),
             "Particles": len(Particle.instances),

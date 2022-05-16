@@ -23,7 +23,6 @@ from src.constants import CAVE_PREGEN_BATCH, CHUNK_SIZE, MIN_BLOCK_SIZE, BLOCK_S
 from src.sprite import SPRITE_MANAGER, Sprite, LayersEnum, SpriteNotFoundException
 from src.utils import ascii_str_sum, canter_pairing, inttup, rand_bool
 from src.block import Block, BlockData, Location, set_block
-from src.block import Block
 
 if TYPE_CHECKING:
     from src.player import Camera
@@ -144,6 +143,7 @@ class StructureGenerator(object):
 
         return block_in_chunk
 
+    # 🤮
     def can_generate(self, block_name: str, block_in_chunk: str) -> int:
         """
 
@@ -301,20 +301,21 @@ class Chunk(Sprite):
         __class__.instances[pos] = self
         super().__init__(layer)
         self.pos = VEC(pos)
-        self.previous_block_data = {}
-        self.block_data = BlockData(self.generate(pos[0], pos[1]))
+        self.previous_location_data = {}
+        self.location_data = {}
+        self.location_data = BlockData(self.generate(pos[0], pos[1]))
         self.rect = Rect(0, 0, CHUNK_SIZE * BLOCK_SIZE, CHUNK_SIZE * BLOCK_SIZE)
         self.image = Surface((MIN_BLOCK_SIZE * CHUNK_SIZE, MIN_BLOCK_SIZE * CHUNK_SIZE), SRCALPHA)
 
     def update(self, dt: float, **kwargs) -> None:
         if self.pos not in kwargs["rendered_chunks"]: return
 
-        if (block_positions := list(self.block_data.keys())):
+        if (block_positions := list(self.location_data.keys())):
             if block_positions[0] not in Block.instances:
-                for block in self.block_data:
-                    Block.instances[block] = Block(self, block, self.block_data[block])
+                for block in self.location_data:
+                    Block.instances[block] = Block(self, block, self.location_data[block])
 
-        for block in self.block_data:
+        for block in self.location_data:
             Block.instances[block].calc_pos(kwargs["camera"])
 
         self.rect.topleft = (self.pos[0] * CHUNK_SIZE * BLOCK_SIZE - kwargs["camera"].pos[0],
@@ -324,28 +325,28 @@ class Chunk(Sprite):
         # Calls the draw function for each of the blocks inside
         if self.pos not in kwargs["rendered_chunks"]: return
 
-        if self.block_data:
-            if self.previous_block_data != self.block_data:
+        if self.location_data:
+            if self.previous_location_data != self.location_data:
                 self.image = Surface((MIN_BLOCK_SIZE * CHUNK_SIZE, MIN_BLOCK_SIZE * CHUNK_SIZE)).convert()
                 self.image.set_colorkey((0, 0, 0))
-                for block in self.block_data:
-                    if block not in Block.instances:
-                        Block.instances[block] = Block(self, block, self.block_data[block])
-                    Block.instances[block].draw(self.image)
+                for pos in self.location_data:
+                    if pos not in Location.instances:
+                        Location.new(pos, self.__class__.instances, {WorldSlices.MIDGROUND: self.location_data[pos][WorldSlices.MIDGROUND]})
+                    Location.instances[pos].draw(self.image, kwargs["camera"])
                 self.image = scale(self.image, (BLOCK_SIZE * CHUNK_SIZE, BLOCK_SIZE * CHUNK_SIZE))
 
             screen.blit(self.image, self.rect)
 
-        self.previous_block_data = self.block_data.copy()
+        self.previous_location_data = self.location_data.copy()
 
     def debug(self, screen: Surface, **kwargs) -> None:
         drawrect(screen, (255, 255, 0), self.rect, width=1)
 
     def kill(self) -> None:
         # Removing the blocks inside the chunk.
-        for block in self.block_data:
-            if block in Block.instances:
-                Block.instances[block].kill()
+        for location in self.location_data:
+            if location in Location.instances:
+                Location.instances[location].kill()
 
         try: # Deleting the chunk from the sprite list.
             SPRITE_MANAGER.remove(self)
@@ -355,6 +356,7 @@ class Chunk(Sprite):
     def generate(self, x: int, y: int) -> dict:
         """Takes the chunk coordinates and returns a dictionary containing the block data inside the chunk"""
 
+        self.location_data = {} # Fixes crash
         chunk_data = {}
         for y_pos in range(CHUNK_SIZE):
             for x_pos in range(CHUNK_SIZE):
@@ -367,13 +369,13 @@ class Chunk(Sprite):
                     block_name = generate_block(block_pos[0], block_pos[1])
 
                 if block_name != "":
-                    chunk_data[block_pos] = Location(block_pos, MIDDLEGROUND=block_name)
+                    Location.new(block_pos, __class__.instances, {WorldSlices.MIDGROUND: block_name})
 
         # If the structure has already been pre-generated and saved in another chunk, don't generate it again
         if (x, y) in Structure.instances:
             for structure in Structure.instances[(x, y)]:
                 for block_pos, block_name in structure.blocks_in_chunk[(x, y)].items():
-                    chunk_data[block_pos] = Location(block_pos, MIDDLEGROUND=block_name)
+                    Location.new(block_pos, __class__.instances, {WorldSlices.MIDGROUND: block_name})
         else:
             if -1 <= y <= 1: # Surface generations
                 chunk_data = generate_structures(x, y, chunk_data, "oak_tree", 1, chance=33)
@@ -390,7 +392,7 @@ class Chunk(Sprite):
             elif MAX_Y // CHUNK_SIZE >= y >= MAX_Y // CHUNK_SIZE // 2:
                 chunk_data = generate_structures(x, y, chunk_data, "tuff", 2, chance=20)
 
-        return {pos: Location(pos, MIDDLEGROUND=block) for pos, block in chunk_data}
+        return chunk_data
 
 def get_structures(x: int, y: int, generator: StructureGenerator, attempts: int, chance: int | None, dist: dict) -> list:
     """Get structures inside the current chunk (x, y)
@@ -465,12 +467,13 @@ def generate_structures(x: int, y: int, chunk_data: dict, name: str, attempts: i
         for block_pos, block_name in struct.items():
             block_chunk = (floor(block_pos[0] / CHUNK_SIZE), floor(block_pos[1] / CHUNK_SIZE))
             if block_chunk[0] == x and block_chunk[1] == y:
-                chunk_data[block_pos] = Location(block_pos, MIDDLEGROUND=block_name)
+                Location.new(block_pos, Chunk.instances, {WorldSlices.MIDGROUND: block_name})
             else:
                 if block_chunk in Chunk.instances:
                     set_block(Chunk.instances, block_pos, block_name)
                 else:
-                    Chunk.generated_blocks[block_pos] = Location(block_pos, MIDDLEGROUND=block_name)
+                    Location.new(block_pos, Chunk.instances, {WorldSlices.MIDGROUND: block_name})
+                    Chunk.generated_blocks[block_pos] = Location.instances[block_pos]
 
     return chunk_data
 

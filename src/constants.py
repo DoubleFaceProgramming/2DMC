@@ -62,7 +62,7 @@ class CustomEvents(Enum):
 
 class WorldSlices(Enum):
     BACKGROUND = auto()
-    MIDDLEGROUND = auto()
+    MIDGROUND = auto()
     FOREGROUND = auto()
 
 class CinematicModes(Enum):

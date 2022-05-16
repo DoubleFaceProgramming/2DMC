@@ -1,4 +1,5 @@
 build/profiles/*
+/.VSCodeCounter
 screenshots/*
 build/dist/*
 __pycache__/

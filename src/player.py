@@ -11,8 +11,8 @@ from pygame import K_SPACE, Surface, Rect
 from pygame.math import Vector2
 import pygame
 
-from src.constants import MAX_Y, SCR_DIM, GRAVITY, TERMINAL_VEL, CHUNK_SIZE, BLOCK_SIZE, CHUNK_SIZE
-from src.block import Block, BLOCK_DATA, remove_block, is_placeable, updated_set_block, inttup
+from src.constants import MAX_Y, SCR_DIM, GRAVITY, TERMINAL_VEL, CHUNK_SIZE, BLOCK_SIZE, CHUNK_SIZE, WorldSlices
+from src.block import Block, BLOCK_DATA, Location, remove_block, is_placeable, updated_set_block, inttup
 from src.utils import block_collide, sign, text, pps, generate_neighbours
 from src.particle import PlayerFallParticle, PlayerWalkingParticle
 from src.particle import PlayerFallParticle
@@ -158,7 +158,7 @@ class Player(Sprite):
             self.vel.x += -sign(self.vel.x) * pps(1) * dt
 
         # Move the test for collision
-        self.move(kwargs["blocks"], dt)
+        self.move(kwargs["locations"], dt)
 
         # Check if the player is on the ground with a bar at the bottom of the player
         for block in self.detecting_blocks:
@@ -254,7 +254,7 @@ class Player(Sprite):
             self.arm.image, self.arm2.image = rotate(invert_player_arm, self.arm.rot), rotate(invert_player_arm, self.arm2.rot)
             self.leg.image, self.leg2.image = rotate(invert_player_leg, self.leg.rot), rotate(invert_player_leg, self.leg2.rot)
 
-    def move(self, blocks: dict[tuple[int, int], Block], dt: float) -> None:
+    def move(self, locations: dict[tuple[int, int], Block], dt: float) -> None:
         """Move the player and test for collision between it and the main dictionary of blocks"""
         # Number of steps to cut the movement into inside one frame to prevent tunnelling
         split = int(self.vel.length() * dt) + 1
@@ -265,9 +265,9 @@ class Player(Sprite):
             # Only detect collision within a 3 by 4 area around the player
             for y in range(4):
                 for x in range(3):
-                    if (block_pos := (int(self.coords.x - 1 + x), int(self.coords.y - 1 + y))) in blocks: # If there exists a block at that position
+                    if (block_pos := (int(self.coords.x - 1 + x), int(self.coords.y - 1 + y))) in locations: # If there exists a block at that position
                         # Get the block object in that position from the main blocks dictionary
-                        block = blocks[block_pos]
+                        block = locations[block_pos][WorldSlices.MIDGROUND]
                         if block.data["collision_box"] == "full": # If the block has a full collision box
                             # Here is some code for solving some rounding problems/bugs
                             # Bug description here vvv
@@ -309,8 +309,8 @@ class Player(Sprite):
         for _ in range(split):
             for y in range(4):
                 for x in range(3):
-                    if (int(self.coords.x - 1 + x), int(self.coords.y - 1 + y)) in blocks:
-                        block = blocks[(int(self.coords.x - 1 + x), int(self.coords.y - 1 + y))]
+                    if (int(self.coords.x - 1 + x), int(self.coords.y - 1 + y)) in locations:
+                        block = locations[(int(self.coords.x - 1 + x), int(self.coords.y - 1 + y))][WorldSlices.MIDGROUND]
                         if block.data["collision_box"] == "full":
                             if self.vel.x < 0:
                                 colliding, detecting_blocks = block_collide(
@@ -356,7 +356,7 @@ class Player(Sprite):
             # Remove it!
             remove_block(chunks, block_pos, Block.instances[block_pos].data, neighbors)
 
-    def place_block(self, chunks, mpos: Vector2) -> None:
+    def place_block(self, chunks, mpos: Vector2, worldslice: WorldSlices) -> None:
         if not self.inventory.holding: return # If the player isn't holding any block, just skip everything
 
         # In the following comments in this function:
@@ -373,7 +373,7 @@ class Player(Sprite):
         # For singular components blocks (ex. dirt), aka it doesn't have counterparts
         if "counterparts" not in data:
             if is_placeable(self, block_pos, data, neighbors): # If the block is placeable according to its neighbors and data
-                updated_set_block(chunks, block_pos, block_name, neighbors) # Place down the block and update neighbors
+                updated_set_block(chunks, block_pos, block_name, neighbors, worldslice) # Place down the block and update neighbors
             return
 
         # For blocks with more than 1 component (ex. tall grass)
@@ -402,10 +402,10 @@ class Player(Sprite):
             counterpart_pos = VEC(block_pos) + inttup(counterpart.split(" ")) # Real world position of the counterpart block
             counterpart_name = data["counterparts"][counterpart] # The block name of the counterpart
             counterpart_neighbors = generate_neighbours(counterpart_pos) # Generate neighbors of the counterpart block
-            updated_set_block(chunks, counterpart_pos, counterpart_name, counterpart_neighbors) # Place down the counterpart
+            updated_set_block(chunks, counterpart_pos, counterpart_name, counterpart_neighbors, worldslice) # Place down the counterpart
 
         # Place down the original block
-        updated_set_block(chunks, block_pos, block_name, neighbors)
+        updated_set_block(chunks, block_pos, block_name, neighbors, worldslice)
 
     def pick_block(self) -> None:
         """Pick the block at the mouse position, with all the functionality in 3D Minecraft."""
@@ -456,8 +456,8 @@ class Crosshair(Sprite):
         # Calculating the block beneath the mouse cursor
         self.mpos = VEC(pygame.mouse.get_pos())
         self.block_pos = inttup((self.master.pos + (self.mpos - self.master.rect.topleft)) // BLOCK_SIZE)
-        if self.block_pos in Block.instances:
-            self.block = Block.instances[inttup(self.block_pos)]
+        if self.block_pos in Location.instances:
+            self.block = Location.instances[inttup(self.block_pos)][kwargs["location"]]
         else:
             self.block = ""
 
