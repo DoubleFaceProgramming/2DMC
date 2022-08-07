@@ -22,6 +22,7 @@ class LayersEnum(Enum):
     REG_PARTICLES = auto()
     BLOCK_SELECTION = auto()
     DEBUG = auto()
+    ENTITIES = auto()
     PLAYER = auto()
     HOTBAR = auto()
     HOTBAR_LABELS = auto()
