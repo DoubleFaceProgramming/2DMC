@@ -89,12 +89,12 @@ class ChunkData(BlockDict):
                 yield (x, y)
 
     def generate_base(self):
-        seed(pairing(3, *self.chunk_pos, SEED))
+        seed(pairing(2, *self.chunk_pos, SEED))
         for pos in self.iterate():
             self[pos] = BlockData(pos)
 
     def fill(self, block_name):
-        seed(pairing(3, *self.chunk_pos, SEED))
+        seed(pairing(2, *self.chunk_pos, SEED))
         for pos in self.iterate():
             self[pos] = BlockData(pos, block_name)
 
