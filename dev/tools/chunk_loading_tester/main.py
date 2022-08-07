@@ -6,26 +6,29 @@ from pygame.locals import *
 from pygame.math import Vector2 as VEC
 
 FPS = 144
-WIDTH, HEIGHT = 768, 768
+WIDTH, HEIGHT = 1280, 768
 BG_COLOR = (135, 206, 250)
-BLOCK_SIZE = 16
-CHUNK_SIZE = 8
-CHUNK_PIXEL_SIZE = BLOCK_SIZE * CHUNK_SIZE
+BLOCK_SIZE = 16 # Number of pixels in a block
+CHUNK_SIZE = 8 # Number of blocks in a chunk
+CHUNK_PIXEL_SIZE = BLOCK_SIZE * CHUNK_SIZE # Size in pixels of a chunk
+SEED = 1
 
 inttup = lambda tup: tuple((int(tup[0]), int(tup[1])))
 intvec = lambda vec: VEC((int(vec[0]), int(vec[1])))
 
-def canter_pairing(tup: tuple) -> int:
-    """Uses the Canter Pairing function to get a unique integer from a unique interger pair"""
-    # Deal with negative numbers by turning positives into positive evens and negatives into positive odds
-    a = 2 * tup[0] if tup[0] >= 0 else -2 * tup[0] - 1
-    b = 2 * tup[1] if tup[1] >= 0 else -2 * tup[1] - 1
-    return (a + b) * (a + b + 1) + b
+def pairing(count, *args: int) -> int:
+    count -= 1
+    if count == 0: return int(args[0])
+    a = 2 * args[0] if args[0] >= 0 else -2 * args[0] - 1
+    b = 2 * args[1] if args[1] >= 0 else -2 * args[1] - 1
+    new = [0.5 * (a + b) * (a + b + 1) + b] + [num for i, num in enumerate(args) if i > 1]
+    return pairing(count, *new)
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT), DOUBLEBUF | HWSURFACE)
 clock = pygame.time.Clock()
 
+# Loads each image in assets, also adds a key for air so that when air is hashed, it doesn't error
 block_images = {filename[:-4]: pygame.image.load(f"assets/{filename}").convert_alpha() for filename in os.listdir("assets")} | {"air": pygame.Surface((0, 0))}
 
 class PosDict(dict):
@@ -48,23 +51,52 @@ class PosDict(dict):
 class BlockDict(PosDict):
     """Custom dictionary that returns air for non-existent positions"""
     def __setitem__(self, key, value):
-        if value == "air": return
+        # If an air block gets created, it would have to be deleted at some point, thus don't even create it
+        if value.name == "air": return
         return super().__setitem__(key, value)
 
     def __missing__(self, key):
         return "air"
 
+class BlockData:
+    """Class for storing and generating a single block"""
+    def __init__(self, pos, name=None):
+        self.pos = VEC(pos)
+        if name is not None:
+            self.name = name
+        else:
+            self.generate()
+
+    def generate(self):
+        if self.pos.y == 4:
+            self.name = "grass_block"
+        elif 4 < self.pos.y <= 8:
+            self.name = "dirt"
+        elif self.pos.y > 8:
+            self.name = choice(["stone", "andesite"])
+        else:
+            self.name = "air"
+
 class ChunkData(BlockDict):
     """Custom dictionary that also has methods that handle chunk generation"""
     def __init__(self, chunk_pos):
         self.chunk_pos = chunk_pos
-        self.fill("stone")
+        self.generate_base()
+
+    def iterate(self):
+        for y in range(int(self.chunk_pos.y * CHUNK_SIZE + CHUNK_SIZE)):
+            for x in range(int(self.chunk_pos.x * CHUNK_SIZE + CHUNK_SIZE)):
+                yield (x, y)
+
+    def generate_base(self):
+        seed(pairing(2, *self.chunk_pos, SEED))
+        for pos in self.iterate():
+            self[pos] = BlockData(pos)
 
     def fill(self, block_name):
-        seed(canter_pairing(self.chunk_pos))
-        for y in range(CHUNK_SIZE):
-            for x in range(CHUNK_SIZE):
-                self[(x, y)] = block_name
+        seed(pairing(2, *self.chunk_pos, SEED))
+        for pos in self.iterate():
+            self[pos] = BlockData(pos, block_name)
 
 class Chunk:
     """Renders a chunk"""
@@ -75,15 +107,18 @@ class Chunk:
         self.chunk_pos = intvec(chunk_pos)
         self.chunk_data = ChunkData(self.chunk_pos)
         self.image = pygame.Surface((CHUNK_PIXEL_SIZE, CHUNK_PIXEL_SIZE), SRCALPHA)
-        for block_pos, block_name in self.chunk_data.items():
-            self.image.blit(block_images[block_name], VEC(block_pos) * BLOCK_SIZE)
+        # Blit every block's image onto the chunk's image
+        for block_pos, block in self.chunk_data.items():
+            self.image.blit(block_images[block.name], VEC(block_pos - self.chunk_pos * CHUNK_SIZE) * BLOCK_SIZE)
 
     def draw(self):
         screen.blit(self.image, self.chunk_pos * CHUNK_PIXEL_SIZE)
+        pygame.draw.rect(screen, (255, 255, 0), (self.chunk_pos * CHUNK_PIXEL_SIZE, self.image.get_size()), 1)
 
 running = True
 while running:
     clock.tick_busy_loop(FPS)
+    pygame.display.set_caption("Chunk Loading Tester")
 
     for event in pygame.event.get():
         if event.type == QUIT:
