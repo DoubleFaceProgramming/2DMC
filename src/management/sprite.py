@@ -6,6 +6,10 @@
 # you can view their TOS here: https://account.mojang.com/documents/minecraft_eula
 
 from __future__ import annotations
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.management.game_manager import GameManager
 
 from enum import Enum, auto
 from pygame import Surface
@@ -29,7 +33,10 @@ class LayersEnum(Enum):
 class Sprite:
     """A common baseclass for all sprites."""
 
-    def __init__(self, layer: int | LayersEnum, debug_layer: int | LayersEnum | None = None) -> None:
+    def __init__(self, manager: GameManager, layer: int | LayersEnum, debug_layer: int | LayersEnum | None = None) -> None:
+        self.manager = manager
+        self.scene = self.manager.scene
+        
         # Setting the layer attribute. This defines where in the draw order the sprite will be drawn.
         # See SpriteHandler.draw()
         # In theory try except is faster as layer will almost always be an enum, so may as well
@@ -52,9 +59,9 @@ class Sprite:
                 else:
                     raise TypeError("Argument 'debug_layer' must be of type 'int' or 'Enum item'")
 
-        SPRITE_MANAGER.add(self)
+        self.manager.add(self)
 
-    def update(self, dt: float, **kwargs: dict[Any]) -> None:
+    def update(self) -> None:
         """Update the classes attributes and variables or handle class logic related to the class.
 
         Args:
@@ -62,26 +69,16 @@ class Sprite:
             **kwargs (dict[Any]): Class specific arguments
         """
 
-    def draw(self, screen: Surface, **kwargs: dict[Any]) -> None:
-        """Draw the sprite to the screen
+    def draw(self) -> None:
+        """Draw the sprite to the screen"""
 
-        Args:
-            screen (Surface): The screen to draw to
-            **kwargs (dict[Any]): Class specific arguments
-        """
-
-    def debug(self, screen: Surface, **kwargs: dict[Any]) -> None:
-        """Draw the sprite's debug information to the given screen
-
-        Args:
-            screen (Surface): The screen to draw to
-            **kwargs (dict[Any]): Class specific arguments
-        """
+    def debug(self) -> None:
+        """Draw the sprite's debug information to the given screen"""
 
     def kill(self) -> None:
         """Kill the sprite and handle any cleanup logic"""
         try:
-            SPRITE_MANAGER.remove(self)
+            self.scene.manager.remove(self)
         except SpriteNotFoundException:
             pass
         del self
@@ -118,7 +115,9 @@ class SpriteNotFoundException(Exception):
 class SpriteManager:
     """A class to simplify and better how sprites are drawn and managed"""
 
-    def __init__(self, *args: tuple[Sprite]) -> None:
+    def __init__(self, manager: GameManager, *args: tuple[Sprite]) -> None:
+        self.manager = manager
+        self.scene = self.manager.scene
         self.layers = {}
         if args: # You can create a spritehandler without specifying any args
             self.add(*args)
@@ -207,20 +206,19 @@ class SpriteManager:
         if not self.layers[sprite._layer]:
             del self.layers[sprite._layer]
 
-    def draw(self, screen: Surface, debug: bool, **kwargs) -> None:
+    def draw(self) -> None:
         # We need to copy self.layers because otheriwse when sprites are created whilst rendering it would crash
-        for layer in (layers := self.layers.copy()): # Loop through every layer
+        layers = self.layers.copy()
+        for layer in layers: # Loop through every layer
             for sprite in layers[layer]: # Loop through every sprite
                 if not LayersEnum(layer).name.endswith("_DEBUG"): # Draw every layer that isnt a debug layer
-                    sprite.draw(screen, **kwargs)
+                    sprite.draw()
 
                 # If we should render debug stuff and the either the layer is a debug layer or the sprite's debug layer is its default layer, debug the sprite
-                if debug:
+                if self.scene.debug:
                     if LayersEnum(layer).name.endswith("_DEBUG") or sprite._layer == sprite._debug_layer:
-                        sprite.debug(screen, **kwargs)
+                        sprite.debug()
 
-    def update(self, dt: float, **kwargs) -> None:
+    def update(self) -> None:
         for sprite in self:
-            sprite.update(dt, **kwargs)
-
-SPRITE_MANAGER = SpriteManager()
+            sprite.update()

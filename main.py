@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from src.constants import MANAGER
+from src.management.game_manager import GameManager
 
 if __name__ == "__main__":
-    MANAGER.new().run()
+    GameManager().run()

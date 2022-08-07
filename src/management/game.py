@@ -5,4 +5,13 @@
 # The majority of the game assets are properties of Mojang Studios,
 # you can view their TOS here: https://account.mojang.com/documents/minecraft_eula
 
-WIDTH, HEIGHT = SCR_DIM = 1200, 600
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from src.management.game_manager import GameManager
+
+from src.management.scenes import Scene
+
+class Game(Scene):
+    def __init__(self, game: GameManager) -> None:
+        super().__init__(game)
