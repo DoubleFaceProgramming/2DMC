@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 import pygame
 
 from src.management.sprite import SpriteManager
+from src.utils.constants import BLUE_SKY
 
 class Scene:
     def __init__(self, manager: Game) -> None:
@@ -27,6 +28,7 @@ class Scene:
         self.sprite_manager.update()
 
     def draw(self) -> None:
+        self.manager.screen.fill(BLUE_SKY)
         self.sprite_manager.draw()
 
     def kill(self) -> None:

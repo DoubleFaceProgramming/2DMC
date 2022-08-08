@@ -11,7 +11,9 @@ if TYPE_CHECKING:
     from src.management.game_manager import GameManager
 
 from src.management.scenes import Scene
+from src.entities.player import Player
 
 class Game(Scene):
-    def __init__(self, game: GameManager) -> None:
-        super().__init__(game)
+    def setup(self) -> None:
+        super().setup()
+        self.player = Player(self.manager)

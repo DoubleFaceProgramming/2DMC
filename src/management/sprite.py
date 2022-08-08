@@ -60,7 +60,7 @@ class Sprite:
                 else:
                     raise TypeError("Argument 'debug_layer' must be of type 'int' or 'Enum item'")
 
-        self.manager.add(self)
+        self.scene.sprite_manager.add(self)
 
     def update(self) -> None:
         """Update the classes attributes and variables or handle class logic related to the class.
@@ -216,7 +216,7 @@ class SpriteManager:
                     sprite.draw()
 
                 # If we should render debug stuff and the either the layer is a debug layer or the sprite's debug layer is its default layer, debug the sprite
-                if self.scene.debug:
+                if self.manager.debug:
                     if LayersEnum(layer).name.endswith("_DEBUG") or sprite._layer == sprite._debug_layer:
                         sprite.debug()
 

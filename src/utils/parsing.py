@@ -24,7 +24,7 @@ def load_ore_distribution() -> dict:
     ore_distribution = {}
     for file in listdir(pathof("data/ore_distribution/")):
         ore_distribution[Path(file).stem] = json.loads(open(pathof(join("data/ore_distribution/", file)), "r").read())
-    
+
     return ore_distribution
 
 def load_structures() -> dict:
