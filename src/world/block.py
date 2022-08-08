@@ -11,12 +11,13 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING: # Type annotations without causing circular imports
     from src.management.game_manager import GameManager
-
+    from src.world.chunk import Chunk
 
 import pygame
 
-from src.utils.constants import BLOCK_SIZE, WorldSlices
+from src.utils.constants import BLOCK_SIZE, WorldSlices, VEC
 from src.utils.images import BLOCK_TEXTURES
+from src.utils.utils import PosDict
 import src.utils.hooks
 
 class Block:
@@ -32,19 +33,21 @@ class Block:
         elif self.data["collision_box"] == "none":
             self.rect = pygame.Rect(self.pos, (0, 0))
 
-    def update(self):
+    def update(self): # TODO: Make sure this works :)
         if not is_supported(self.pos, self.data, self.neighbors):
             remove_block(chunks, self.coords, self.data, self.neighbors)
 
 class Location:
-    instances: dict[tuple[int, int], Location] = {}
+    instances: dict[tuple[int, int], Location] = PosDict()
 
-    def __init__(self, manager, coords: tuple[int, int]):
-        self.coords = coords
+    def __init__(self, manager: GameManager, master: Chunk, coords: tuple[int, int], bg: None | Block = None, mg: None | Block = None, fg: None | Block = None):
+        self.manager = manager
+        self.master = master
+        self.coords = VEC(coords)
         self.__class__.instances[self.coords] = self
         self.image = pygame.Surface((BLOCK_SIZE, BLOCK_SIZE))
 
-        self.blocks: list[Block | None, Block | None, Block | None] = [None, None, None]
+        self.blocks: list[Block | None, Block | None, Block | None] = [bg, mg, fg]
 
     def __getitem__(self, key: WorldSlices | int):
         return self.blocks[WorldSlices(key)]
@@ -52,10 +55,12 @@ class Location:
     def __setitem__(self, key: WorldSlices | int, value):
         self.blocks[WorldSlices(key)] = value
         self.update_image()
+        self.master.update_image(self.coords, self.image)
 
     def __delitem__(self, key: WorldSlices | int):
         self.blocks[WorldSlices(key)] = None
         self.update_image()
+        self.master.update_image(self.coords, self.image)
 
     def __contains__(self, key: WorldSlices | int):
         return bool(WorldSlices(key))

@@ -84,8 +84,8 @@ class ChunkData(BlockDict):
         self.generate_base()
 
     def iterate(self):
-        for y in range(int(self.chunk_pos.y * CHUNK_SIZE + CHUNK_SIZE)):
-            for x in range(int(self.chunk_pos.x * CHUNK_SIZE + CHUNK_SIZE)):
+        for y in range(int(self.chunk_pos.y * CHUNK_SIZE), int(self.chunk_pos.y * CHUNK_SIZE + CHUNK_SIZE)):
+            for x in range(int(self.chunk_pos.y * CHUNK_SIZE), int(self.chunk_pos.x * CHUNK_SIZE + CHUNK_SIZE)):
                 yield (x, y)
 
     def generate_base(self):

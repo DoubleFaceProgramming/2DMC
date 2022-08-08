@@ -13,9 +13,24 @@ from pathlib import Path
 from os.path import join
 import pygame
 
-
-
 from src.utils.constants import PROFILES
+
+class PosDict(dict):
+    """Custom dictionary that can take Vectors and turn them into tuples for hashing"""
+    def __getitem__(self, key):
+        return super().__getitem__(inttup(key))
+
+    def __setitem__(self, key, value):
+        super().__setitem__(inttup(key), value)
+
+    def __delitem__(self, key):
+        return super().__delitem__(inttup(key))
+
+    def __contains__(self, key):
+        return super().__contains__(inttup(key))
+
+def inttup(tup: tuple[int | float, int | float]) -> tuple[int, int]:
+    return (int(tup[0]), int(tup[1]))
 
 def scale_by(surf, scale):
     return pygame.transform.scale(surf, (surf.get_width() * scale, surf.get_height() * scale))
@@ -23,6 +38,14 @@ def scale_by(surf, scale):
 def sign(num: int | float) -> int:
     """Returns the sign of the num (+/-) as -1, 0, or 1"""
     return (num > 0) - (num < 0)
+
+def pairing(count, *args: int) -> int:
+    count -= 1
+    if count == 0: return int(args[0])
+    a = 2 * args[0] if args[0] >= 0 else -2 * args[0] - 1
+    b = 2 * args[1] if args[1] >= 0 else -2 * args[1] - 1
+    new = [0.5 * (a + b) * (a + b + 1) + b] + [num for i, num in enumerate(args) if i > 1]
+    return pairing(count, *new)
 
 do_profile = False
 def profile(callable: Callable[..., Any], *args: tuple[Any]) -> Any:

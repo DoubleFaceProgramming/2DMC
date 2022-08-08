@@ -6,13 +6,14 @@
 # you can view their TOS here: https://account.mojang.com/documents/minecraft_eula
 
 from pygame.locals import SRCALPHA, HWSURFACE, DOUBLEBUF
+from pygame.transform import scale
 from pygame.image import load
 from pathlib import Path
 from os.path import join
 import pygame
 import os
 
-from src.utils.constants import VEC, MIN_BLOCK_SIZE, ASSETS
+from src.utils.constants import VEC, BLOCK_SIZE, ASSETS
 from src.utils.utils import scale_by
 from build.exe_comp import pathof
 
@@ -68,5 +69,5 @@ hotbar_selection_img = scale_by(load(gui("hotbar_selection")), 2.5).convert_alph
 block_path = join(ASSETS, "textures", "blocks")
 BLOCK_TEXTURES = {}
 for img in os.listdir(block_path):
-    BLOCK_TEXTURES[(key := Path(img).stem)] = load(join(block_path, img)).convert()
+    BLOCK_TEXTURES[(key := Path(img).stem)] = scale(load(join(block_path, img)), (BLOCK_SIZE, BLOCK_SIZE)).convert()
     BLOCK_TEXTURES[key].set_colorkey((255, 255, 255))

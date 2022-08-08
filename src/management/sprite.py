@@ -211,6 +211,7 @@ class SpriteManager:
         # We need to copy self.layers because otheriwse when sprites are created whilst rendering it would crash
         layers = self.layers.copy()
         for layer in layers: # Loop through every layer
+            # if LayersEnum(layer).name.endswith("_DEBUG"): continue
             for sprite in layers[layer]: # Loop through every sprite
                 if not LayersEnum(layer).name.endswith("_DEBUG"): # Draw every layer that isnt a debug layer
                     sprite.draw()
