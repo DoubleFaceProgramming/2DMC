@@ -34,7 +34,10 @@ class GameManager:
     def run(self):
         while self.scene.running:
             self.update()
-            self.draw()
+            self.scene.draw()
+            if self.debug:
+                self.scene.debug()
+            pygame.display.flip()
 
         self.kill()
 
@@ -51,10 +54,6 @@ class GameManager:
                 self.debug = not self.debug
 
         self.scene.update()
-
-    def draw(self):
-        self.scene.draw()
-        pygame.display.flip()
 
     def kill(self) -> None:
         pygame.quit()

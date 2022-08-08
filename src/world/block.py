@@ -34,9 +34,9 @@ class Block:
         # elif self.data["collision_box"] == "none":
         #     self.rect = pygame.Rect(self.pos, (0, 0))
 
-    def update(self): # TODO: Make sure this works :)
-        if not is_supported(self.pos, self.data, self.neighbors):
-            remove_block(chunks, self.coords, self.data, self.neighbors)
+    # def update(self): # TODO: Make sure this works :)
+    #     if not is_supported(self.pos, self.data, self.neighbors):
+    #         remove_block(chunks, self.coords, self.data, self.neighbors)
 
 class Location:
     instances: dict[tuple[int, int], Location] = PosDict()
@@ -49,9 +49,9 @@ class Location:
         self.image = pygame.Surface((BLOCK_SIZE, BLOCK_SIZE), SRCALPHA)
 
         self.blocks: list[Block | None, Block | None, Block | None] = [
-            Block(self, bg, WorldSlices.BACKGROUND) if bg else None,
+            Block(self, bg, WorldSlices.BACKGROUND  ) if bg else None,
             Block(self, mg, WorldSlices.MIDDLEGROUND) if mg else None,
-            Block(self, fg, WorldSlices.FOREGROUND) if fg else None
+            Block(self, fg, WorldSlices.FOREGROUND  ) if fg else None
         ]
         self.update_image()
 
@@ -61,12 +61,12 @@ class Location:
     def __setitem__(self, key: WorldSlices | int, value):
         self.blocks[WorldSlices(key)] = value
         self.update_image()
-        self.master.update_image(self.coords, self.image)
+        self.master.update_image(self.coords, self.image) # Cannot go in update_image() because locations are generated before chunks
 
     def __delitem__(self, key: WorldSlices | int):
         self.blocks[WorldSlices(key)] = None
         self.update_image()
-        self.master.update_image(self.coords, self.image)
+        self.master.update_image(self.coords, self.image) # Ditto
 
     def __contains__(self, key: WorldSlices | int):
         return bool(WorldSlices(key))
@@ -78,10 +78,11 @@ class Location:
 
     # TODO: use tag system for transparency
     def highest_opaque_block(self):
-        rev = self.blocks.reverse_nip()
+        """Get the blocks from the highest opaque block to the foreground"""
+        rev = self.blocks.reverse_nip() # Reverse not in place - defined in hooks.py
         for index, block in enumerate(rev):
             if not block: continue
             if block.name not in {"glass", "tall_grass", "tall_grass_top", "grass", "dandelion", "poppy"}: # <- tags go here
-                return rev[:index + 1].reverse_nip()
+                return rev[:index + 1].reverse_nip() # Return all blocks from the highest opaque block (index + 1) to the foreground
 
-        return self.blocks
+        return self.blocks # If the are no opaque blocks return self.blocks

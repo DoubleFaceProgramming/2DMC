@@ -13,7 +13,7 @@ from pathlib import Path
 from os.path import join
 import pygame
 
-from src.utils.constants import PROFILES
+from src.utils.constants import PROFILES, VEC, BLOCK_SIZE
 
 class PosDict(dict):
     """Custom dictionary that can take Vectors and turn them into tuples for hashing"""
@@ -46,6 +46,14 @@ def pairing(count, *args: int) -> int:
     b = 2 * args[1] if args[1] >= 0 else -2 * args[1] - 1
     new = [0.5 * (a + b) * (a + b + 1) + b] + [num for i, num in enumerate(args) if i > 1]
     return pairing(count, *new)
+
+def PPS(blocks: int | float | VEC) -> int | float | VEC:
+    """Returns pixels per second equivalent of the input value in blocks per second"""
+    return blocks * BLOCK_SIZE
+
+def BPS(pixels: int | float | VEC) -> int | float | VEC:
+    """Returns blocks per second equivalent of the input value in pixels per second"""
+    return pixels / BLOCK_SIZE
 
 do_profile = False
 def profile(callable: Callable[..., Any], *args: tuple[Any]) -> Any:
