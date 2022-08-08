@@ -5,8 +5,17 @@
 # The majority of the game assets are properties of Mojang Studios,
 # you can view their TOS here: https://account.mojang.com/documents/minecraft_eula
 
+from pstats import SortKey, Stats
 from typing import Callable, Any
+from datetime import datetime
+from cProfile import Profile
+from pathlib import Path
+from os.path import join
 import pygame
+
+
+
+from src.utils.constants import PROFILES
 
 def scale_by(surf, scale):
     return pygame.transform.scale(surf, (surf.get_width() * scale, surf.get_height() * scale))
@@ -27,14 +36,15 @@ def profile(callable: Callable[..., Any], *args: tuple[Any]) -> Any:
     global do_profile
     if do_profile: # Profile_bool stops the user from being able to hold down the profile key
         do_profile = False
-        with cProfile.Profile() as profile: # Profiling the contents of the with block
+        with Profile() as profile: # Profiling the contents of the with block
             returnval = callable(*args)     # Calling the callable with the args
 
         # Naming the profile file in the format "profile_{hour}-{minute}-{second}.prof"
-        statfile = Path(os.path.join(PROFILE_DIR, str(datetime.datetime.now().strftime("profile_%H-%M-%S")) + ".prof"))
+        statfile = Path(join(PROFILES, str(datetime.now().strftime("profile_%H-%M-%S")) + ".prof"))
         if not (statfile_dirpath := statfile.parent).exists():
-            statfile_dirpath.mkdir() # Creating the dirpath of the statfile (ex. "build/profiles") if they do not exist
-        stats = pstats.Stats(profile).sort_stats(pstats.SortKey.TIME) # Sorting the stats from highest time to lowest
+            statfile_dirpath.mkdir() # Creating the dirpath of the statfile (ex. "dev/profiles") if they do not exist
+
+        stats = Stats(profile).sort_stats(SortKey.TIME) # Sorting the stats from highest time to lowest
         stats.dump_stats(filename=str(statfile)) # Saving the stats to a profile file
         stats.print_stats()                      # Printing the stats
         print(f"\n\n Profile saved to: {str(statfile)}!\n\n")
