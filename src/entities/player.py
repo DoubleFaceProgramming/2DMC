@@ -21,20 +21,28 @@ class Camera:
         self.player = player
         self.pos = self.player.size / 2
         self.pos = self.player.pos - self.pos - VEC(SCR_DIM) / 2 + self.player.size / 2
+        self.scalar = VEC(0.6, 1.2)
 
     def update(self, dt: float) -> None:
         mpos = pygame.mouse.get_pos()
-        tick_offset = self.player.pos - self.pos - VEC(SCR_DIM) / 2 + self.player.size / 2
-        if -1 < tick_offset.x < 1:
-            tick_offset.x = 0
-        if -1 < tick_offset.y < 1:
-            tick_offset.y = 0
+
+        # How much the player moved since last frame (relative to camera)
+        tick_offset = self.player.pos - self.pos - (VEC(SCR_DIM) / 2 - self.player.size / 2)
+
+        # Calculate the distance the mouse is from the center of the screen
         if not self.player.inventory.visible:
             x_dist, y_dist = mpos[0] - SCR_DIM[0] / 2, mpos[1] - SCR_DIM[1] / 2
-        else:
+        else: # (if the player is in their inventory)
             x_dist, y_dist = 0, 0
-        dist_squared = VEC(sign(x_dist) * x_dist ** 2 * 0.6, sign(y_dist) * y_dist ** 2 * 1.2)
 
+        # Squaring the distance so that the further out the cursor from the center, the camera moves exponentially away
+        # Times a scalar so that the camera can move further in the y-direction but less in the x-direction
+        dist_squared = VEC(
+            sign(x_dist) * x_dist ** 2 * self.scalar.x,
+            sign(y_dist) * y_dist ** 2 * self.scalar.y
+        )
+
+        # Combined the offset due to player movement and offset due to cursor, and scale it down to a reasonable value
         self.pos += (tick_offset * 2 + VEC(dist_squared) / 300) * dt
 
 class Player(Entity):
@@ -64,7 +72,7 @@ class Player(Entity):
         super().update()
 
     def draw(self) -> None:
-        pygame.draw.rect(self.manager.screen, (255, 0, 0), (*self.pos, *self.size))
+        pygame.draw.rect(self.manager.screen, (255, 0, 0), (*(self.pos - self.camera.pos), *self.size))
 
     def debug(self) -> None:
         pass

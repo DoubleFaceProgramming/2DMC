@@ -7,9 +7,9 @@ if TYPE_CHECKING: # Type annotations without causing circular imports
 
 import pygame
 
-from src.utils.constants import VEC, BLOCK_SIZE, WIDTH, HEIGHT
+from src.utils.constants import TERMINAL_VEL, VEC, BLOCK_SIZE, WIDTH, HEIGHT
 from src.management.sprite import LayersEnum, Sprite
-from src.utils.clamps import clamp, snap
+from src.utils.clamps import clamp, snap, clamp_max
 
 class Entity(Sprite):
     def __init__(self, pos, size, manager: GameManager, layer: int | LayersEnum | None = None, debug_layer: int | LayersEnum | None = None) -> None:
@@ -26,11 +26,12 @@ class Entity(Sprite):
         self.vel += self.acc * self.manager.dt                         # Accelerate velocity
         self.vel.x, _ = clamp(self.vel.x, -self.speed, self.speed)     # Clamp x to max speed
         self.vel.x = snap(self.vel.x, 0, self.acc.x * self.manager.dt) # Snap x to 0 if it gets close (prevents tiny movement after acceleration)
+        self.vel.y, _ = clamp_max(self.vel.y, TERMINAL_VEL)
 
         # Move position by velocity
         self.pos += self.vel * self.manager.dt
         # Clamps position to inside the window, also gets the direction of clamping
-        self.pos, _ = clamp(self.pos, VEC(0, 0), VEC(WIDTH, HEIGHT) - self.size + (1, 1))
+        # self.pos, _ = clamp(self.pos, VEC(0, 0), VEC(WIDTH, HEIGHT) - self.size + (1, 1))
 
     def draw(self):
-        self.manager.screen.blit(self.image, self.pos - self.scene.player.camera.offset)
+        self.manager.screen.blit(self.image, self.pos - self.scene.player.camera.pos)
