@@ -11,7 +11,7 @@ from src.management.sprite import Sprite, LayersEnum
 from src.entities.entity import Entity
 
 from pygame.locals import (
-    K_a, K_d, K_w, K_LEFT, K_RIGHT, K_UP
+    K_a, K_d, K_w, K_LEFT, K_RIGHT, K_UP, K_SPACE
 )
 
 class Player(Entity):
@@ -36,7 +36,7 @@ class Player(Entity):
             self.acc.x += self.slide # Accelerate
         elif self.vel.x > 0:
             self.acc.x -= self.slide # Decelerate
-        if (keys[K_UP] or keys[K_w]) and self.on_ground:
+        if (keys[K_UP] or keys[K_w] or keys[K_SPACE]) and self.on_ground:
             self.vel.y = self.jump_vel
 
     def draw(self) -> None:
