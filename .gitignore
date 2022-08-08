@@ -1,4 +1,5 @@
-build/profiles/*
+.VSCodeCounter/
+dev/profiles/*
 screenshots/*
 build/dist/*
 __pycache__/
