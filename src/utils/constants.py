@@ -7,6 +7,7 @@
 
 from pygame.math import Vector2 as VEC
 from build.exe_comp import pathof
+from enum import Enum, auto
 
 WIDTH, HEIGHT = SCR_DIM = 1200, 600
 BLUE_SKY = (135, 206, 250)
@@ -15,4 +16,10 @@ BLOCK_SIZE = 64
 GRAVITY = 3200
 TERMINAL_VEL = 1000
 
+PROFILES = pathof("dev/profiles/")
 ASSETS = pathof("assets")
+
+class WorldSlices(Enum):
+    BACKGROUND = auto()
+    MIDDLEGROUND = auto()
+    FOREGROUND = auto()
