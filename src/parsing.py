@@ -10,7 +10,7 @@ from os.path import join
 from os import listdir
 import json
 
-from build.exe_comp import pathof
+from dist.exe_comp import pathof
 
 def load_block_data() -> dict:
     # Load json block data into a dictionary

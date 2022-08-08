@@ -12,7 +12,7 @@ from enum import Enum, auto
 from random import randint
 
 from src.parsing import load_block_data, load_ore_distribution, load_structures
-import build.exe_comp as exe
+import dist.exe_comp as exe
 
 init()
 
