@@ -19,24 +19,18 @@ class Entity(Sprite):
         self.vel = VEC(0, 0)
         self.acc = VEC(0, 0)
         self.rect = pygame.Rect(pos, size)
+        self.image = pygame.Surface((0, 0))
         self.coords = self.pos // BLOCK_SIZE
 
     def update(self) -> None:
-        # THIS CODE HAS BEEN COPY PASTED. IDK IF THIS IS RIGHT OR NOT BUT IM TOO SMOL BRAIN TO UNDERSTAND AND CHECK MYSELF D:
-
-        self.vel += self.acc * self.manager.dt # Accelerate velocity
-        self.vel.x = clamp(self.vel.x, -self.speed, self.speed)[0] # Clamp x to max speed
+        self.vel += self.acc * self.manager.dt                         # Accelerate velocity
+        self.vel.x, _ = clamp(self.vel.x, -self.speed, self.speed)     # Clamp x to max speed
         self.vel.x = snap(self.vel.x, 0, self.acc.x * self.manager.dt) # Snap x to 0 if it gets close (prevents tiny movement after acceleration)
 
-        self.pos += self.vel * self.manager.dt # Move position by velocity
+        # Move position by velocity
+        self.pos += self.vel * self.manager.dt
         # Clamps position to inside the window, also gets the direction of clamping
-        self.pos, clamp_direction = clamp(self.pos, VEC(0, 0), VEC(WIDTH, HEIGHT) - self.size)
-        # If the bottom y was clamped, the player is on ground, if not, the player is NOT on ground
-        self.on_ground = clamp_direction.y == 1
-        # If player is on ground, reset y velocity, doesn't make a difference here but future proofing
-        self.vel.y = 0 if self.on_ground else self.vel.y
-        # If the player touches the wall reset acceleration, so that when player turns immediately there wouldn't be a smol delay
-        self.vel.x = 0 if clamp_direction.x else self.vel.x
+        self.pos, _ = clamp(self.pos, VEC(0, 0), VEC(WIDTH, HEIGHT) - self.size + (1, 1))
 
     def draw(self):
-        pass
+        self.manager.screen.blit(self.image, self.pos - self.scene.player.camera.offset)

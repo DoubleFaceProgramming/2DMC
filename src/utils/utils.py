@@ -6,6 +6,14 @@
 # you can view their TOS here: https://account.mojang.com/documents/minecraft_eula
 
 from typing import Callable, Any
+import pygame
+
+def scale_by(surf, scale):
+    return pygame.transform.scale(surf, (surf.get_width() * scale, surf.get_height() * scale))
+
+def sign(num: int | float) -> int:
+    """Returns the sign of the num (+/-) as -1, 0, or 1"""
+    return (num > 0) - (num < 0)
 
 do_profile = False
 def profile(callable: Callable[..., Any], *args: tuple[Any]) -> Any:

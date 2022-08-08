@@ -6,9 +6,12 @@
 # you can view their TOS here: https://account.mojang.com/documents/minecraft_eula
 
 from pygame.math import Vector2 as VEC
+from build.exe_comp import pathof
 
 WIDTH, HEIGHT = SCR_DIM = 1200, 600
 BLUE_SKY = (135, 206, 250)
 MIN_BLOCK_SIZE = 16
 BLOCK_SIZE = 64
 GRAVITY = 3200
+
+ASSETS = pathof("assets")
