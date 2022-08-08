@@ -79,7 +79,7 @@ class Sprite:
     def kill(self) -> None:
         """Kill the sprite and handle any cleanup logic"""
         try:
-            self.scene.manager.remove(self)
+            self.scene.sprite_manager.remove(self)
         except SpriteNotFoundException:
             pass
         del self

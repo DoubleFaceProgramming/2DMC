@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 import pygame
 import sys
 
-from pygame.locals import DOUBLEBUF, HWSURFACE, QUIT
+from pygame.locals import DOUBLEBUF, HWSURFACE, QUIT, K_F3, KEYDOWN
 from enum import Enum
 
 from src.utils.constants import WIDTH, HEIGHT, SCR_DIM
@@ -45,6 +45,10 @@ class GameManager:
 
         if QUIT in self.events:
             self.kill()
+
+        if KEYDOWN in self.events:
+            if self.events[KEYDOWN].key == K_F3:
+                self.debug = not self.debug
 
         self.scene.update()
 

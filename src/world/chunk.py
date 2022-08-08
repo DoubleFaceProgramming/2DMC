@@ -31,7 +31,7 @@ class ChunkData(PosDict):
 
     def iterate(self):
         for y in range(int(self.chunk_pos.y * CHUNK_SIZE), int(self.chunk_pos.y * CHUNK_SIZE + CHUNK_SIZE)):
-            for x in range(int(self.chunk_pos.y * CHUNK_SIZE), int(self.chunk_pos.x * CHUNK_SIZE + CHUNK_SIZE)):
+            for x in range(int(self.chunk_pos.x * CHUNK_SIZE), int(self.chunk_pos.x * CHUNK_SIZE + CHUNK_SIZE)):
                 yield (x, y)
 
     def generate_base(self):
@@ -53,7 +53,7 @@ class Chunk(Sprite):
             self.update_image(VEC(coords), location.image)
 
     def update_image(self, coords, image):
-        on_chunk_pos = coords // CHUNK_SIZE * BLOCK_SIZE
+        on_chunk_pos = VEC(coords.x % CHUNK_SIZE, coords.y % CHUNK_SIZE) * BLOCK_SIZE
         self.image.fill((0, 0, 0, 0), (*on_chunk_pos, BLOCK_SIZE, BLOCK_SIZE))
         self.image.blit(image, on_chunk_pos)
 
@@ -66,7 +66,7 @@ class ChunkManager:
         self.manager = manager
         self.scene = self.manager.scene
         self.chunks = PosDict()
-        self.old_chunk_data = PosDict()
+        self.unloaded_chunk_data = PosDict()
         self.displayed_chunks = VEC(WIDTH // CHUNK_PIXEL_SIZE + 1, HEIGHT // CHUNK_PIXEL_SIZE + 1)
         self.topleft_chunk_pos = self.scene.player.chunk_coords - self.displayed_chunks // 2 - (1, 0)
         self.bottomright_chunk_pos = self.topleft_chunk_pos + self.displayed_chunks
@@ -79,7 +79,7 @@ class ChunkManager:
             for x in range(int(self.topleft_chunk_pos.x), int(self.bottomright_chunk_pos.x + 1)):
                 if (x, y) not in self.chunks: # If the chunk is inactive or ungenerated
                     # If it has been generated before and stored in old_chunk_data, use the chunk data from there
-                    new_chunks[(x, y)] = Chunk(self.manager, (x, y), self.old_chunk_data[(x, y)] if (x, y) in self.old_chunk_data else None)
+                    new_chunks[(x, y)] = Chunk(self.manager, (x, y), self.unloaded_chunk_data[(x, y)] if (x, y) in self.unloaded_chunk_data else None)
                 else: # If the chunk is currently active
                     # It is in the new chunks, also in the current chunks, thus just copy the object over to new chunks
                     new_chunks[(x, y)] = self.chunks[(x, y)]
@@ -87,7 +87,8 @@ class ChunkManager:
                     del self.chunks[(x, y)]
         # Store the chunk data of the remaining chunks in old_chunk_data
         for chunk_pos, chunk in self.chunks.items():
-            self.old_chunk_data[chunk_pos] = chunk.chunk_data
+            chunk.kill()
+            self.unloaded_chunk_data[chunk_pos] = chunk.chunk_data
         self.chunks = new_chunks
 
 def generate_location(coords):

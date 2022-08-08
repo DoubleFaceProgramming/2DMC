@@ -13,6 +13,7 @@ if TYPE_CHECKING: # Type annotations without causing circular imports
     from src.management.game_manager import GameManager
     from src.world.chunk import Chunk
 
+from pygame.locals import SRCALPHA
 import pygame
 
 from src.utils.constants import BLOCK_SIZE, WorldSlices, VEC
@@ -28,10 +29,10 @@ class Block:
         self.image = BLOCK_TEXTURES[self.name]
         self.worldslice = WorldSlices(worldslice)
 
-        if self.data["collision_box"] == "full":
-            self.rect = pygame.Rect(self.pos, (BLOCK_SIZE, BLOCK_SIZE))
-        elif self.data["collision_box"] == "none":
-            self.rect = pygame.Rect(self.pos, (0, 0))
+        # if self.data["collision_box"] == "full":
+        #     self.rect = pygame.Rect(self.pos, (BLOCK_SIZE, BLOCK_SIZE))
+        # elif self.data["collision_box"] == "none":
+        #     self.rect = pygame.Rect(self.pos, (0, 0))
 
     def update(self): # TODO: Make sure this works :)
         if not is_supported(self.pos, self.data, self.neighbors):
@@ -45,9 +46,14 @@ class Location:
         self.master = master
         self.coords = VEC(coords)
         self.__class__.instances[self.coords] = self
-        self.image = pygame.Surface((BLOCK_SIZE, BLOCK_SIZE))
+        self.image = pygame.Surface((BLOCK_SIZE, BLOCK_SIZE), SRCALPHA)
 
-        self.blocks: list[Block | None, Block | None, Block | None] = [bg, mg, fg]
+        self.blocks: list[Block | None, Block | None, Block | None] = [
+            Block(self, bg, WorldSlices.BACKGROUND) if bg else None,
+            Block(self, mg, WorldSlices.MIDDLEGROUND) if mg else None,
+            Block(self, fg, WorldSlices.FOREGROUND) if fg else None
+        ]
+        self.update_image()
 
     def __getitem__(self, key: WorldSlices | int):
         return self.blocks[WorldSlices(key)]
@@ -66,7 +72,9 @@ class Location:
         return bool(WorldSlices(key))
 
     def update_image(self):
-        self.image.blits([(block, (0, 0)) for block in self.highest_opaque_block()])
+        for block in self.highest_opaque_block():
+            if block:
+                self.image.blit(block.image, (0, 0))
 
     # TODO: use tag system for transparency
     def highest_opaque_block(self):
