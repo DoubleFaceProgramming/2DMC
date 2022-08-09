@@ -3,4 +3,4 @@ dev/profiles/*
 screenshots/*
 build/dist/*
 __pycache__/
-/.vscode
+.vscode/
