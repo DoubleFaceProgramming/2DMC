@@ -14,6 +14,11 @@ def pairing(count, *args: int) -> int:
     new = [0.5 * (a + b) * (a + b + 1) + b] + [num for i, num in enumerate(args) if i > 1]
     return pairing(count, *new)
 
+def filled_surf(size, color, tags=SRCALPHA):
+    surf = Surface(size, tags)
+    surf.fill(color)
+    return surf
+
 class AutoEnum(Enum):
     def __new__(cls):
         value = len(cls.__members__)
@@ -27,10 +32,8 @@ class WorldSlices(AutoEnum):
     FOREGROUND = ()
 
 class SliceOverlay(Enum):
-    BACKGROUND = Surface((BLOCK_SIZE, BLOCK_SIZE), SRCALPHA)
-    BACKGROUND.fill((0, 0, 0, 70))
-    MIDDLEGROUND = Surface((BLOCK_SIZE, BLOCK_SIZE), SRCALPHA)
-    MIDDLEGROUND.fill((0, 0, 0, 40))
+    BACKGROUND = filled_surf((BLOCK_SIZE, BLOCK_SIZE), (0, 0, 0, 70))
+    MIDDLEGROUND = filled_surf((BLOCK_SIZE, BLOCK_SIZE), (0, 0, 0, 40))
     FOREGROUND = Surface((0, 0))
 
 class PosDict(dict):

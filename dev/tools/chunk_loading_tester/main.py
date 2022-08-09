@@ -74,7 +74,7 @@ class Chunk:
 running = True
 while running:
     clock.tick_busy_loop(FPS)
-    pygame.display.set_caption("Chunk Loading Tester")
+    pygame.display.set_caption(f"Chunk Loading Tester {clock.get_fps():.0f}")
 
     for event in pygame.event.get():
         if event.type == QUIT:
