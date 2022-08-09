@@ -1,59 +1,17 @@
-import os
 import sys
 import pygame
 from random import *
 from pygame.locals import *
-from enum import Enum, auto
 from typing import Generator
 from pygame.math import Vector2 as VEC
 
-FPS = 144
-WIDTH, HEIGHT = 1280, 768
-BG_COLOR = (135, 206, 250)
-BLOCK_SIZE = 16 # Number of pixels in a block
-CHUNK_SIZE = 8 # Number of blocks in a chunk
-CHUNK_PIXEL_SIZE = BLOCK_SIZE * CHUNK_SIZE # Size in pixels of a chunk
-SEED = 1
-
-inttup = lambda tup: tuple((int(tup[0]), int(tup[1])))
-intvec = lambda vec: VEC((int(vec[0]), int(vec[1])))
-
-def pairing(count, *args: int) -> int:
-    count -= 1
-    if count == 0: return int(args[0])
-    a = 2 * args[0] if args[0] >= 0 else -2 * args[0] - 1
-    b = 2 * args[1] if args[1] >= 0 else -2 * args[1] - 1
-    new = [0.5 * (a + b) * (a + b + 1) + b] + [num for i, num in enumerate(args) if i > 1]
-    return pairing(count, *new)
-
-class WorldSlices(Enum):
-    BACKGROUND = auto()
-    MIDDLEGROUND = auto()
-    FOREGROUND = auto()
+from block import Location
+from constants import *
+from utils import *
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT), DOUBLEBUF | HWSURFACE)
 clock = pygame.time.Clock()
-
-# Loads each image in assets, also adds a key for air so that when air is hashed, it doesn't error
-block_images = {filename[:-4]: pygame.image.load(f"assets/{filename}").convert_alpha() for filename in os.listdir("assets")} | {"air": pygame.Surface((0, 0))}
-
-class PosDict(dict):
-    """Custom dictionary that can take Vectors and turn them into tuples for hashing, doesn't error if key doesn't exist"""
-    def __getitem__(self, key):
-        return super().__getitem__(inttup(key))
-
-    def __setitem__(self, key, value):
-        super().__setitem__(inttup(key), value)
-
-    def __delitem__(self, key):
-        return super().__delitem__(inttup(key))
-
-    def __contains__(self, key):
-        return super().__contains__(inttup(key))
-
-    def __missing__(self, key):
-        return ""
 
 def generate_location(coords: tuple[int, int]) -> tuple[str | None, str | None, str | None]:
     """Generate the names of the blocks to go at a certain location. Temporary world gen!"""
@@ -68,65 +26,6 @@ def generate_location(coords: tuple[int, int]) -> tuple[str | None, str | None, 
     else:
         name = None
     return (name, name, name) # Veru temporary - we want all slices to be the same
-
-class Block:
-    def __init__(self, master, name: str, worldslice: WorldSlices | int) -> None:
-        self.master = master
-        self.name = name
-        self.data = {}
-        self.image = block_images[self.name]
-        self.worldslice = WorldSlices(worldslice)
-
-class Location:
-    instances = PosDict()
-
-    def __init__(self, master, coords: tuple[int, int], bg: None | Block = None, mg: None | Block = None, fg: None | Block = None):
-        self.master = master
-        self.coords = VEC(coords)
-        self.__class__.instances[self.coords] = self
-        self.image = pygame.Surface((BLOCK_SIZE, BLOCK_SIZE), SRCALPHA)
-
-        self.blocks: list[Block | None, Block | None, Block | None] = [
-            Block(self, bg, WorldSlices.BACKGROUND  ) if bg else None,
-            Block(self, mg, WorldSlices.MIDDLEGROUND) if mg else None,
-            Block(self, fg, WorldSlices.FOREGROUND  ) if fg else None
-        ]
-        self.update_image()
-
-    def __getitem__(self, key: WorldSlices | int):
-        return self.blocks[WorldSlices(key)]
-
-    def __setitem__(self, key: WorldSlices | int, value):
-        self.blocks[WorldSlices(key)] = value
-        self.update_image()
-        self.master.update_image(self.coords, self.image)
-
-    def __delitem__(self, key: WorldSlices | int):
-        self.blocks[WorldSlices(key)] = None
-        self.update_image()
-        self.master.update_image(self.coords, self.image)
-
-    def __contains__(self, key: WorldSlices | int):
-        return bool(WorldSlices(key))
-
-    def update_image(self):
-        for block in self.highest_opaque_block():
-            if block:
-                self.image.blit(block.image, (0, 0))
-
-    # TODO: use tag system for transparency
-    def highest_opaque_block(self):
-        """Get the blocks from the highest opaque block to the foreground"""
-        rev = self.blocks.copy()
-        rev.reverse()
-        for index, block in enumerate(rev):
-            if not block: continue
-            if block.name not in {"glass", "tall_grass", "tall_grass_top", "grass", "dandelion", "poppy"}: # <- tags go here
-                new = rev[:index + 1] # Return all blocks from the highest opaque block (index + 1) to the foreground
-                new.reverse()
-                return new
-
-        return self.blocks # If the are no opaque blocks return self.blocks
 
 class ChunkData(PosDict):
     """Custom dictionary that also has methods that handle chunk generation"""
@@ -181,13 +80,18 @@ while running:
         if event.type == QUIT:
             running = False
         if event.type == MOUSEBUTTONDOWN:
+            mpos = VEC(pygame.mouse.get_pos())
             if event.button == 1:
-                mpos = VEC(pygame.mouse.get_pos())
                 chunk_pos = mpos // CHUNK_PIXEL_SIZE
                 if chunk_pos in Chunk.instances:
                     del Chunk.instances[chunk_pos]
                 else:
                     Chunk(chunk_pos)
+            if event.button == 3:
+                block_pos = mpos // BLOCK_SIZE
+                if block_pos in Location.instances:
+                    location = Location.instances[block_pos]
+                    del location[location.get_highest()]
 
     screen.fill(BG_COLOR)
 
