@@ -5,15 +5,39 @@
 # The majority of the game assets are properties of Mojang Studios,
 # you can view their TOS here: https://account.mojang.com/documents/minecraft_eula
 
+from pygame.locals import SRCALPHA
 from pstats import SortKey, Stats
 from typing import Callable, Any
 from datetime import datetime
 from cProfile import Profile
 from pathlib import Path
 from os.path import join
+from enum import Enum
 import pygame
 
 from src.utils.constants import PROFILES, VEC, BLOCK_SIZE
+
+class AutoEnum(Enum):
+    def __new__(cls):
+        value = len(cls.__members__)
+        obj = object.__new__(cls)
+        obj._value_ = value
+        return obj
+
+class WorldSlices(AutoEnum):
+    BACKGROUND = ()
+    MIDDLEGROUND = ()
+    FOREGROUND = ()
+
+def filled_surf(size, color, tags=SRCALPHA):
+    surf = pygame.Surface(size, tags)
+    surf.fill(color)
+    return surf
+
+class SliceOverlay(Enum):
+    BACKGROUND = filled_surf((BLOCK_SIZE, BLOCK_SIZE), (0, 0, 0, 70))
+    MIDDLEGROUND = filled_surf((BLOCK_SIZE, BLOCK_SIZE), (0, 0, 0, 40))
+    FOREGROUND = pygame.Surface((0, 0))
 
 class PosDict(dict):
     """Custom dictionary that can take Vectors and turn them into tuples for hashing"""

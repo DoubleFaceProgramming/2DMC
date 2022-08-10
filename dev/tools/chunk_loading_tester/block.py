@@ -4,6 +4,7 @@ import os
 from constants import *
 from utils import *
 import hooks
+from utils.constants import WorldSlices
 
 pygame.init()
 pygame.display.set_mode((0, 0))
@@ -52,7 +53,7 @@ class Location:
             self.master.update_image(self.coords, self.image)
 
     def __contains__(self, key: WorldSlices | int):
-        return bool(WorldSlices(key))
+        return self.blocks[WorldSlices(key).value] is None
 
     def update_image(self):
         self.image.fill((0, 0, 0, 0))
@@ -61,7 +62,7 @@ class Location:
                 self.image.blit(block.image, (0, 0))
                 self.image.blit(SliceOverlay[block.worldslice.name].value, (0, 0))
 
-    def get_highest(self) -> None | int:
+    def get_highest(self) -> None | WorldSlices:
         for block in self.blocks.reverse_nip():
             if block:
                 return block.worldslice.value

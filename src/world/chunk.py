@@ -13,8 +13,8 @@ if TYPE_CHECKING:
     from typing import Generator
     from pygame import Surface
 
+from random import seed, choice, randint
 from pygame.locals import SRCALPHA
-from random import seed, choice
 import pygame
 
 from src.utils.constants import VEC, CHUNK_SIZE, WIDTH, HEIGHT, CHUNK_PIXEL_SIZE, BLOCK_SIZE, SCR_DIM
@@ -103,12 +103,15 @@ def generate_location(coords: tuple[int, int]) -> tuple[str | None, str | None, 
     """Generate the names of the blocks to go at a certain location. Temporary world gen!"""
 
     coords = VEC(coords)
+    slices = 3
     if coords.y == 0:
         name = "grass_block"
     elif 0 < coords.y <= 4:
         name = "dirt"
+        slices -= randint(1, 2)
     elif coords.y > 4:
         name = choice(["stone", "andesite"])
+        slices -= randint(0, 2)
     else:
         name = None
-    return (name, name, name) # Veru temporary - we want all slices to be the same
+    return (name,) * slices + (None,) * (3 - slices) # Veru temporary - we want all slices to be the same

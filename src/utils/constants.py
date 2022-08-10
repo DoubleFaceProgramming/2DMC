@@ -7,7 +7,6 @@
 
 from pygame.math import Vector2 as VEC
 from build.exe_comp import pathof
-from enum import Enum, auto
 
 WIDTH, HEIGHT = SCR_DIM = 1200, 600
 BLUE_SKY = (135, 206, 250)
@@ -20,8 +19,3 @@ DEBUG_SPACING = 24
 
 PROFILES = pathof("dev/profiles/")
 ASSETS = pathof("assets")
-
-class WorldSlices(Enum):
-    BACKGROUND = auto()
-    MIDDLEGROUND = auto()
-    FOREGROUND = auto()

@@ -16,9 +16,9 @@ if TYPE_CHECKING: # Type annotations without causing circular imports
 from pygame.locals import SRCALPHA
 import pygame
 
-from src.utils.constants import BLOCK_SIZE, WorldSlices, VEC
+from src.utils.utils import PosDict, WorldSlices, SliceOverlay
+from src.utils.constants import BLOCK_SIZE, VEC
 from src.utils.images import BLOCK_TEXTURES
-from src.utils.utils import PosDict
 import src.utils.hooks
 
 class Block:
@@ -56,25 +56,33 @@ class Location:
         self.update_image()
 
     def __getitem__(self, key: WorldSlices | int):
-        return self.blocks[WorldSlices(key)]
+        return self.blocks[WorldSlices(key).value]
 
     def __setitem__(self, key: WorldSlices | int, value):
-        self.blocks[WorldSlices(key)] = value
+        self.blocks[WorldSlices(key).value] = value
         self.update_image()
         self.master.update_image(self.coords, self.image) # Cannot go in update_image() because locations are generated before chunks
 
     def __delitem__(self, key: WorldSlices | int):
-        self.blocks[WorldSlices(key)] = None
-        self.update_image()
-        self.master.update_image(self.coords, self.image) # Ditto
+        if key is not None:
+            self.blocks[WorldSlices(key).value] = None
+            self.update_image()
+            self.master.update_image(self.coords, self.image) # Ditto
 
     def __contains__(self, key: WorldSlices | int):
-        return bool(WorldSlices(key))
+        return self.blocks[WorldSlices(key).value] is None
 
     def update_image(self):
+        self.image.fill((0, 0, 0, 0))
         for block in self.highest_opaque_block():
             if block:
                 self.image.blit(block.image, (0, 0))
+                self.image.blit(SliceOverlay[block.worldslice.name].value, (0, 0))
+
+    def get_highest(self) -> None | WorldSlices:
+        for block in self.blocks.reverse_nip():
+            if block:
+                return block.worldslice
 
     # TODO: use tag system for transparency
     def highest_opaque_block(self):
