@@ -4,3 +4,4 @@ screenshots/*
 build/dist/*
 __pycache__/
 .vscode/
+tempCodeRunnerFile.py

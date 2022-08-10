@@ -38,6 +38,7 @@ class Game(Scene):
 
         self.player = Player(self.manager)
         self.chunk_manager = ChunkManager(self.manager)
+        self.locations = Location.instances
 
     def update(self):
         super().update()
@@ -46,8 +47,8 @@ class Game(Scene):
             mpos = VEC(pygame.mouse.get_pos())
             if self.manager.events[MOUSEBUTTONDOWN].button == 1:
                 block_pos = (mpos + self.player.camera.pos) // BLOCK_SIZE
-                if block_pos in Location.instances:
-                    location = Location.instances[block_pos]
+                if block_pos in self.locations:
+                    location = self.locations[block_pos]
                     del location[location.get_highest()]
 
         self.chunk_manager.update()
@@ -67,14 +68,17 @@ class Game(Scene):
             "Camera offset": inttup(self.player.pos - self.player.camera.pos - VEC(SCR_DIM) / 2 + self.player.size / 2),
             "Chunk": inttup(self.player.coords // CHUNK_SIZE),
             "Chunks loaded": len(self.chunk_manager.chunks),
-            "Rendered blocks": len(Location.instances),
+            "Rendered blocks": len(self.locations),
             "Block position": inttup((self.player.pos + (VEC(pygame.mouse.get_pos()) - self.player.rect.topleft)) // BLOCK_SIZE),
-            # "Detecting rects": len(self.player.detecting_blocks),
+            "Detecting rects": len(self.player.detecting_locations),
             # "Particles": len(Particle.instances),
             # "Pre-gen cave heightmap": Chunk.cave_pregeneration_pos if Chunk.cave_pregeneration_bool else "Complete"
         }
+        
+        for location in self.player.detecting_locations.values():
+            rect = pygame.Rect(location.rect.left - self.player.camera.pos.x, location.rect.top - self.player.camera.pos.y, BLOCK_SIZE, BLOCK_SIZE)
+            pygame.draw.rect(self.manager.screen, (255, 0, 0), rect, 1)
 
         # Displaying the debug values.
         for line, name in enumerate(debug_values):
             self.manager.screen.blit(text(f"{name}: {debug_values[name]}"), (6, DEBUG_SPACING * line))
-

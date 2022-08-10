@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 if TYPE_CHECKING: # Type annotations without causing circular imports
     from src.management.game_manager import GameManager
+    from src.world.block import Location
 
 import pygame
 
@@ -63,6 +64,7 @@ class Player(Entity):
         self.slide = 1200 # Speed of acceleration and deceleration
         self.speed = 250 # Max speed
         self.jump_vel = -800 # Velocity at start of jump
+        self.on_ground = False
 
     def update(self) -> None:
         keys = pygame.key.get_pressed()
@@ -75,19 +77,38 @@ class Player(Entity):
             self.acc.x += self.slide # Accelerate
         elif self.vel.x > 0:
             self.acc.x -= self.slide # Decelerate
-        if keys[K_UP] or keys[K_w]:
-            self.acc.y -= self.slide # Accelerate
-        elif self.vel.y < 0:
-            self.acc.y += self.slide # Decelerate
-        if keys[K_DOWN] or keys[K_s]:
-            self.acc.y += self.slide # Accelerate
-        elif self.vel.y > 0:
-            self.acc.y -= self.slide # Decelerate
-        # if (keys[K_UP] or keys[K_w] or keys[K_SPACE]) and self.on_ground:
-        #     self.vel.y = self.jump_vel
+        if (keys[K_UP] or keys[K_w] or keys[K_SPACE]) and self.on_ground:
+            self.vel.y = self.jump_vel
 
-        super().update()
-        
+        super().update_vel()
+
+        self.detecting_locations: dict[tuple[int, int], Location] = {}
+        self.update_pos_x()
+        for y in range(int(self.coords.y - 1), int(self.coords.y + 3)):
+            for x in range(int(self.coords.x - 1), int(self.coords.x + 2)):
+                # if (x, y) == self.coords or (x, y) == self.coords + (0, 1): continue
+                if not (location := self.scene.locations[(x, y)]): continue
+                self.detecting_locations[(x, y)] = location
+                if not self.rect.colliderect(location.rect): continue
+                if self.vel.x < 0:
+                    self.set_pos(VEC(location.rect.right, self.pos.y))
+                elif self.vel.x > 0:
+                    self.set_pos(VEC(location.rect.left - self.size.x, self.pos.y))
+                self.vel.x = 0
+
+        self.on_ground = False
+        self.update_pos_y()
+        for location in self.detecting_locations.values():
+            if not self.rect.colliderect(location.rect): continue
+            if self.vel.y < 0:
+                self.set_pos(VEC(self.pos.x, location.rect.bottom))
+            elif self.vel.y > 0:
+                self.set_pos(VEC(self.pos.x, location.rect.top - self.size.y))
+                self.on_ground = True
+            self.vel.y = 0
+
+        self.update_coords()
+
         self.camera.update()
 
     def draw(self) -> None:

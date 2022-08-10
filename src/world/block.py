@@ -30,9 +30,9 @@ class Block:
         self.worldslice = WorldSlices(worldslice)
 
         # if self.data["collision_box"] == "full":
-        #     self.rect = pygame.Rect(self.pos, (BLOCK_SIZE, BLOCK_SIZE))
+        self.rect = pygame.Rect(self.master.coords * BLOCK_SIZE, (BLOCK_SIZE, BLOCK_SIZE))
         # elif self.data["collision_box"] == "none":
-        #     self.rect = pygame.Rect(self.pos, (0, 0))
+            # self.rect = pygame.Rect(self.pos, (0, 0))
 
     # def update(self): # TODO: Make sure this works :)
     #     if not is_supported(self.pos, self.data, self.neighbors):
@@ -53,6 +53,10 @@ class Location:
             Block(self, mg, WorldSlices.MIDDLEGROUND) if mg else None,
             Block(self, fg, WorldSlices.FOREGROUND  ) if fg else None
         ]
+        if WorldSlices.MIDDLEGROUND in self:
+            self.rect = self[WorldSlices.MIDDLEGROUND].rect
+        else:
+            self.rect = pygame.Rect((0, 0, 0, 0))
         self.update_image()
 
     def __getitem__(self, key: WorldSlices | int):
@@ -61,16 +65,24 @@ class Location:
     def __setitem__(self, key: WorldSlices | int, value):
         self.blocks[WorldSlices(key).value] = value
         self.update_image()
+        self.update_rect()
         self.master.update_image(self.coords, self.image) # Cannot go in update_image() because locations are generated before chunks
 
     def __delitem__(self, key: WorldSlices | int):
         if key is not None:
             self.blocks[WorldSlices(key).value] = None
             self.update_image()
+            self.update_rect()
             self.master.update_image(self.coords, self.image) # Ditto
 
     def __contains__(self, key: WorldSlices | int):
-        return self.blocks[WorldSlices(key).value] is None
+        return self.blocks[WorldSlices(key).value] is not None
+    
+    def update_rect(self):
+        if WorldSlices.MIDDLEGROUND in self:
+            self.rect = self[WorldSlices.MIDDLEGROUND].rect
+        else:
+            self.rect = pygame.Rect((0, 0, 0, 0))
 
     def update_image(self):
         self.image.fill((0, 0, 0, 0))

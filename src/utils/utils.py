@@ -52,6 +52,9 @@ class PosDict(dict):
 
     def __contains__(self, key):
         return super().__contains__(inttup(key))
+    
+    def __missing__(self, key):
+        return
 
 def inttup(tup: tuple[int | float, int | float]) -> tuple[int, int]:
     return (int(tup[0]), int(tup[1]))
