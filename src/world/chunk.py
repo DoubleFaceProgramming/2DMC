@@ -108,7 +108,7 @@ def generate_location(coords: tuple[int, int]) -> tuple[str | None, str | None, 
         name = "grass_block"
     elif 0 < coords.y <= 4:
         name = "dirt"
-        slices -= randint(1, 2)
+        slices -= randint(0, 1)
     elif coords.y > 4:
         name = choice(["stone", "andesite"])
         slices -= randint(0, 2)

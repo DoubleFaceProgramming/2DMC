@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.management.game_manager import GameManager
 
+from pygame.locals import MOUSEBUTTONDOWN
 from random import randint
 import pygame
 
@@ -40,6 +41,14 @@ class Game(Scene):
 
     def update(self):
         super().update()
+        
+        if MOUSEBUTTONDOWN in self.manager.events:
+            mpos = VEC(pygame.mouse.get_pos())
+            if self.manager.events[MOUSEBUTTONDOWN].button == 1:
+                block_pos = (mpos + self.player.camera.pos) // BLOCK_SIZE
+                if block_pos in Location.instances:
+                    location = Location.instances[block_pos]
+                    del location[location.get_highest()]
 
         self.chunk_manager.update()
         
