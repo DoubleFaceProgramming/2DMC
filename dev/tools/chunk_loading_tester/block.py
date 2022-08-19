@@ -4,7 +4,7 @@ import os
 from constants import *
 from utils import *
 import hooks
-from utils.constants import WorldSlices
+from utils import WorldSlices
 
 pygame.init()
 pygame.display.set_mode((0, 0))

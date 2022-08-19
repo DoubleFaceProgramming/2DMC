@@ -5,6 +5,8 @@ from pygame.locals import *
 from typing import Generator
 from pygame.math import Vector2 as VEC
 
+from my_profile import profile
+
 from block import Location
 from constants import *
 from utils import *
@@ -22,10 +24,10 @@ def generate_location(coords: tuple[int, int]) -> tuple[str | None, str | None, 
     elif 4 < coords.y <= 8:
         name = "dirt"
     elif coords.y > 8:
-        name = choice(["stone", "andesite"])
+        name = "stone"
     else:
         name = None
-    return (name, name, name) # Veru temporary - we want all slices to be the same
+    return (name, name) # Very temporary - we want all slices to be the same
 
 class ChunkData(PosDict):
     """Custom dictionary that also has methods that handle chunk generation"""
@@ -48,7 +50,7 @@ class ChunkData(PosDict):
 
 class Chunk:
     instances = PosDict()
-    
+
     def __init__(self, chunk_pos: tuple[int, int] | VEC, chunk_data=None) -> None:
         self.__class__.instances[chunk_pos] = self
         self.chunk_pos = VEC(chunk_pos)
@@ -76,6 +78,8 @@ while running:
     clock.tick_busy_loop(FPS)
     pygame.display.set_caption(f"Chunk Loading Tester {clock.get_fps():.0f}")
 
+    keys = pygame.key.get_pressed()
+
     for event in pygame.event.get():
         if event.type == QUIT:
             running = False
@@ -86,7 +90,10 @@ while running:
                 if chunk_pos in Chunk.instances:
                     del Chunk.instances[chunk_pos]
                 else:
-                    Chunk(chunk_pos)
+                    if keys[K_LSHIFT]:
+                        profile(Chunk, chunk_pos)
+                    else:
+                        Chunk(chunk_pos)
             if event.button == 3:
                 block_pos = mpos // BLOCK_SIZE
                 if block_pos in Location.instances:
