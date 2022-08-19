@@ -117,6 +117,23 @@ Then just override any applicable methods to customise the behaviour of your new
 Your sprite can also be killed with `sprite.kill()`
 And you can also add the manager with `self.manager`, meaning you have access to pretty much every attribute in 2DMC. Neat!
 
+### Layers Enum
+
+The layers enum is what defines the order and number of onscreen layers.
+It is defined like so:
+
+```python
+class LayersEnum(enum.Enum):
+    ONE = enum.auto()
+    TWO = enum.auto()
+    ...
+    SEVEN_BILLION_FOUR_HUNDRED_AND_TWENTY-FIVE_MILLION_ONE_HUNDRED_AND_THIRTY-TWO_THOUSAND_FIVE_HUNDRED_AND_ONE = enum.auto()
+```
+
+The beauty of this is that adding a new layer is as simple as choosing a name and adding it in!
+
+It also makes it really easy to re-arange the ordering of layers (tip: use Alt ↑ / Alt ↓ in VSCode!)
+
 ### Spritemanager
 
 This system doesnt work on its own, however.
@@ -129,42 +146,42 @@ A dictionary to hold layers is also created.
 An explanation of SpriteManager's methods:
 
 - `__iter__(self)` and `__next__`
-
+  
     Makes SpriteManager an iterator so it can be... iterated over?
     The code and details of these functions are beyond the scope of this document (because the code is disgusting and unreadable)
     If, for some reason, you want to understand, modify or utilise this code in greater deal then you can find it [here](src/management/sprite.py)
 
 - `__contains__(self, sprite: Sprite) -> bool`
-
+  
     Adds support for python's `in` operator.
     It will check if the sprite is in its layer. I dont really know why it wouldnt be but its here... just in case.
     It will raise a SpriteNotFoundException if the sprite was not in it's layer.
     It will **print** a LayerNotFoundException if the sprite's layer was not in the spritemanager's layer dict.
 
 - `add(self, *args: tuple[Sprite])`
-
+  
     This method takes any number of sprites as an argument.
     It will add all these sprites to its layers dict, creating layers and debug layers as needed.
     See [Debug Layers](#debug-layers) for more information.
-
+  
     It will raise a NoLayerAttributeException if the sprite does not have a ._layer attribute.
 
 - `remove(self, sprite: Sprite)`
-
+  
     This removes a sprite from its layer (+ debug layer if applicable)
     It will also delete the layer / debug layer if it is empty. This prevents a crash involving empty dicts.
     It will raise a SpriteNotFoundException if the sprite was not in it's layer.
     It will raise a LayerNotFoundException if the sprite's layer was not in the spritemanager's layer dict.
 
 - `draw(self)`
-
+  
     This function serves as both draw() and debug().
     We loop through every layer and every sprite.
     Then if the layer is not a debug layer we draw it.
     We also check if debug is active, if it is we check if the layer is a debug layer or if the sprite's debug layer is the same as its regular layer, in which case we will call `sprite.debug()`. For an explanation on why this is, see [Debug Layers](#debug-layers).
 
 - `update(self)`
-
+  
     We just loop through every sprite and update it, no trickery here :)
 
 ### Debug Layers
@@ -178,6 +195,270 @@ If you pass `LayersEnum.NAME_DEBUG` or its value (`int`) into a sprite's `debug_
 If a sprite's `debug_layer` is not set then it's debug information will be drawn on its normal `layer`.
 This makes the system (by my metrics) *entirely* customisable, which in my opinion is sort of worth it.
 (even if we never use it :P)
+
+### Demonstration
+
+You can view the source code for this demonstration [here.](dev/rescources/sprite-system-demo/)
+
+I will make this demonstration from scratch in pygame to better explain how this suite of tools works. It will be written using the 0.2.1 sprite system. The system has changed slightly in 0.3.0, however this update and rewrite is not yet finished, so I will use the old system for the demo whilst we smooth out the new version. I will try to remember to update this section when 0.3.0 is released; if I havent then make a Github issue and I'll fix it :) 
+
+I'll start by writing the demo the old way we used to do it, to demonstrate the advantadges of the sprite system, then rewrite them to fit with the new standard and hopefully better explain how to implement your own Sprite classes in the process.
+
+Assume the following file structure:
+
+```tree
+demo/
+├── main.py
+├── README.py
+├── lib/
+│   └── sprite.py
+└── images/
+    └── [...]
+```
+
+`sprite.py` contains the same content as [the 2DMC sprite system file,](src/management/sprite.py) minus the LayersEnum which we will go over in more detail in just one second.
+
+
+
+We'll start in main.py with some boilerplate which I'm sure you have seen many times before so I won't bother explaining it :P
+
+```python
+from pygame.math import Vector2 as VEC
+import pygame
+
+from pygame.locals import * # Dont do this normally! I'm only doing this for demonstration!
+
+WIDTH, HEIGHT = SCR_DIM = (1200, 800)
+SPEED = 500
+FPS = 80
+
+pygame.init()
+screen = pygame.display.set_mode(SCR_DIM)
+pygame.display.set_caption("Sprite System Demonstration")
+clock = pygame.time.Clock()
+
+running = True
+while running:
+    screen.fill((255, 255, 255))
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+    pygame.display.flip()
+    clock.tick(FPS)
+
+pygame.quit()
+```
+
+Next we'll write a quick player class:
+
+```python
+class Player:
+    def __init__(self, pos: VEC | tuple[int, int]) -> None:
+        self.size = VEC(80, 80)
+        self.pos = VEC(pos)
+        self.vel = VEC(0, 0)
+
+    def update(self, dt: float) -> None:
+        keys = pygame.key.get_pressed()
+        self.vel = VEC(0, 0)
+
+        if keys[K_a]:
+            self.vel.x -= SPEED
+        if keys[K_d]:
+            self.vel.x += SPEED
+        if keys[K_w]:
+            self.vel.y -= SPEED
+        if keys[K_s]:
+            self.vel.y += SPEED
+
+        self.pos += self.vel * dt
+
+    def draw(self, screen: pygame.Surface) -> None:
+        pygame.draw.circle(screen, (0, 0, 0), self.pos - (self.size / 2), self.size.x / 2)
+```
+
+..and a square class:
+
+```python
+class Square:
+    instances = []
+
+    def __init__(self, pos: tuple[int, int] | VEC, colour: tuple[int, int, int]):
+        self.__class__.instances.append(self)
+
+        self.size = VEC(100, 100)
+        self.pos = VEC(pos)
+
+        self.colour = colour
+
+    def update(self) -> None:
+        pass # While I could omit update() for this example, you rarely can in practise so I'll leave it here.
+
+    def draw(self, screen: pygame.Surface) -> None:
+        pygame.draw.rect(screen, self.colour, pygame.Rect(*self.pos, *self.size))
+```
+
+Cool! We can create them like so:
+
+```python
+player = Player((200, 200))
+for i, colour in enumerate(((255, 0, 0), (0, 255, 0), (0, 0, 255))):
+    Square((400, 200 + i * 50), colour)
+```
+
+..then update and draw them in the main `while` loop:
+
+```python
+for square in Square.instances:
+    square.update()
+
+player.update(dt)
+
+for square in Square.instances:
+    square.draw(screen) # Whilst we could merge these 2 loops for this demo you rarely can in practise so I wont here.
+
+player.draw(screen)
+```
+
+If we run the code now we should see it working as expected:
+
+![](dev/rescources/sprite-system-demo/images/test_1.png)
+
+We can see that the player draws above the sqaures and the squares draw in the order that we declared them.
+
+However, what if we decide that we instead want the green square to draw above the others?
+
+Lets try and implement this:
+
+We will now have to initialise the squares like so:
+
+```python
+s_r = Square((400, 200), (255, 0, 0))
+s_g = Square((400, 250), (0, 255, 0))
+s_b = Square((400, 300), (0, 0, 255))
+```
+
+Then draw them like this:
+
+```python
+for square in Square.instances:
+    if square is not s_g:
+        square.draw(screen)
+s_g.draw(screen)
+```
+
+![](dev/rescources/sprite-system-demo/images/test_2.png)
+
+As you can see, we got the expected result. However:
+
+
+
+1) The code is messy and hard to follow
+
+2) The more rules we add (say, the player gets drawn above green), the worse this will become
+
+3) Re-ordering the way sprites are drawn is gets increasingly complex and difficult the more sprites there are and the more sprites there are with seperate rules
+
+4) Its difficult to make define where 1 instance of a class will be drawn relative to other instances of the class
+
+5) Creating and drawing lots of classes and their instances will end up in long, repeated calls to `x.draw(screen)`, `y.draw(screen)`, `z.draw(screen)`, ect
+
+
+
+Let's rewrite this using the Sprite system!
+
+First, lets populate LayersEnum:
+
+```python
+class LayersEnum(Enum):
+    SQUARE = auto()
+    PLAYER = auto()
+```
+
+Next, lets make Player and Square officially Sprites:
+
+```python
+class Player(Sprite):
+    def __init__(self, pos: VEC | tuple[int, int]) -> None:
+        super().__init__(LayersEnum.PLAYER)
+        ...
+```
+
+```python
+class Square(Sprite):
+    def __init__(self, layer: LayersEnum | int, pos: tuple[int, int] | VEC, colour: tuple[int, int, int]):
+        super().__init__(layer)
+        ...
+
+    def update(self, dt) -> None:
+        pass # While I could omit update() for this example, you rarely can in practise so I'll leave it here.
+```
+
+..that's all that you need to change! Just make the class inherit from Sprite and call `super().__init__(layer)` in your class's constructor. 
+
+A few things to note:
+
+- Because we always know that `Player` will draw on the PLAYER layer, we don't need to pass `layer` into `__init__`, we can just pass it through directly.
+  
+  - However, because we might change what layer a `Square` draws on we do need to pass a layer argument in.
+
+-  In `Square.update` we need to pass in `dt` to satisfy the `Sprite.update` function signature. This is a limit with the way the 0.2.1 sprite system works that is mitigated in 0.3.0 with the Scene, GameManager and `self.game` architecture (there will likely be a section on this in this document, whenever one of us gets around to writing it :P)
+
+- Finally, we use the `LayersEnum | int` type annotation to refer to a layer argument. This is because `Sprite.__init__` can recieve and parse either a LayersEnum or an int. If you want to understand this in greater depth you can check out the Sprite baseclass.
+
+Then we can initialise our Squares and Player:
+
+```python
+Player((200, 200))
+Square(LayersEnum.SQUARE, (400, 200), (255, 0, 0))
+Square(LayersEnum.SQUARE, (400, 250), (0, 255, 0))
+Square(LayersEnum.SQUARE, (400, 300), (0, 0, 255))
+```
+
+This will automagically add the sprites to the SpriteManager.
+
+Finally, we can draw and update the sprites in the main loop:
+
+```python
+SPRITE_MANAGER.update(dt)
+SPRITE_MANAGER.draw(screen, False)
+```
+
+This works as expected.
+
+![](dev/rescources/sprite-system-demo/images/test_1.png)
+
+Now lets implement the green square displaying above the others:
+
+Its as simple as:
+
+1) Adding a new entry in LayersEnum:
+   
+   ```python
+   ```python
+   class LayersEnum(Enum):
+       SQUARE = auto()
+       GREEN_SQUARE = auto()
+       PLAYER = auto()
+   ```
+   ```
+
+2) Updating the sprite creation call:
+   
+   ```python
+   Square(LayersEnum.SQUARE, (400, 200), (255, 0, 0))
+   Square(LayersEnum.GREEN_SQUARE, (400, 250), (0, 255, 0))
+   Square(LayersEnum.SQUARE, (400, 300), (0, 0, 255))
+   ```
+
+And thats it! 
+
+![](dev/rescources/sprite-system-demo/images/test_2.png)
+
+The result is exactly the same as it was before (emphasis on *exactly* because I'm using the same images as earlier but it does actually work xD), but this time more maintainable, scaleable and readable.
+
+
 
 ### Exceptions
 
@@ -193,7 +474,9 @@ They are as follows:
 
 - `LayerNotFoundException`
     Takes: `int | Sprite`
+  
         -> (if a sprite is given it's `_layer` attribute will be used)
+  
     Prints: "Layer `LayersEnum(int | Sprite._layer).name` does not exist in the layer list!"
 
 - `SpriteNotFoundException`
