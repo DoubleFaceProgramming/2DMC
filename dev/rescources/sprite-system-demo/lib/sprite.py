@@ -15,6 +15,8 @@ class LayersEnum(Enum):
     SQUARE = auto()
     GREEN_SQUARE = auto()
     PLAYER = auto()
+    SQUARE_DEBUG = auto()
+    GREEN_SQUARE_DEBUG = auto()
 
 class Sprite:
     """A common baseclass for all sprites."""
@@ -136,6 +138,8 @@ class SpriteManager:
             # This could benefit from a do / while loop :o (python please add it its actually useful)
             while True:
                 self.layeriter += 1
+                if self.layeriter >= len(self.layers):
+                    raise StopIteration
                 if not LayersEnum(list(self.layers)[self.layeriter - 1]).name.endswith("_DEBUG"):
                     layer = self.get_layer() # Recalculating layer with the new layer iteration attribute
                     break

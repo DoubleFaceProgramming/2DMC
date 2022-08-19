@@ -460,6 +460,90 @@ The result is exactly the same as it was before (emphasis on *exactly* because I
 
 
 
+The final part of this demonstration is to display Debug Layers.
+
+Lets start by adding a simple debug toggle and passing it into `SpriteManager.draw`:
+
+
+
+```python
+debug = False
+running = True
+while running:
+    screen.fill((255, 255, 255))
+    dt = clock.tick_busy_loop(FPS) / 1000
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        if event.type == KEYDOWN:
+            if event.key == K_F1:
+                debug = not debug
+
+    SPRITE_MANAGER.update(dt)
+    SPRITE_MANAGER.draw(screen, debug)
+    ...
+```
+
+Then lets give `Square` a simple debug function. We'll make it display their outline in.. purple. I'm also going to seperate out the squares to make it a little easier to understand.
+
+```python
+>> Square
+def debug(self, screen: pygame.Surface) -> None:
+    pygame.draw.rect(screen, (255, 0, 255), pygame.Rect(*self.pos, *self.size), width=5)
+
+>> Global
+Square(LayersEnum.SQUARE, (400, 210), (255, 0, 0))
+Square(LayersEnum.GREEN_SQUARE, (400, 320), (0, 255, 0))
+Square(LayersEnum.SQUARE, (400, 430), (0, 0, 255))
+```
+
+If we run this and enable debug, we see:
+
+![](dev/rescources/sprite-system-demo/images/test_3.png)
+
+Perfect! We can see the sprites' debug information is drawn above the sprite, but below any other sprite. However, lets say we want to have the square's debug information draw above the player. This is the purpose of debug layers.
+
+First, add some new entries to the LayersEnum:
+
+```python
+class LayersEnum(Enum):
+    SQUARE = auto()
+    GREEN_SQUARE = auto()
+    PLAYER = auto()
+    SQUARE_DEBUG = auto()
+    GREEN_SQUARE_DEBUG = auto()
+```
+
+**IMPORTANT: A debug layer must end with "_DEBUG"!**
+
+
+
+Next, let's modify `Square.__init__`:
+
+```python
+def __init__(self, layer: LayersEnum | int, debug_layer: LayersEnum | int, pos: tuple[int, int] | VEC, colour: tuple[int, int, int]):
+    super().__init__(layer, debug_layer)
+```
+
+And finally edit the square instantiation:
+
+```python
+Square(LayersEnum.SQUARE, LayersEnum.SQUARE_DEBUG, (400, 210), (255, 0, 0))
+Square(LayersEnum.GREEN_SQUARE, LayersEnum.GREEN_SQUARE_DEBUG, (400, 320), (0, 255, 0))
+Square(LayersEnum.SQUARE, LayersEnum.SQUARE_DEBUG, (400, 430), (0, 0, 255))
+```
+
+Then when we run it:
+
+![](dev/rescources/sprite-system-demo/images/test_4.png)
+
+Perfect! The debug information is being drawn above the player. 
+
+
+
+Hopefully this demonstration has served as a guide on creating you own sprites, a better understanding of layers and a visual explanation of debug layers!
+
 ### Exceptions
 
 There are a few exceptions to make working with errors in this system easier.

@@ -41,8 +41,8 @@ class Player(Sprite):
         pygame.draw.circle(screen, (0, 0, 0), self.pos - (self.size / 2), self.size.x / 2)
 
 class Square(Sprite):
-    def __init__(self, layer: LayersEnum | int, pos: tuple[int, int] | VEC, colour: tuple[int, int, int]):
-        super().__init__(layer)
+    def __init__(self, layer: LayersEnum | int, debug_layer: LayersEnum | int, pos: tuple[int, int] | VEC, colour: tuple[int, int, int]):
+        super().__init__(layer, debug_layer)
 
         self.size = VEC(100, 100)
         self.pos = VEC(pos)
@@ -55,11 +55,15 @@ class Square(Sprite):
     def draw(self, screen: pygame.Surface) -> None:
         pygame.draw.rect(screen, self.colour, pygame.Rect(*self.pos, *self.size))
 
-Player((200, 200))
-Square(LayersEnum.SQUARE, (400, 200), (255, 0, 0))
-Square(LayersEnum.GREEN_SQUARE, (400, 250), (0, 255, 0))
-Square(LayersEnum.SQUARE, (400, 300), (0, 0, 255))
+    def debug(self, screen: pygame.Surface) -> None:
+        pygame.draw.rect(screen, (255, 0, 255), pygame.Rect(*self.pos, *self.size), width=5)
 
+Player((200, 200))
+Square(LayersEnum.SQUARE, LayersEnum.SQUARE_DEBUG, (400, 210), (255, 0, 0))
+Square(LayersEnum.GREEN_SQUARE, LayersEnum.GREEN_SQUARE_DEBUG, (400, 320), (0, 255, 0))
+Square(LayersEnum.SQUARE, LayersEnum.SQUARE_DEBUG, (400, 430), (0, 0, 255))
+
+debug = False
 running = True
 while running:
     screen.fill((255, 255, 255))
@@ -68,9 +72,12 @@ while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
+        if event.type == KEYDOWN:
+            if event.key == K_F1:
+                debug = not debug
 
     SPRITE_MANAGER.update(dt)
-    SPRITE_MANAGER.draw(screen, False)
+    SPRITE_MANAGER.draw(screen, debug)
 
     pygame.display.flip()
     clock.tick(FPS)
