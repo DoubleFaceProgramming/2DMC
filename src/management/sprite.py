@@ -149,6 +149,8 @@ class SpriteManager:
             # This could benefit from a do / while loop :o (python please add it its actually useful)
             while True:
                 self.layeriter += 1
+                if self.layeriter >= len(self.layers): # Fixes a crash that occurs if a debug layer is the last entry in LayersEnum
+                    raise StopIteration
                 if not LayersEnum(list(self.layers)[self.layeriter - 1]).name.endswith("_DEBUG"):
                     layer = self.get_layer() # Recalculating layer with the new layer iteration attribute
                     break
