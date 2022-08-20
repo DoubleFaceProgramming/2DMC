@@ -25,6 +25,8 @@ noise1.fractal.octaves = 4
 noise1.fractal.lacunarity = 0.5
 noise1.fractal.gain = 0.5
 noise2 = Noise(SEED)
+noise2.axesScales = (1, 2, 1)
+noise2.frequency = 0.006
 noise2.fractal.lacunarity = 0.8
 
 def generate_location(coords: tuple[int, int], cave: bool) -> tuple[str | None, str | None, str | None]:
@@ -98,6 +100,9 @@ for x in range(WIDTH // CHUNK_PIXEL_SIZE + 1):
     for y in range(HEIGHT // CHUNK_PIXEL_SIZE + 1):
         Chunk((x, y))
 
+# Uncomment for cool gradual generation :)
+# x = y = 0
+
 running = True
 while running:
     clock.tick_busy_loop(FPS)
@@ -124,6 +129,15 @@ while running:
                 if block_pos in Location.instances:
                     location = Location.instances[block_pos]
                     del location[location.get_highest()]
+    
+    # Uncomment for cool gradual generation :)
+    # if x < WIDTH // CHUNK_PIXEL_SIZE + 1:
+    #     Chunk((x, y))
+    #     x += 1
+    # elif y < HEIGHT // CHUNK_PIXEL_SIZE - 1:
+    #     x = 0
+    #     y += 1
+    # print(len(Chunk.instances))
 
     screen.fill(BG_COLOR)
 
