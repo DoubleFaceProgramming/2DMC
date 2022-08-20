@@ -1,10 +1,11 @@
 import sys
 import pygame
 from random import *
+from numpy import ndarray
 from pygame.locals import *
 from typing import Generator
-from pyfastnoisesimd import Noise
 from pygame.math import Vector2 as VEC
+from pyfastnoisesimd import Noise, NoiseType, FractalType
 
 from my_profile import profile
 
@@ -16,8 +17,15 @@ pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT), DOUBLEBUF | HWSURFACE)
 clock = pygame.time.Clock()
 
-noise = Noise(SEED, 8)
-noise.fractal.lacunarity = 0.8
+noise1 = Noise(SEED)
+noise1.noiseType = NoiseType.PerlinFractal
+noise1.frequency = 0.01
+noise1.fractal.fractalType = FractalType.Billow
+noise1.fractal.octaves = 4
+noise1.fractal.lacunarity = 0.5
+noise1.fractal.gain = 0.5
+noise2 = Noise(SEED)
+noise2.fractal.lacunarity = 0.8
 
 def generate_location(coords: tuple[int, int], cave: bool) -> tuple[str | None, str | None, str | None]:
     """Generate the names of the blocks to go at a certain location. Temporary world gen!"""
@@ -46,12 +54,20 @@ class ChunkData(PosDict):
             for x in range(int(self.chunk_pos.x * CHUNK_SIZE), int(self.chunk_pos.x * CHUNK_SIZE + CHUNK_SIZE)):
                 yield (x, y), inttup((x - self.chunk_pos.x * CHUNK_SIZE, y - self.chunk_pos.y * CHUNK_SIZE))
 
+    def generate_cave_grids(self) -> tuple[ndarray, ndarray]:
+        grid1 = noise1.genAsGrid([8, 8, 1], [int(self.chunk_pos.x * CHUNK_SIZE), int(self.chunk_pos.y * CHUNK_SIZE), 0])
+        grid2 = noise2.genAsGrid([8, 8, 1], [int(self.chunk_pos.x * CHUNK_SIZE), int(self.chunk_pos.y * CHUNK_SIZE), 0])
+        return grid1, grid2
+    
+    def is_cave(self, pos) -> bool:
+        return self.noise_grid_1[pos[0]][pos[1]][0] < -0.85 or 0.145 < self.noise_grid_2[pos[0]][pos[1]][0] < 0.275
+
     def generate_base(self) -> None:
         """Generate every block in the chunk"""
         seed(pairing(3, *self.chunk_pos, SEED))
-        noise_grid = noise.genAsGrid([8, 8, 1], [int(self.chunk_pos.x * CHUNK_SIZE), int(self.chunk_pos.y * CHUNK_SIZE), 0])
+        self.noise_grid_1, self.noise_grid_2 = self.generate_cave_grids()
         for pos, in_chunk_pos in self.iterate():
-            self[pos] = Location(self.master, pos, *generate_location(pos, 0.145 < noise_grid[in_chunk_pos[0]][in_chunk_pos[1]][0] < 0.275))
+            self[pos] = Location(self.master, pos, *generate_location(pos, self.is_cave(in_chunk_pos)))
 
 class Chunk:
     instances = PosDict()
