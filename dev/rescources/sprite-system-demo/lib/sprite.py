@@ -6,38 +6,22 @@
 # you can view their TOS here: https://account.mojang.com/documents/minecraft_eula
 
 from __future__ import annotations
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from src.management.game_manager import GameManager
 
 from enum import Enum, auto
 from pygame import Surface
 from typing import Any
 
 class LayersEnum(Enum):
-    BACKGROUND = auto()
-    ENV_PARTICLES = auto()
-    BLOCKS = auto()
-    REG_PARTICLES = auto()
-    BLOCK_SELECTION = auto()
-    DEBUG = auto()
-    ENTITIES = auto()
+    SQUARE = auto()
+    GREEN_SQUARE = auto()
     PLAYER = auto()
-    HOTBAR = auto()
-    HOTBAR_LABELS = auto()
-    INVENTORY = auto()
-    INVENTORY_LABELS = auto()
-    CROSSHAIR = auto()
-    TOASTS = auto()
+    SQUARE_DEBUG = auto()
+    GREEN_SQUARE_DEBUG = auto()
 
 class Sprite:
     """A common baseclass for all sprites."""
 
-    def __init__(self, manager: GameManager, layer: int | LayersEnum, debug_layer: int | LayersEnum | None = None) -> None:
-        self.manager = manager
-        self.scene = self.manager.scene
-        
+    def __init__(self, layer: int | LayersEnum, debug_layer: int | LayersEnum | None = None) -> None:
         # Setting the layer attribute. This defines where in the draw order the sprite will be drawn.
         # See SpriteHandler.draw()
         # In theory try except is faster as layer will almost always be an enum, so may as well
@@ -60,26 +44,33 @@ class Sprite:
                 else:
                     raise TypeError("Argument 'debug_layer' must be of type 'int' or 'Enum item'")
 
-        self.scene.sprite_manager.add(self)
+        SPRITE_MANAGER.add(self)
 
-    def update(self) -> None:
+    def update(self, dt: float, **kwargs: dict[Any]) -> None:
         """Update the classes attributes and variables or handle class logic related to the class.
-
         Args:
             dt (float): Delta time
             **kwargs (dict[Any]): Class specific arguments
         """
 
-    def draw(self) -> None:
-        """Draw the sprite to the screen"""
+    def draw(self, screen: Surface, **kwargs: dict[Any]) -> None:
+        """Draw the sprite to the screen
+        Args:
+            screen (Surface): The screen to draw to
+            **kwargs (dict[Any]): Class specific arguments
+        """
 
-    def debug(self) -> None:
-        """Draw the sprite's debug information to the given screen"""
+    def debug(self, screen: Surface, **kwargs: dict[Any]) -> None:
+        """Draw the sprite's debug information to the given screen
+        Args:
+            screen (Surface): The screen to draw to
+            **kwargs (dict[Any]): Class specific arguments
+        """
 
     def kill(self) -> None:
         """Kill the sprite and handle any cleanup logic"""
         try:
-            self.scene.sprite_manager.remove(self)
+            SPRITE_MANAGER.remove(self)
         except SpriteNotFoundException:
             pass
         del self
@@ -116,9 +107,7 @@ class SpriteNotFoundException(Exception):
 class SpriteManager:
     """A class to simplify and better how sprites are drawn and managed"""
 
-    def __init__(self, manager: GameManager, *args: tuple[Sprite]) -> None:
-        self.manager = manager
-        self.scene = self.manager.scene
+    def __init__(self, *args: tuple[Sprite]) -> None:
         self.layers = {}
         if args: # You can create a spritehandler without specifying any args
             self.add(*args)
@@ -149,7 +138,7 @@ class SpriteManager:
             # This could benefit from a do / while loop :o (python please add it its actually useful)
             while True:
                 self.layeriter += 1
-                if self.layeriter >= len(self.layers): # Fixes a crash that occurs if a debug layer is the last entry in LayersEnum
+                if self.layeriter >= len(self.layers):
                     raise StopIteration
                 if not LayersEnum(list(self.layers)[self.layeriter - 1]).name.endswith("_DEBUG"):
                     layer = self.get_layer() # Recalculating layer with the new layer iteration attribute
@@ -169,10 +158,8 @@ class SpriteManager:
 
     def add(self, *args: tuple[Sprite]) -> None:
         """Add any number of sprites to the list of sprites
-
         Args:
             *args (tuple of Sprites): The sprites to add (can be of arbitary length)
-
         Raises:
             NoLayerAttributeException: If any given sprite does not have a layer attribute
         """
@@ -209,20 +196,20 @@ class SpriteManager:
         if not self.layers[sprite._layer]:
             del self.layers[sprite._layer]
 
-    def draw(self) -> None:
+    def draw(self, screen: Surface, debug: bool, **kwargs) -> None:
         # We need to copy self.layers because otheriwse when sprites are created whilst rendering it would crash
-        layers = self.layers.copy()
-        for layer in layers: # Loop through every layer
-            # if LayersEnum(layer).name.endswith("_DEBUG"): continue
+        for layer in (layers := self.layers.copy()): # Loop through every layer
             for sprite in layers[layer]: # Loop through every sprite
                 if not LayersEnum(layer).name.endswith("_DEBUG"): # Draw every layer that isnt a debug layer
-                    sprite.draw()
+                    sprite.draw(screen, **kwargs)
 
                 # If we should render debug stuff and the either the layer is a debug layer or the sprite's debug layer is its default layer, debug the sprite
-                if self.manager.debug:
+                if debug:
                     if LayersEnum(layer).name.endswith("_DEBUG") or sprite._layer == sprite._debug_layer:
-                        sprite.debug()
+                        sprite.debug(screen, **kwargs)
 
-    def update(self) -> None:
+    def update(self, dt: float, **kwargs) -> None:
         for sprite in self:
-            sprite.update()
+            sprite.update(dt, **kwargs)
+
+SPRITE_MANAGER = SpriteManager()
