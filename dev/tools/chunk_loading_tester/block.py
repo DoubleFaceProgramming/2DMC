@@ -38,28 +38,30 @@ class Location:
         ]
         self.update_image()
 
-    def __getitem__(self, key: WorldSlices | int):
+    def __getitem__(self, key: WorldSlices | int) -> None | Block:
         return self.blocks[WorldSlices(key).value]
 
-    def __setitem__(self, key: WorldSlices | int, value):
+    def __setitem__(self, key: WorldSlices | int, value) -> None:
         self.blocks[WorldSlices(key).value] = value
         self.update_image()
         self.master.update_image(self.coords, self.image)
 
-    def __delitem__(self, key: WorldSlices | int):
+    def __delitem__(self, key: WorldSlices | int) -> None:
         if key is not None:
             self.blocks[WorldSlices(key).value] = None
             self.update_image()
             self.master.update_image(self.coords, self.image)
 
-    def __contains__(self, key: WorldSlices | int):
+    def __contains__(self, key: WorldSlices | int) -> bool:
         return self.blocks[WorldSlices(key).value] is None
 
-    def update_image(self):
+    def update_image(self) -> None:
+        """Updates its image to match the data"""
         self.image.fill((0, 0, 0, 0))
-        for i, block in enumerate(self.highest_opaque_blocks()):
+        for i, block in enumerate(self.highest_opaque_blocks()): # Gets all the visible blocks
             if not block: continue
             self.image.blit(block.image, (0, 0))
+            # Blit each slice's corresponding transparent overlay
             self.image.blit(SliceOverlay[block.worldslice.name].value, (0, 0))
 
     def get_highest(self) -> None | WorldSlices:
