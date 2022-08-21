@@ -57,23 +57,23 @@ class Location:
 
     def update_image(self):
         self.image.fill((0, 0, 0, 0))
-        for block in self.highest_opaque_block():
-            if block:
-                self.image.blit(block.image, (0, 0))
-                self.image.blit(SliceOverlay[block.worldslice.name].value, (0, 0))
+        for i, block in enumerate(self.highest_opaque_blocks()):
+            if not block: continue
+            self.image.blit(block.image, (0, 0))
+            self.image.blit(SliceOverlay[block.worldslice.name].value, (0, 0))
 
     def get_highest(self) -> None | WorldSlices:
-        for block in self.blocks.reverse_nip():
+        for block in self.blocks.reverse_3():
             if block:
                 return block.worldslice.value
 
     # TODO: use tag system for transparency
-    def highest_opaque_block(self):
+    def highest_opaque_blocks(self):
         """Get the blocks from the highest opaque block to the foreground"""
-        rev = self.blocks.reverse_nip()
+        rev = self.blocks.reverse_3()
         for index, block in enumerate(rev):
             if not block: continue
             if block.name not in {"glass", "tall_grass", "tall_grass_top", "grass", "dandelion", "poppy"}: # <- tags go here
-                return rev[:index + 1].reverse_nip() # Return all blocks from the highest opaque block (index + 1) to the foreground
+                return rev[:index + 1].reverse_3() # Return all blocks from the highest opaque block (index + 1) to the foreground
 
         return self.blocks # If the are no opaque blocks return self.blocks

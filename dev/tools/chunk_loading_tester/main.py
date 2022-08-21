@@ -52,9 +52,9 @@ class ChunkData(PosDict):
 
     def iterate(self) -> Generator:
         """Iterates through every coordinate inside the chunk, yields the absolute coordinates AND chunk coordinates"""
-        for y in range(int(self.chunk_pos.y * CHUNK_SIZE), int(self.chunk_pos.y * CHUNK_SIZE + CHUNK_SIZE)):
-            for x in range(int(self.chunk_pos.x * CHUNK_SIZE), int(self.chunk_pos.x * CHUNK_SIZE + CHUNK_SIZE)):
-                yield (x, y), inttup((x - self.chunk_pos.x * CHUNK_SIZE, y - self.chunk_pos.y * CHUNK_SIZE))
+        for y in range(CHUNK_SIZE):
+            for x in range(CHUNK_SIZE):
+                yield (x + self.chunk_pos.x * CHUNK_SIZE, y + self.chunk_pos.y * CHUNK_SIZE), (x, y)
 
     def generate_cave_grids(self) -> tuple[ndarray, ndarray]:
         return noise.genAsGrid([8, 8, 1], [int(self.chunk_pos.x * CHUNK_SIZE), int(self.chunk_pos.y * CHUNK_SIZE), 0])
@@ -82,12 +82,13 @@ class Chunk:
         self.image = pygame.Surface((CHUNK_PIXEL_SIZE, CHUNK_PIXEL_SIZE), SRCALPHA)
         # Updates every location on the chunk as the chunk was just created
         for coords, location in self.chunk_data.items():
-            self.update_image(VEC(coords), location.image)
+            self.update_image(VEC(coords), location.image, first=True)
 
-    def update_image(self, coords: tuple[int, int], image: pygame.Surface) -> None:
+    def update_image(self, coords: tuple[int, int], image: pygame.Surface, first: bool = False) -> None:
         """Update the image of a location on it's parent chunk."""
-        on_chunk_pos = VEC(coords.x % CHUNK_SIZE, coords.y % CHUNK_SIZE) * BLOCK_SIZE
-        self.image.fill((0, 0, 0, 0), (*on_chunk_pos, BLOCK_SIZE, BLOCK_SIZE)) # Clear the area that the image occupies
+        on_chunk_pos = (coords.x % CHUNK_SIZE * BLOCK_SIZE, coords.y % CHUNK_SIZE * BLOCK_SIZE)
+        if not first:
+            self.image.fill((0, 0, 0, 0), (*on_chunk_pos, BLOCK_SIZE, BLOCK_SIZE)) # Clear the area that the image occupies
         self.image.blit(image, on_chunk_pos)
 
     def draw(self):

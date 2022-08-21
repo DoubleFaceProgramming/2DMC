@@ -8,7 +8,7 @@
 from fishhook import hook
 
 @hook(list)
-def reverse_nip(self):
-    rev = self.copy()
-    rev.reverse()
-    return rev
+def reverse_3(self):
+    self = self.copy()
+    self[0], self[-1] = self[-1], self[0]
+    return self
