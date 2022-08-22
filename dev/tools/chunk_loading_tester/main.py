@@ -8,7 +8,7 @@ from pygame.math import Vector2 as VEC
 from pyfastnoisesimd import Noise, NoiseType, FractalType, PerturbType
 
 import time
-from my_profile import profile
+from my_profile import profile_chunk
 
 from block import Location
 from constants import *
@@ -132,7 +132,7 @@ while running:
                     del Chunk.instances[chunk_pos]
                 else:
                     if keys[K_LSHIFT]:
-                        profile(Chunk, chunk_pos)
+                        profile_chunk(Chunk, chunk_pos)
                     else:
                         Chunk(chunk_pos)
             if event.button == 3:
