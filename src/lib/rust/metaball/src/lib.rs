@@ -7,8 +7,8 @@ struct Coord {
 }
 
 impl Coord {
-    fn dist(&self, other: &Coord) -> f32 {
-        (((self.x - other.x).pow(2) + (self.y - other.y).pow(2)) as f32).sqrt()
+    fn dist_sqr(&self, other: &Coord) -> f32 {
+        ((self.x - other.x).pow(2) + (self.y - other.y).pow(2)) as f32
     }
 }
 
@@ -27,47 +27,37 @@ impl MetaBall {
 }
 
 #[pyfunction]
-fn blob() -> PyResult<Vec<Vec<&'static str>>> {
+fn blob() -> PyResult<Vec<(i32, i32)>> {
     let mut rng = rand::thread_rng();
+
     let mut balls = vec![];
-    for i in 0..rng.gen_range(3..4 + 1) {
+    for _ in 0..rng.gen_range(3..4 + 1) {
         balls.push(MetaBall::new(rng.gen_range(4..11 + 1) as i32, rng.gen_range(4..11 + 1) as i32, rng.gen_range(2..4 + 1) as f32))
     }
 
-    let mut res = vec![];
+    let mut coordinates = vec![];
     for y in 0..16 {
-       res.push(vec![]);
        for x in 0..16 {
-           let mut val = 0.0;
-           for ball in &balls {
-               let distance = ball.center.dist(&Coord {x, y});
-               // There's probably a way to use casting to bool like you would in python but im too dum
-               val += if distance == 0.0 {
-                   10.0
-               } else {
-                   ball.radius / distance / 2.0
-               };
-           }
-           res[y as usize].push(if val > 1.2 { "#" } else { "." });
+            let mut val = 0.0;
+            for ball in &balls {
+                let distance_squared = ball.center.dist_sqr(&Coord {x, y});
+                val += if distance_squared == 0.0 {
+                    10.0
+                } else {
+                    ball.radius * ball.radius / distance_squared / 1.6
+                };
+            }
+            if val > 1.2 {
+                coordinates.push((x, y))
+            }
         }
     }
 
-    Ok(res)
+    Ok(coordinates)
 }
 
-#[pyfunction]
-fn n_blobs(n: i32) -> PyResult<Vec<Vec<Vec<&'static str>>>> {
-    let mut res = vec![];
-    for i in 0..n {
-        res.push(blob().unwrap());
-    }
-    Ok(res)
-}
-
-/// A Python module implemented in Rust.
 #[pymodule]
 fn metaball(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(blob, m)?)?;
-    m.add_function(wrap_pyfunction!(n_blobs, m)?)?;
     Ok(())
 }
