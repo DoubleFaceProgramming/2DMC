@@ -18,7 +18,7 @@ def profile_chunk(callable: Callable[..., Any], *args: tuple[Any]) -> Any:
         returnval = callable(*args)     # Calling the callable with the args
 
     # Naming the profile file in the format "chunk-{x},{y}-{hour}-{minute}-{second}.prof"
-    statfile = Path(join("profiles", f"chunk-{int(args[0][0])},{int(args[0][1])}-{datetime.now().strftime('%H-%M-%S')}.prof"))
+    statfile = Path(join("profiles", f"chunk-{int(args[1][0])},{int(args[1][1])}-{datetime.now().strftime('%H-%M-%S')}.prof"))
 
     stats = Stats(profile).sort_stats(SortKey.TIME) # Sorting the stats from highest time to lowest
     stats.dump_stats(filename=str(statfile)) # Saving the stats to a profile file
