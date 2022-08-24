@@ -3,7 +3,7 @@ from pygame.locals import *
 
 VEC = Vector2
 FPS = float("inf")
-WIDTH, HEIGHT = 1280, 768
+WIDTH, HEIGHT = SCR_DIM = 1280, 768
 BG_COLOR = (135, 206, 250)
 BLOCK_SIZE = 2 # Number of pixels in a block
 CHUNK_SIZE = 16 # Number of blocks in a chunk

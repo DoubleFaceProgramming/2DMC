@@ -1,15 +1,15 @@
 import pygame
 import os
 
+from utils import WorldSlices, PosDict, SliceOverlay
 from constants import *
 from utils import *
 import hooks
-from utils import WorldSlices
 
 pygame.init()
 pygame.display.set_mode((0, 0))
 
-# Loads each image in assets, also adds a key for air so that when air is hashed, it doesn't error
+# Loads each image in assets
 block_images = {filename[:-4]: pygame.image.load(f"assets/{filename}").convert_alpha() for filename in os.listdir("assets")}
 
 pygame.display.quit()
