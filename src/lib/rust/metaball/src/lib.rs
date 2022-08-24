@@ -1,5 +1,6 @@
 use pyo3::prelude::*;
-use rand::Rng;
+use rand::prelude::*;
+use rand_chacha::ChaCha8Rng;
 
 struct Coord {
     x: i32,
@@ -27,8 +28,8 @@ impl MetaBall {
 }
 
 #[pyfunction]
-fn blob() -> PyResult<Vec<(i32, i32)>> {
-    let mut rng = rand::thread_rng();
+fn blob(seed: i64) -> PyResult<Vec<(i32, i32)>> {
+    let mut rng = ChaCha8Rng::seed_from_u64(if seed < 0 { (-seed * 2 - 1) as u64 } else { (seed * 2) as u64 });
 
     let mut balls = vec![];
     for _ in 0..rng.gen_range(3..4 + 1) {

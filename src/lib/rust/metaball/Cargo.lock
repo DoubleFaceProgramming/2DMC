@@ -59,6 +59,7 @@ version = "0.1.0"
 dependencies = [
  "pyo3",
  "rand",
+ "rand_chacha",
 ]
 
 [[package]]
