@@ -1,3 +1,4 @@
+from pathlib import Path
 import pygame
 import os
 
@@ -9,8 +10,11 @@ import hooks
 pygame.init()
 pygame.display.set_mode((0, 0))
 
-# Loads each image in assets
-block_images = {filename[:-4]: pygame.image.load(f"assets/{filename}").convert_alpha() for filename in os.listdir("assets")}
+try:
+    # Loads each image in assets
+    block_images = {Path(filename).stem: pygame.image.load(os.path.join("assets", filename)).convert_alpha() for filename in os.listdir("assets")}
+except:
+    raise FileNotFoundError("Try cd-ing into the chunk_loading_tester directory and running again!")
 
 pygame.display.quit()
 
