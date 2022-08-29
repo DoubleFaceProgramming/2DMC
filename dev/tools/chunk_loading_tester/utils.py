@@ -39,6 +39,9 @@ class SliceOverlay(Enum):
     MIDDLEGROUND = filled_surf((BLOCK_SIZE, BLOCK_SIZE), (0, 0, 0, 40))
     FOREGROUND = Surface((0, 0))
 
+class BlobParams(Enum):
+    NATURAL_STONE = (16, (3, 5), (4, 11), (2, 4))
+
 class PosDict(dict):
     """Custom dictionary that can take Vectors and turn them into tuples for hashing, doesn't error if key doesn't exist"""
     def __getitem__(self, key):
@@ -53,5 +56,5 @@ class PosDict(dict):
     def __contains__(self, key):
         return super().__contains__(inttup(key))
 
-    def __missing__(self, key):
-        return ""
+    # def __missing__(self, key):
+    #     return ""

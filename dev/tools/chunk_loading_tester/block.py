@@ -44,7 +44,8 @@ class Location:
     def __setitem__(self, key: WorldSlices | int, value) -> None:
         self.blocks[WorldSlices(key).value] = value
         self.update_image()
-        self.master.update_image(self.coords, self.image)
+        try: self.master.update_image(self.coords, self.image)
+        except: pass
 
     def __delitem__(self, key: WorldSlices | int) -> None:
         if key is not None:

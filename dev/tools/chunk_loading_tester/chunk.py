@@ -1,16 +1,20 @@
 from __future__ import annotations
+from msilib.schema import Feature
+from tracemalloc import start
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from game_manager import GameManager
 
+from random import randint, choice
+from random import seed as rseed
 from typing import Generator
 from numpy import ndarray
-from random import seed
 import pygame
 
+from features import StoneBlob, Feature
+from block import Location, Block
 from sprite import LayersEnum
-from block import Location
 from sprite import Sprite
 from constants import *
 from utils import *
@@ -39,6 +43,7 @@ class ChunkData(PosDict):
         self.master = master
         self.chunk_pos = VEC(chunk_pos)
         self.generate_base()
+        self.populate_features()
 
     def iterate(self) -> Generator:
         """Iterates through every coordinate inside the chunk, yields the absolute coordinates AND chunk coordinates"""
@@ -56,10 +61,24 @@ class ChunkData(PosDict):
 
     def generate_base(self) -> None:
         """Generate every block in the chunk"""
-        seed(pairing(3, *self.chunk_pos, SEED))
+        rseed(pairing(3, *self.chunk_pos, SEED))
         self.noise_map = self.generate_cave_map()
         for pos, in_chunk_pos in self.iterate():
             self[pos] = Location(self.master, pos, *generate_location(pos, self.is_cave(in_chunk_pos)))
+
+    # TODO: In the future, use BiomeData class which stores information of biomes including what features to generate and how in each biome
+    def populate_features(self) -> None:
+        positions = [(randint(self.chunk_pos.x * CHUNK_SIZE, self.chunk_pos.x * CHUNK_SIZE + CHUNK_SIZE - 1), randint(self.chunk_pos.y * CHUNK_SIZE, self.chunk_pos.y * CHUNK_SIZE + CHUNK_SIZE - 1)) for _ in range(randint(0, 2))]
+        for start_pos in positions:
+            start_pos = VEC(start_pos)
+            seed = pairing(3, *start_pos, SEED)
+            rseed(seed)
+            generator = StoneBlob(seed, choice(["andesite", "diorite", "granite"]))
+            feature = Feature(generator())
+            for pos, block_name in feature.generator:
+                if start_pos + pos in self:
+                    location = self[start_pos + pos]
+                    location[WorldSlices.MIDDLEGROUND] = Block(location, block_name, WorldSlices.MIDDLEGROUND)
 
 class Chunk(Sprite):
     instances = PosDict()
@@ -86,7 +105,7 @@ class Chunk(Sprite):
 
     def draw(self) -> None:
         self.manager.screen.blit(self.image, self.chunk_pos * CHUNK_PIXEL_SIZE)
-        # pygame.draw.rect(self.manager.screen, (255, 255, 0), (self.chunk_pos * CHUNK_PIXEL_SIZE, self.image.get_size()), 1)
+        pygame.draw.rect(self.manager.screen, (255, 255, 0), (self.chunk_pos * CHUNK_PIXEL_SIZE, self.image.get_size()), 1)
 
     def kill(self) -> None:
         del self.__class__.instances[self.chunk_pos]

@@ -33,16 +33,16 @@ class Game(Scene):
     def setup(self) -> None:
         super().setup()
 
-        start = time.time()
-        avg = 0
-        for x in range(WIDTH // CHUNK_PIXEL_SIZE):
-            for y in range(HEIGHT // CHUNK_PIXEL_SIZE):
-                one_chunk_start = time.time()
-                Chunk(self.manager, (x, y))
-                avg += time.time() - one_chunk_start
-                avg /= 2
-        print("TOTAL:", time.time() - start, "seconds")
-        print("AVERAGE:", avg, "seconds")
+        # start = time.time()
+        # avg = 0
+        # for x in range(WIDTH // CHUNK_PIXEL_SIZE):
+        #     for y in range(HEIGHT // CHUNK_PIXEL_SIZE):
+        #         one_chunk_start = time.time()
+        #         Chunk(self.manager, (x, y))
+        #         avg += time.time() - one_chunk_start
+        #         avg /= 2
+        # print("TOTAL:", time.time() - start, "seconds")
+        # print("AVERAGE:", avg, "seconds")
 
     def update(self) -> None:
         keys = pygame.key.get_pressed()

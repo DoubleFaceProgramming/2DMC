@@ -42,7 +42,7 @@ fn blob(seed: i64, size: i32, num_balls: (i32, i32), inner_range: (i32, i32), ba
 
     let mut coordinates = vec![];
     for y in 0..size {
-       for x in 0..size {
+        for x in 0..size {
             let mut val = 0.0;
             for ball in &balls {
                 let distance_squared = ball.center.dist_sqr(&Coord {x, y});
@@ -54,7 +54,6 @@ fn blob(seed: i64, size: i32, num_balls: (i32, i32), inner_range: (i32, i32), ba
             }
             if val > 1.2 {
                 coordinates.push((x, y));
-                break;
             }
         }
     }
