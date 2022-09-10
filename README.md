@@ -6,13 +6,17 @@
 
 Enjoy ^-^
 
+## Running
+
+1) Install [poetry](https://python-poetry.org/docs/#installation)
+2) Install dependencies (`poetry install`)
+3) Run (`poetry poe main`)
+
 ## Related Information
 
 **[Gallery](https://imgur.com/gallery/BHqgAHi)**
 
 **[Credits](CREDITS.md)**
-
-**[Install](INSTALL.md)**
 
 ## Instructions
 
