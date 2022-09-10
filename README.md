@@ -10,7 +10,7 @@ Enjoy ^-^
 
 1) Install [poetry](https://python-poetry.org/docs/#installation)
 2) Install dependencies (`poetry install`)
-3) Run (`poetry poe main`)
+3) Run (`poetry start`)
 
 ## Related Information
 

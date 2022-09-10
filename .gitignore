@@ -4,4 +4,5 @@ screenshots/*
 build/dist/*
 __pycache__/
 .vscode/
-tempCodeRunnerFile.py
+
+src/lang/rust/target

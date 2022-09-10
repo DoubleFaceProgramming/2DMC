@@ -13,9 +13,20 @@ opensimplex = "^0.4.3"
 fast-enum = "^1.3.0"
 fishhook = "^0.1.4"
 multipledispatch = "^0.6.0"
+maturin = "^0.13.2"
+
+[tool.poe]
+poetry_command = ""
 
 [tool.poe.tasks]
-main = "poetry run python main.py"
+develop = "poetry run python main.py" # Develop because there is no compilation
+
+[tool.poe.tasks.start]
+sequence = [ "compile", { cmd = "poetry run python main.py "} ]
+
+[tool.poe.tasks.compile]
+cmd = "maturin develop"
+cwd = "src/lang/rust"
 
 [tool.poetry.group.dev.dependencies]
 poethepoet = "^0.16.2"
