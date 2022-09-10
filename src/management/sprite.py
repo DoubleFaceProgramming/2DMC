@@ -128,7 +128,7 @@ class SpriteManager:
         # is first, and the highest is drawn last
         self.layers = dict(sorted(self.layers.items()))
         self.layeriter = self.spriteiter = 0
-        self.get_layer = lambda: list(self.layers.values())[self.layeriter-1]
+        self.get_layer = lambda: list(self.layers.values())[self.layeriter]
         return self
 
     # Bad code but i just cba at this point this has taken way too long
@@ -148,12 +148,14 @@ class SpriteManager:
             # If the next layer is a debug layer, keep on incrementing the layer counter until it is no longer a debug layer
             # This could benefit from a do / while loop :o (python please add it its actually useful)
             while True:
-                self.layeriter += 1
                 if self.layeriter >= len(self.layers): # Fixes a crash that occurs if a debug layer is the last entry in LayersEnum
                     raise StopIteration
-                if not LayersEnum(list(self.layers)[self.layeriter - 1]).name.endswith("_DEBUG"):
+                if not LayersEnum(list(self.layers)[self.layeriter]).name.endswith("_DEBUG"):
                     layer = self.get_layer() # Recalculating layer with the new layer iteration attribute
+                    self.layeriter += 1 # We need to do += 1 here because the later += wont be reached if we break
                     break
+
+                self.layeriter += 1
 
         return layer[self.spriteiter]
 
