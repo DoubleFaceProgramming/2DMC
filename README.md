@@ -9,6 +9,7 @@ Enjoy ^-^
 ## Running
 
 1) Install [poetry](https://python-poetry.org/docs/#installation)
+3) Install poethepoet (`poetry self add 'poethepoet[poetry_plugin]'`)
 2) Install dependencies (`poetry install`)
 3) Run (`poetry start`)
 

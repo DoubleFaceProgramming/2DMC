@@ -32,9 +32,6 @@ cwd = "src/lang/rust"
 cmd = "maturin develop --release"
 cwd = "src/lang/rust"
 
-[tool.poetry.group.dev.dependencies]
-poethepoet = "^0.16.2"
-
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
