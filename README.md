@@ -12,6 +12,9 @@ Enjoy ^-^
 2) Install dependencies (`poetry install`)
 3) Run (`poetry start`)
 
+If you are developing rust integration, you can run `poetry develop` to use unoptimised binaries, giving a faster response time.
+Note that if you want to do any form of benchmarking or performance increases you should use `poetry start`
+
 ## Related Information
 
 **[Gallery](https://imgur.com/gallery/BHqgAHi)**

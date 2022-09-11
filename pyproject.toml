@@ -18,14 +18,18 @@ maturin = "^0.13.2"
 [tool.poe]
 poetry_command = ""
 
-[tool.poe.tasks]
-develop = "poetry run python main.py" # Develop because there is no compilation
-
 [tool.poe.tasks.start]
+sequence = [ "compile_release", { cmd = "poetry run python main.py "} ]
+
+[tool.poe.tasks.develop]
 sequence = [ "compile", { cmd = "poetry run python main.py "} ]
 
 [tool.poe.tasks.compile]
 cmd = "maturin develop"
+cwd = "src/lang/rust"
+
+[tool.poe.tasks.compile_release]
+cmd = "maturin develop --release"
 cwd = "src/lang/rust"
 
 [tool.poetry.group.dev.dependencies]

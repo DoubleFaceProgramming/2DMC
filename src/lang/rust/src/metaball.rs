@@ -1,6 +1,6 @@
+use rand_chacha::ChaCha8Rng;
 use pyo3::prelude::*;
 use rand::prelude::*;
-use rand_chacha::ChaCha8Rng;
 
 struct Coord {
     x: i32,
@@ -28,7 +28,7 @@ impl MetaBall {
 }
 
 #[pyfunction]
-fn blob(seed: i64, size: i32, num_balls: (i32, i32), inner_range: (i32, i32), ball_size: (i32, i32)) -> PyResult<Vec<(i32, i32)>> {
+pub fn blob(seed: i64, size: i32, num_balls: (i32, i32), inner_range: (i32, i32), ball_size: (i32, i32)) -> PyResult<Vec<(i32, i32)>> {
     let mut rng = ChaCha8Rng::seed_from_u64(if seed < 0 { (-seed * 2 - 1) as u64 } else { (seed * 2) as u64 });
 
     let mut balls = vec![];
@@ -59,10 +59,4 @@ fn blob(seed: i64, size: i32, num_balls: (i32, i32), inner_range: (i32, i32), ba
     }
 
     Ok(coordinates)
-}
-
-#[pymodule]
-fn metaball(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(blob, m)?)?;
-    Ok(())
 }

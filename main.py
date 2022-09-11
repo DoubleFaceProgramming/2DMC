@@ -17,11 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import rust
+from src.management.game_manager import GameManager
 
-print(rust.square_as_string(3))
-
-# from src.management.game_manager import GameManager
-
-# if __name__ == "__main__":
-#     GameManager().run()
+if __name__ == "__main__":
+    GameManager().run()
