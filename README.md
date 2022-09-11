@@ -6,13 +6,21 @@
 
 Enjoy ^-^
 
+## Running
+
+1) Install [poetry](https://python-poetry.org/docs/#installation)
+3) Install poethepoet (`poetry self add 'poethepoet[poetry_plugin]'`)
+2) Install dependencies (`poetry install`)
+3) Run (`poetry start`)
+
+If you are developing rust integration, you can run `poetry develop` to use unoptimised binaries, giving a faster response time.
+Note that if you want to do any form of benchmarking or performance increases you should use `poetry start`
+
 ## Related Information
 
 **[Gallery](https://imgur.com/gallery/BHqgAHi)**
 
 **[Credits](CREDITS.md)**
-
-**[Install](INSTALL.md)**
 
 ## Instructions
 
