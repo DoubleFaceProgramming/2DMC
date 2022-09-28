@@ -74,11 +74,11 @@ def pairing(count, *args: int) -> int:
     new = [0.5 * (a + b) * (a + b + 1) + b] + [num for i, num in enumerate(args) if i > 1]
     return pairing(count, *new)
 
-def PPS(blocks: int | float | VEC) -> int | float | VEC:
+def to_pps(blocks: int | float | VEC) -> int | float | VEC:
     """Returns pixels per second equivalent of the input value in blocks per second"""
     return blocks * BLOCK_SIZE
 
-def BPS(pixels: int | float | VEC) -> int | float | VEC:
+def to_bps(pixels: int | float | VEC) -> int | float | VEC:
     """Returns blocks per second equivalent of the input value in pixels per second"""
     return pixels / BLOCK_SIZE
 

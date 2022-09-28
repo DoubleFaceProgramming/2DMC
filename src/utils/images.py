@@ -21,6 +21,7 @@ os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (50, 50)
 pygame.init()
 pygame.display.set_mode((0, 0), HWSURFACE | DOUBLEBUF)
 
+missing = pygame.image.load(pathof("assets/misc/missing.png"))
 window_icon = pygame.image.load(pathof("assets/logo.png"))
 
 # Simple load functions

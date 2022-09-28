@@ -15,10 +15,11 @@ from random import randint
 import pygame
 
 from src.utils.constants import SCR_DIM, BLOCK_SIZE, CHUNK_SIZE, VEC, DEBUG_SPACING
+from src.effects.particles import BlockParticle
 from src.utils.constants import BLUE_SKY
 from src.world.chunk import ChunkManager
 from src.management.scenes import Scene
-from src.utils.utils import inttup, BPS
+from src.utils.utils import inttup, to_bps
 from src.entities.player import Player
 from src.world.block import Location
 
@@ -42,7 +43,7 @@ class Game(Scene):
 
     def update(self):
         super().update()
-        
+
         if MOUSEBUTTONDOWN in self.manager.events:
             mpos = VEC(pygame.mouse.get_pos())
             if self.manager.events[MOUSEBUTTONDOWN].button == 1:
@@ -50,12 +51,13 @@ class Game(Scene):
                 if block_pos in self.locations:
                     location = self.locations[block_pos]
                     del location[location.get_highest()]
+                    BlockParticle.spawn(self.manager, location, 1) # TODO: Change this to take the player's selected worldslice? or midground? idk man
 
         self.chunk_manager.update()
-        
+
     def draw(self):
         self.manager.screen.fill(BLUE_SKY)
-        
+
         super().draw()
 
     def debug(self) -> None:
@@ -63,7 +65,7 @@ class Game(Scene):
         debug_values = {
             "FPS": int(self.manager.clock.get_fps()),
             "Seed": self.seed,
-            "Velocity": (f"X: {round(BPS(self.player.vel.x), 4)} BPS, Y: {round(BPS(self.player.vel.y), 4)} BPS"),
+            "Velocity": (f"X: {round(to_bps(self.player.vel.x), 4)} BPS, Y: {round(to_bps(self.player.vel.y), 4)} BPS"),
             "Positon": inttup(self.player.coords),
             "Camera offset": inttup(self.player.pos - self.player.camera.pos - VEC(SCR_DIM) / 2 + self.player.size / 2),
             "Chunk": inttup(self.player.coords // CHUNK_SIZE),
@@ -74,7 +76,7 @@ class Game(Scene):
             # "Particles": len(Particle.instances),
             # "Pre-gen cave heightmap": Chunk.cave_pregeneration_pos if Chunk.cave_pregeneration_bool else "Complete"
         }
-        
+
         for location in self.player.detecting_locations.values():
             rect = pygame.Rect(location.rect.left - self.player.camera.pos.x, location.rect.top - self.player.camera.pos.y, BLOCK_SIZE, BLOCK_SIZE)
             pygame.draw.rect(self.manager.screen, (255, 0, 0), rect, 1)
