@@ -5,48 +5,83 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING: # Type annotations without causing circular imports
     from src.management.game_manager import GameManager
 
-from src.utils.constants import VEC, BLOCK_SIZE, SCR_DIM
+from src.utils.constants import VEC, BLOCK_SIZE, GRAVITY
+from src.utils.utils import WorldSlices, sign, to_pps
 from src.management.sprite import LayersEnum, Sprite
 from src.world.block import Location, Block
-from src.utils.utils import WorldSlices
 from src.utils.images import missing
+from random import randint, uniform
+from math import floor, ceil
 from pygame import Surface
-from random import randint
 import pygame
 
 class Particle(Sprite):
     instances: list[Particle] = []
 
-    def __init__(self, manager: GameManager, pos: tuple[int, int], size: tuple[int, int], layer: LayersEnum=LayersEnum.REG_PARTICLES):
+    def __init__(self, manager: GameManager, pos: tuple[int, int], vel: tuple[float, float], size: tuple[int, int], layer: LayersEnum=LayersEnum.REG_PARTICLES):
         super().__init__(manager, layer)
         __class__.instances.append(self)
 
         self.pos = VEC(pos)
         self.coords = self.pos // BLOCK_SIZE
+        self.vel = VEC(vel)
         self.size = size
         self.image = Surface(size)
         self.image.blit(pygame.transform.scale(missing, self.size), (0, 0))
 
+    def update(self):
+        self.pos += self.vel * self.manager.dt
+        self.coords = VEC((floor if self.pos.x > 0 else ceil)(self.pos.x) // BLOCK_SIZE, (floor if self.pos.y > 0 else ceil)(self.pos.y) // BLOCK_SIZE)
+
     def draw(self):
-        self.manager.screen.blit(self.image, self.pos)
+        self.manager.screen.blit(self.image, self.pos - self.manager.scene.player.camera.pos)
 
 class PhysicsParticle(Particle):
-    def __init__(self, manager: GameManager, pos: tuple[int, int], size: tuple[int, int]):
-        super().__init__(manager, pos, size)
+    def __init__(self, manager: GameManager, pos: tuple[int, int], vel: tuple[int, int], size: tuple[int, int]):
+        super().__init__(manager, pos, vel, size)
 
-    # Add in the physics stuff in here :)
+    def update(self) -> None:
+        self.move()
+
+        # Collision with the blocks around, block on the left if going left, block below if moving down, and vice versa
+        for pos in set([(self.coords.x + sign(self.vel.x), self.coords.y), (self.coords.x, self.coords.y + sign(self.vel.y))]):
+            if pos in Location.instances and Location.instances[pos][1]:
+                loc = Location.instances[pos]
+                # TODO: Use tags here, for blocks with collision (if loc[1] (middleground) has collision)
+                location_rect = pygame.Rect(loc.coords.x, loc.coords.y, BLOCK_SIZE, BLOCK_SIZE)
+                if self.vel.x != 0:
+                    if location_rect.collidepoint(self.pos.x + self.vel.x * self.manager.dt, self.pos.y):
+                        self.vel.x = 0
+                        break
+                if self.vel.y != 0:
+                    if location_rect.collidepoint(self.pos.x, self.pos.y + self.vel.y * self.manager.dt):
+                        self.vel.y = 0
+                        break
+
+        super().update()
+
+    def move(self) -> None:
+        # Fall
+        self.vel.y += to_pps(GRAVITY) * self.manager.dt
+        # X-velocity gets decreased over time
+        self.vel.x -= sign(self.vel.x) * 0.02 * self.manager.dt
 
 class BlockParticle(PhysicsParticle):
-    def __init__(self, manager, pos, block: Block):
+    def __init__(self, manager, pos: tuple[int, int], vel: tuple[float, float], block: Block):
         if not block:
             return # Is this okay? This seems like it isnt okay but I... think its okay?
 
         size = randint(6, 8)
-        super().__init__(manager, pos, (size, size))
+        super().__init__(manager, pos, vel, (size, size))
 
-        colour = block.image.get_at((randint(0, block.image.get_width() - 1), randint(0, block.image.get_height() - 1)))
-        self.image.fill(colour)
+        color = block.image.get_at((randint(0, block.image.get_width() - 1), randint(0, block.image.get_height() - 1)))
+        self.image.fill(color)
 
     @classmethod
     def spawn(cls, manager: GameManager, loc: Location, ws: WorldSlice):
-        BlockParticle(manager, (randint(0, SCR_DIM[0]), randint(0, SCR_DIM[1])), loc[ws])
+        spawn_range = ((loc.coords.x * BLOCK_SIZE, (loc.coords.x + 1) * BLOCK_SIZE),
+                       (loc.coords.y * BLOCK_SIZE, (loc.coords.y + 1) * BLOCK_SIZE))
+        for _ in range(randint(18, 26)):
+            spawn_pos = (randint(*spawn_range[0]), randint(*spawn_range[1])) # Gonna try start stop writing one-liners, just makes life harder
+            spawn_vel = (uniform(-2, 2), uniform(-3, 0.5))
+            BlockParticle(manager, spawn_pos, spawn_vel, loc[ws])
