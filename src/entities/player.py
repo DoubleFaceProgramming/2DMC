@@ -16,8 +16,8 @@ import pygame
 
 from src.utils.constants import CHUNK_SIZE, VEC, GRAVITY, BLOCK_SIZE, SCR_DIM
 from src.management.sprite import Sprite, LayersEnum
+from src.utils.utils import sign, to_pps
 from src.entities.entity import Entity
-from src.utils.utils import sign
 
 from pygame.locals import (
     K_a, K_d, K_w, K_s, K_LEFT, K_RIGHT, K_UP, K_DOWN, K_SPACE
@@ -63,7 +63,7 @@ class Player(Entity):
         self.camera = Camera(self.manager, self)
         self.slide = 1200 # Speed of acceleration and deceleration
         self.speed = 250 # Max speed
-        self.jump_vel = -800 # Velocity at start of jump
+        self.jump_vel = -620 # Velocity at start of jump
         self.on_ground = False
 
     def update(self) -> None:

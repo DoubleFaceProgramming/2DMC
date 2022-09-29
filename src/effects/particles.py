@@ -48,7 +48,7 @@ class PhysicsParticle(Particle):
             if pos in Location.instances and Location.instances[pos][1]:
                 loc = Location.instances[pos]
                 # TODO: Use tags here, for blocks with collision (if loc[1] (middleground) has collision)
-                location_rect = pygame.Rect(loc.coords.x, loc.coords.y, BLOCK_SIZE, BLOCK_SIZE)
+                location_rect = pygame.Rect(loc.coords.x * BLOCK_SIZE, loc.coords.y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
                 if self.vel.x != 0:
                     if location_rect.collidepoint(self.pos.x + self.vel.x * self.manager.dt, self.pos.y):
                         self.vel.x = 0
@@ -62,15 +62,12 @@ class PhysicsParticle(Particle):
 
     def move(self) -> None:
         # Fall
-        self.vel.y += to_pps(GRAVITY) * self.manager.dt
+        self.vel.y += GRAVITY * self.manager.dt
         # X-velocity gets decreased over time
-        self.vel.x -= sign(self.vel.x) * 0.02 * self.manager.dt
+        self.vel.x -= self.vel.x * 5 * self.manager.dt
 
 class BlockParticle(PhysicsParticle):
     def __init__(self, manager, pos: tuple[int, int], vel: tuple[float, float], block: Block):
-        if not block:
-            return # Is this okay? This seems like it isnt okay but I... think its okay?
-
         size = randint(6, 8)
         super().__init__(manager, pos, vel, (size, size))
 
@@ -78,10 +75,10 @@ class BlockParticle(PhysicsParticle):
         self.image.fill(color)
 
     @classmethod
-    def spawn(cls, manager: GameManager, loc: Location, ws: WorldSlice):
+    def spawn(cls, manager: GameManager, loc: Location, ws: WorldSlices):
         spawn_range = ((loc.coords.x * BLOCK_SIZE, (loc.coords.x + 1) * BLOCK_SIZE),
                        (loc.coords.y * BLOCK_SIZE, (loc.coords.y + 1) * BLOCK_SIZE))
         for _ in range(randint(18, 26)):
             spawn_pos = (randint(*spawn_range[0]), randint(*spawn_range[1])) # Gonna try start stop writing one-liners, just makes life harder
-            spawn_vel = (uniform(-2, 2), uniform(-3, 0.5))
+            spawn_vel = (to_pps(uniform(-1.5, 1.5)), to_pps(uniform(-3, 0.5)))
             BlockParticle(manager, spawn_pos, spawn_vel, loc[ws])

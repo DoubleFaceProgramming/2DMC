@@ -50,9 +50,10 @@ class Game(Scene):
                 block_pos = (mpos + self.player.camera.pos) // BLOCK_SIZE
                 if block_pos in self.locations:
                     location = self.locations[block_pos]
-                    del location[location.get_highest()]
-                    if location[1]:
-                        BlockParticle.spawn(self.manager, location, 1) # TODO: Change this to take the player's selected worldslice? or midground? idk man
+                    highest = location.get_highest()
+                    if highest:
+                        BlockParticle.spawn(self.manager, location, highest) # TODO: Change this to take the player's selected worldslice? or midground? idk man
+                        del location[highest]
 
         self.chunk_manager.update()
 
