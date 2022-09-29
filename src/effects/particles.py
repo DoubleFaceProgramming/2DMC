@@ -14,11 +14,12 @@ from random import randint, uniform
 from math import floor, ceil
 from pygame import Surface
 import pygame
+import time
 
 class Particle(Sprite):
     instances: list[Particle] = []
 
-    def __init__(self, manager: GameManager, pos: tuple[int, int], vel: tuple[float, float], size: tuple[int, int], layer: LayersEnum=LayersEnum.REG_PARTICLES):
+    def __init__(self, manager: GameManager, pos: tuple[int, int], vel: tuple[float, float], size: tuple[int, int], survive_time: float, layer: LayersEnum=LayersEnum.REG_PARTICLES):
         super().__init__(manager, layer)
         __class__.instances.append(self)
 
@@ -28,8 +29,12 @@ class Particle(Sprite):
         self.size = size
         self.image = Surface(size)
         self.image.blit(pygame.transform.scale(missing, self.size), (0, 0))
+        self.survive_time = survive_time
+        self.start_time = time.time()
 
     def update(self):
+        if time.time() - self.start_time > self.survive_time:
+            self.kill()
         self.pos += self.vel * self.manager.dt
         self.coords = VEC((floor if self.pos.x > 0 else ceil)(self.pos.x) // BLOCK_SIZE, (floor if self.pos.y > 0 else ceil)(self.pos.y) // BLOCK_SIZE)
 
@@ -37,15 +42,16 @@ class Particle(Sprite):
         self.manager.screen.blit(self.image, self.pos - self.manager.scene.player.camera.pos)
 
 class PhysicsParticle(Particle):
-    def __init__(self, manager: GameManager, pos: tuple[int, int], vel: tuple[int, int], size: tuple[int, int]):
-        super().__init__(manager, pos, vel, size)
+    def __init__(self, manager: GameManager, pos: tuple[int, int], vel: tuple[int, int], size: tuple[int, int], survive_time: float, worldslice: WorldSlices):
+        super().__init__(manager, pos, vel, size, survive_time)
+        self.worldslice = worldslice
 
     def update(self) -> None:
         self.move()
 
         # Collision with the blocks around, block on the left if going left, block below if moving down, and vice versa
         for pos in set([(self.coords.x + sign(self.vel.x), self.coords.y), (self.coords.x, self.coords.y + sign(self.vel.y))]):
-            if pos in Location.instances and Location.instances[pos][1]:
+            if pos in Location.instances and Location.instances[pos][self.worldslice]:
                 loc = Location.instances[pos]
                 # TODO: Use tags here, for blocks with collision (if loc[1] (middleground) has collision)
                 location_rect = pygame.Rect(loc.coords.x * BLOCK_SIZE, loc.coords.y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE)
@@ -67,9 +73,11 @@ class PhysicsParticle(Particle):
         self.vel.x -= self.vel.x * 5 * self.manager.dt
 
 class BlockParticle(PhysicsParticle):
-    def __init__(self, manager, pos: tuple[int, int], vel: tuple[float, float], block: Block):
+    def __init__(self, manager, pos: tuple[int, int], block: Block):
         size = randint(6, 8)
-        super().__init__(manager, pos, vel, (size, size))
+        vel = to_pps(uniform(-1.5, 1.5)), to_pps(uniform(-3, 0.5))
+        survive_time = uniform(0.3, 0.6)
+        super().__init__(manager, pos, vel, (size, size), survive_time, block.worldslice)
 
         color = block.image.get_at((randint(0, block.image.get_width() - 1), randint(0, block.image.get_height() - 1)))
         self.image.fill(color)
@@ -79,6 +87,5 @@ class BlockParticle(PhysicsParticle):
         spawn_range = ((loc.coords.x * BLOCK_SIZE, (loc.coords.x + 1) * BLOCK_SIZE),
                        (loc.coords.y * BLOCK_SIZE, (loc.coords.y + 1) * BLOCK_SIZE))
         for _ in range(randint(18, 26)):
-            spawn_pos = (randint(*spawn_range[0]), randint(*spawn_range[1])) # Gonna try start stop writing one-liners, just makes life harder
-            spawn_vel = (to_pps(uniform(-1.5, 1.5)), to_pps(uniform(-3, 0.5)))
-            BlockParticle(manager, spawn_pos, spawn_vel, loc[ws])
+            spawn_pos = (randint(*spawn_range[0]), randint(*spawn_range[1]))
+            BlockParticle(manager, spawn_pos, loc[ws])
