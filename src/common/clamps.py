@@ -7,7 +7,7 @@
 
 from multipledispatch import dispatch
 
-from src.utils.constants import VEC
+from src.common.constants import VEC
 
 # The clamp functions clamps a value to the max or min if it exceeds them
 

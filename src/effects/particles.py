@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING: # Type annotations without causing circular imports
     from src.management.game_manager import GameManager
 
-from src.utils.constants import VEC, BLOCK_SIZE, GRAVITY
-from src.utils.utils import WorldSlices, sign, to_pps
+from src.common.constants import VEC, BLOCK_SIZE, GRAVITY
+from src.common.utils import WorldSlices, sign, to_pps
 from src.management.sprite import LayersEnum, Sprite
 from src.world.block import Location, Block
-from src.utils.images import missing
+from src.common.images import missing
 from random import randint, uniform
 from math import floor, ceil
 from pygame import Surface

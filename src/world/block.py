@@ -16,10 +16,10 @@ if TYPE_CHECKING: # Type annotations without causing circular imports
 from pygame.locals import SRCALPHA
 import pygame
 
-from src.utils.utils import PosDict, WorldSlices, SliceOverlay
-from src.utils.constants import BLOCK_SIZE, VEC
-from src.utils.images import BLOCK_TEXTURES
-import src.utils.hooks
+from src.common.utils import PosDict, WorldSlices, SliceOverlay
+from src.common.constants import BLOCK_SIZE, VEC
+from src.common.images import BLOCK_TEXTURES
+import src.common.hooks
 
 class Block:
     def __init__(self, master: Location, name: str, worldslice: WorldSlices | int) -> None:

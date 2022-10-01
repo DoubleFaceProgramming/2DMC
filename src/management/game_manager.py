@@ -17,7 +17,7 @@ import sys
 from pygame.locals import DOUBLEBUF, HWSURFACE, QUIT, K_F3, KEYDOWN
 from enum import Enum
 
-from src.utils.constants import WIDTH, HEIGHT, SCR_DIM
+from src.common.constants import WIDTH, HEIGHT, SCR_DIM
 from src.management.game import Game
 
 class GameManager:

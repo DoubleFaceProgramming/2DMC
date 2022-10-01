@@ -17,9 +17,9 @@ from random import seed, choice, randint
 from pygame.locals import SRCALPHA
 import pygame
 
-from src.utils.constants import VEC, CHUNK_SIZE, WIDTH, HEIGHT, CHUNK_PIXEL_SIZE, BLOCK_SIZE, SCR_DIM
+from src.common.constants import VEC, CHUNK_SIZE, WIDTH, HEIGHT, CHUNK_PIXEL_SIZE, BLOCK_SIZE, SCR_DIM
 from src.management.sprite import Sprite, LayersEnum
-from src.utils.utils import pairing, PosDict
+from src.common.utils import pairing, PosDict
 from src.world.block import Location
 
 class ChunkData(PosDict):

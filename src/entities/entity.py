@@ -14,9 +14,9 @@ if TYPE_CHECKING: # Type annotations without causing circular imports
 
 import pygame
 
-from src.utils.constants import TERMINAL_VEL, VEC, BLOCK_SIZE, CHUNK_SIZE
+from src.common.constants import TERMINAL_VEL, VEC, BLOCK_SIZE, CHUNK_SIZE
 from src.management.sprite import LayersEnum, Sprite
-from src.utils.clamps import clamp, snap, clamp_max
+from src.common.clamps import clamp, snap, clamp_max
 
 class Entity(Sprite):
     def __init__(self, pos, size, manager: GameManager, layer: int | LayersEnum | None = None, debug_layer: int | LayersEnum | None = None) -> None:

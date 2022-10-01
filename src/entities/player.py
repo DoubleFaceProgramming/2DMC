@@ -14,9 +14,9 @@ if TYPE_CHECKING: # Type annotations without causing circular imports
 
 import pygame
 
-from src.utils.constants import CHUNK_SIZE, VEC, GRAVITY, BLOCK_SIZE, SCR_DIM
+from src.common.constants import CHUNK_SIZE, VEC, GRAVITY, BLOCK_SIZE, SCR_DIM
 from src.management.sprite import Sprite, LayersEnum
-from src.utils.utils import sign, to_pps
+from src.common.utils import sign, to_pps
 from src.entities.entity import Entity
 
 from pygame.locals import (

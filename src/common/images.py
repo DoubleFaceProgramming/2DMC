@@ -13,8 +13,8 @@ from os.path import join
 import pygame
 import os
 
-from src.utils.constants import VEC, BLOCK_SIZE, ASSETS
-from src.utils.utils import scale_by
+from src.common.constants import VEC, BLOCK_SIZE, ASSETS
+from src.common.utils import scale_by
 from build.exe_comp import pathof
 
 os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (50, 50)

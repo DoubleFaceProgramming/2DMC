@@ -15,7 +15,7 @@ from os.path import join
 from enum import Enum
 import pygame
 
-from src.utils.constants import PROFILES, VEC, BLOCK_SIZE
+from src.common.constants import PROFILES, VEC, BLOCK_SIZE
 
 class AutoEnum(Enum):
     def __new__(cls):
@@ -35,7 +35,7 @@ def filled_surf(size, color, tags=SRCALPHA):
     return surf
 
 class SliceOverlay(Enum):
-    BACKGROUND = filled_surf((BLOCK_SIZE, BLOCK_SIZE), (0, 0, 0, 70))
+    BACKGROUND = filled_surf((BLOCK_SIZE, BLOCK_SIZE), (0, 0, 0, 80))
     MIDDLEGROUND = filled_surf((BLOCK_SIZE, BLOCK_SIZE), (0, 0, 0, 40))
     FOREGROUND = pygame.Surface((0, 0))
 
