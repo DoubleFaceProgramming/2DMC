@@ -51,7 +51,7 @@ class Game(Scene):
                     location = self.locations[block_pos]
                     highest = location.get_highest()
                     if highest:
-                        BlockParticle.spawn(self.manager, location, highest) # TODO: Change this to take the player's selected worldslice? or midground? idk man
+                        block_break_particle(self.manager, location, highest) # TODO: Change this to take the player's selected worldslice? or midground? idk man
                         del location[highest]
 
         self.chunk_manager.update()
@@ -72,7 +72,7 @@ class Game(Scene):
             "Chunk": inttup(self.player.coords // CHUNK_SIZE),
             "Chunks loaded": len(self.chunk_manager.chunks),
             "Rendered blocks": len(self.locations),
-            "Block position": inttup((self.player.pos + (VEC(pygame.mouse.get_pos()) - self.player.rect.topleft)) // BLOCK_SIZE),
+            "Block position": inttup((self.player.pos + (VEC(pygame.mouse.get_pos()) - self.player.rect.topleft)) // BLOCK_SIZE), # Pretty sure this is borked
             "Detecting rects": len(self.player.detecting_locations),
             # "Particles": len(Particle.instances),
             # "Pre-gen cave heightmap": Chunk.cave_pregeneration_pos if Chunk.cave_pregeneration_bool else "Complete"

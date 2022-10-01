@@ -36,7 +36,8 @@ def filled_surf(size, color, tags=SRCALPHA):
 
 class SliceOverlay(Enum):
     BACKGROUND = filled_surf((BLOCK_SIZE, BLOCK_SIZE), (0, 0, 0, 80))
-    MIDDLEGROUND = filled_surf((BLOCK_SIZE, BLOCK_SIZE), (0, 0, 0, 40))
+    # MIDDLEGROUND = filled_surf((BLOCK_SIZE, BLOCK_SIZE), (0, 0, 0, 40))
+    MIDDLEGROUND = pygame.Surface((0, 0))
     FOREGROUND = pygame.Surface((0, 0))
 
 class PosDict(dict):

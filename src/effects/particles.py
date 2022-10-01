@@ -19,17 +19,17 @@ import time
 class Particle(Sprite):
     instances: list[Particle] = []
 
-    def __init__(self, manager: GameManager, pos: tuple[int, int], vel: tuple[float, float], size: tuple[int, int], survive_time: float, layer: LayersEnum=LayersEnum.REG_PARTICLES):
+    def __init__(self, manager: GameManager, pos: tuple[int, int], size: tuple[int, int], layer: LayersEnum=LayersEnum.REG_PARTICLES):
         super().__init__(manager, layer)
         __class__.instances.append(self)
 
         self.pos = VEC(pos)
         self.coords = self.pos // BLOCK_SIZE
-        self.vel = VEC(vel)
+        self.vel = VEC(0, 0)
         self.size = size
         self.image = Surface(size)
         self.image.blit(pygame.transform.scale(missing, self.size), (0, 0))
-        self.survive_time = survive_time
+        self.survive_time = float("inf")
         self.start_time = time.time()
 
     def update(self):
@@ -42,8 +42,8 @@ class Particle(Sprite):
         self.manager.screen.blit(self.image, self.pos - self.manager.scene.player.camera.pos)
 
 class PhysicsParticle(Particle):
-    def __init__(self, manager: GameManager, pos: tuple[int, int], vel: tuple[int, int], size: tuple[int, int], survive_time: float, worldslice: WorldSlices):
-        super().__init__(manager, pos, vel, size, survive_time)
+    def __init__(self, manager: GameManager, pos: tuple[int, int], size: tuple[int, int], worldslice: WorldSlices):
+        super().__init__(manager, pos, size)
         self.worldslice = worldslice
 
     def update(self) -> None:
@@ -73,19 +73,22 @@ class PhysicsParticle(Particle):
         self.vel.x -= self.vel.x * 5 * self.manager.dt
 
 class BlockParticle(PhysicsParticle):
-    def __init__(self, manager, pos: tuple[int, int], block: Block):
-        size = randint(6, 8)
-        vel = to_pps(uniform(-1.5, 1.5)), to_pps(uniform(-3, 0.5))
-        survive_time = uniform(0.3, 0.6)
-        super().__init__(manager, pos, vel, (size, size), survive_time, block.worldslice)
+    def __init__(self, manager: GameManager, pos: tuple[int, int], block: Block):
+        super().__init__(manager, pos, (s := randint(6, 8), s), block.worldslice)
+        self.vel = VEC(to_pps(uniform(-1.5, 1.5)), to_pps(uniform(-3, 0.5)))
+        self.survive_time = uniform(0.3, 0.6)
 
         color = block.image.get_at((randint(0, block.image.get_width() - 1), randint(0, block.image.get_height() - 1)))
         self.image.fill(color)
 
-    @classmethod
-    def spawn(cls, manager: GameManager, loc: Location, ws: WorldSlices):
-        spawn_range = ((loc.coords.x * BLOCK_SIZE, (loc.coords.x + 1) * BLOCK_SIZE),
-                       (loc.coords.y * BLOCK_SIZE, (loc.coords.y + 1) * BLOCK_SIZE))
-        for _ in range(randint(18, 26)):
-            spawn_pos = (randint(*spawn_range[0]), randint(*spawn_range[1]))
-            BlockParticle(manager, spawn_pos, loc[ws])
+def block_break_particle(manager: GameManager, loc: Location, ws: WorldSlices):
+    spawn_range = ((loc.coords.x * BLOCK_SIZE, (loc.coords.x + 1) * BLOCK_SIZE),
+                   (loc.coords.y * BLOCK_SIZE, (loc.coords.y + 1) * BLOCK_SIZE))
+
+    for _ in range(randint(18, 26)):
+        spawn_pos = (randint(*spawn_range[0]), randint(*spawn_range[1]))
+        BlockParticle(manager, spawn_pos, loc[ws])
+
+def player_walk_particle(manager: GameManager, loc: Location):
+    if not loc[WorldSlices.MIDDLEGROUND]: return
+    BlockParticle(manager, loc.coords * BLOCK_SIZE, loc[WorldSlices.MIDDLEGROUND])

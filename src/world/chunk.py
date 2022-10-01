@@ -102,16 +102,28 @@ class ChunkManager:
 def generate_location(coords: tuple[int, int]) -> tuple[str | None, str | None, str | None]:
     """Generate the names of the blocks to go at a certain location. Temporary world gen!"""
 
+    # coords = VEC(coords)
+    # slices = 3
+    # if coords.y == 0:
+    #     name = "grass_block"
+    # elif 0 < coords.y <= 4:
+    #     name = "dirt"
+    #     slices -= randint(0, 1)
+    # elif coords.y > 4:
+    #     name = choice(["stone", "andesite"])
+    #     slices -= randint(0, 2)
+    # else:
+    #     name = None
+    # return (name,) * slices + (None,) * (3 - slices) # Veru temporary - we want all slices to be the same
+
     coords = VEC(coords)
-    slices = 3
     if coords.y == 0:
         name = "grass_block"
     elif 0 < coords.y <= 4:
         name = "dirt"
-        slices -= randint(0, 1)
     elif coords.y > 4:
         name = choice(["stone", "andesite"])
-        slices -= randint(0, 2)
     else:
         name = None
-    return (name,) * slices + (None,) * (3 - slices) # Veru temporary - we want all slices to be the same
+
+    return (name, name, None)

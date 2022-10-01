@@ -14,9 +14,10 @@ if TYPE_CHECKING: # Type annotations without causing circular imports
 
 import pygame
 
-from src.common.constants import CHUNK_SIZE, VEC, GRAVITY, BLOCK_SIZE, SCR_DIM
+from src.common.constants import CHUNK_SIZE, VEC, GRAVITY, BLOCK_SIZE, SCR_DIM, TERMINAL_VEL
+from src.effects.particles import player_walk_particle
 from src.management.sprite import Sprite, LayersEnum
-from src.common.utils import sign, to_pps
+from src.common.utils import sign, to_pps, to_bps
 from src.entities.entity import Entity
 
 from pygame.locals import (
@@ -108,8 +109,10 @@ class Player(Entity):
             self.vel.y = 0
 
         self.update_coords()
-
         self.camera.update()
+
+        if self.vel.x >= self.speed * 0.9 or self.vel.x <= -self.speed * 0.9:
+            player_walk_particle(self.manager, self.scene.locations[self.coords + VEC(0, 2)])
 
     def draw(self) -> None:
         pygame.draw.rect(self.manager.screen, (255, 0, 0), (*(self.pos - self.camera.pos), *self.size))

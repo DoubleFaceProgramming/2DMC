@@ -23,6 +23,7 @@ from src.management.game import Game
 class GameManager:
     def __init__(self) -> None:
         pygame.init()
+        self.frame = 0
         self.screen = pygame.display.set_mode(SCR_DIM, DOUBLEBUF | HWSURFACE)
         self.clock = pygame.time.Clock()
         self.dt = self.clock.tick_busy_loop() / 1000
@@ -37,6 +38,7 @@ class GameManager:
             self.scene.draw()
             if self.debug:
                 self.scene.debug()
+            self.frame += 1
             pygame.display.flip()
 
         self.kill()
