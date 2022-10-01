@@ -29,8 +29,8 @@ class WorldSlices(AutoEnum):
     MIDDLEGROUND = ()
     FOREGROUND = ()
 
-def filled_surf(size, color, tags=SRCALPHA):
-    surf = pygame.Surface(size, tags)
+def filled_surf(size, color, flags=SRCALPHA):
+    surf = pygame.Surface(size, flags)
     surf.fill(color)
     return surf
 

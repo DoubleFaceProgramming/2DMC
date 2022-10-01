@@ -15,10 +15,10 @@ from random import randint
 import pygame
 
 from src.common.constants import SCR_DIM, BLOCK_SIZE, CHUNK_SIZE, VEC, DEBUG_SPACING, BLUE_SKY
-from src.effects.particles import block_break_particle
+from src.effects.spawn_particles import block_break_particles
+from src.common.utils import inttup, to_bps
 from src.world.chunk import ChunkManager
 from src.management.scenes import Scene
-from src.common.utils import inttup, to_bps
 from src.entities.player import Player
 from src.world.block import Location
 
@@ -51,7 +51,7 @@ class Game(Scene):
                     location = self.locations[block_pos]
                     highest = location.get_highest()
                     if highest:
-                        block_break_particle(self.manager, location, highest) # TODO: Change this to take the player's selected worldslice? or midground? idk man
+                        block_break_particles(self.manager, location, highest) # TODO: Change this to take the player's selected worldslice? or midground? idk man
                         del location[highest]
 
         self.chunk_manager.update()

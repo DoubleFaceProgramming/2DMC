@@ -15,7 +15,7 @@ if TYPE_CHECKING: # Type annotations without causing circular imports
 import pygame
 
 from src.common.constants import CHUNK_SIZE, VEC, GRAVITY, BLOCK_SIZE, SCR_DIM, TERMINAL_VEL
-from src.effects.particles import player_walk_particle
+from src.effects.spawn_particles import walk_particles
 from src.management.sprite import Sprite, LayersEnum
 from src.common.utils import sign, to_pps, to_bps
 from src.entities.entity import Entity
@@ -63,7 +63,7 @@ class Player(Entity):
         super().__init__(VEC(0, -3) * BLOCK_SIZE, VEC(0.225 * BLOCK_SIZE, 1.8 * BLOCK_SIZE), manager, LayersEnum.PLAYER)
         self.camera = Camera(self.manager, self)
         self.slide = 1200 # Speed of acceleration and deceleration
-        self.speed = 250 # Max speed
+        self.speed = to_pps(5.6) # Max speed (5.6 is the minecraft sprinting speed)
         self.jump_vel = -620 # Velocity at start of jump
         self.on_ground = False
 
@@ -111,8 +111,8 @@ class Player(Entity):
         self.update_coords()
         self.camera.update()
 
-        if self.vel.x >= self.speed * 0.9 or self.vel.x <= -self.speed * 0.9:
-            player_walk_particle(self.manager, self.scene.locations[self.coords + VEC(0, 2)])
+        if abs(self.vel.x) >= to_pps(3):
+            walk_particles(self.manager, self.scene.locations[self.coords + VEC(0, 2)])
 
     def draw(self) -> None:
         pygame.draw.rect(self.manager.screen, (255, 0, 0), (*(self.pos - self.camera.pos), *self.size))

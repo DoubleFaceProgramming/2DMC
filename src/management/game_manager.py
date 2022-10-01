@@ -16,6 +16,7 @@ import sys
 
 from pygame.locals import DOUBLEBUF, HWSURFACE, QUIT, K_F3, KEYDOWN
 from enum import Enum
+import time
 
 from src.common.constants import WIDTH, HEIGHT, SCR_DIM
 from src.management.game import Game
@@ -27,6 +28,7 @@ class GameManager:
         self.screen = pygame.display.set_mode(SCR_DIM, DOUBLEBUF | HWSURFACE)
         self.clock = pygame.time.Clock()
         self.dt = self.clock.tick_busy_loop() / 1000
+        self.time = time.time()
         self.debug = False
 
         self.scene = Game(self)
@@ -38,7 +40,9 @@ class GameManager:
             self.scene.draw()
             if self.debug:
                 self.scene.debug()
+
             self.frame += 1
+            self.time = time.time()
             pygame.display.flip()
 
         self.kill()
