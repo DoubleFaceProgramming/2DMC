@@ -1,6 +1,6 @@
 # Sprite System Guide
 
-You can view the source code for this demonstration [here,]([2DMC/dev/rescources/sprite-system-demo at 41bfa7a9c638989d8cd970e750cc0f5502e32d57 · DoubleFaceProgramming/2DMC · GitHub](https://github.com/DoubleFaceProgramming/2DMC/tree/41bfa7a9c638989d8cd970e750cc0f5502e32d57/dev/rescources/sprite-system-demo)) or in `dev/rescources/spritesystemdemo` on the latest github branch. (note: if we changed the path in the latest branch, let us know!)
+You can view the source code for this demonstration [here](https://github.com/DoubleFaceProgramming/2DMC/tree/41bfa7a9c638989d8cd970e750cc0f5502e32d57/dev/rescources/sprite-system-demo), or in `dev/rescources/spritesystemdemo` on the latest github branch. (note: if we changed the path in the latest branch, let us know!)
 
 This guide will be written using the 0.2.1 sprite system. The system has changed slightly in 0.3.0, however the update and rewrite is not yet finished, so I will use the old system for the demo whilst we work on the new version. I will try to remember to update this section when 0.3.0 is released; if I havent then make a Github issue and I'll fix it :) 
 
@@ -116,7 +116,7 @@ for square in Square.instances:
 player.update(dt)
 
 for square in Square.instances:
-    square.draw(screen) # Whilst we could merge these 2 loops for this demo you rarely can in practise so I wont here.
+    square.draw(screen) # Whilst we could merge these 2 loops for this demo you rarely can in practice so I won't here.
 
 player.draw(screen)
 ```
@@ -125,7 +125,7 @@ If we run the code now we should see it working as expected:
 
 ![The squares are now seperated, and have a magenta border around them](https://raw.githubusercontent.com/DoubleFaceProgramming/2DMC/41bfa7a9c638989d8cd970e750cc0f5502e32d57/dev/rescources/sprite-system-demo/images/test_3.png)
 
-We can see that the player draws above the sqaures and the squares draw in the order that we declared them.
+We can see that the player is drawn above the sqaures and the squares draw in the order that was declared.
 
 However, what if we decide that we instead want the green square to draw above the others?
 
@@ -158,7 +158,7 @@ As you can see, we got the expected result. However:
 
 3) Re-ordering the way sprites are drawn is gets increasingly complex and difficult the more sprites there are and the more sprites there are with seperate rules
 
-4) Its difficult to make define where 1 instance of a class will be drawn relative to other instances of the class
+4) It's difficult to make define where 1 instance of a class will be drawn relative to other instances of the class
 
 5) Creating and drawing lots of classes and their instances will end up in long, repeated calls to `x.draw(screen)`, `y.draw(screen)`, `z.draw(screen)`, ect
 
@@ -291,9 +291,10 @@ Square(LayersEnum.SQUARE, (400, 430), (0, 0, 255))
 
 If we run this and enable debug, we see:
 
-![The magenta borderes are drawn above th back circle](https://raw.githubusercontent.com/DoubleFaceProgramming/2DMC/41bfa7a9c638989d8cd970e750cc0f5502e32d57/dev/rescources/sprite-system-demo/images/test_3.png)
+![The magenta borderes are drawn above the back circle](https://raw.githubusercontent.com/DoubleFaceProgramming/2DMC/41bfa7a9c638989d8cd970e750cc0f5502e32d57/dev/rescources/sprite-system-demo/images/test_3.png)
 
-Perfect! We can see the sprites' debug information is drawn above the sprite, but below any other sprite. However, lets say we want to have the square's debug information draw above the player. This is the purpose of debug layers.
+Perfect! We can see the sprites' debug information are drawn above the sprite, but below any other sprite. However, let's say we want to have the square's debug information drawn above the player. This is the purpose of debug layers.
+This scenario is actually quite common. For example, you may want to view the positions of sprites drawn below other sprites, which would be impossible if the debug information is bound to the layer of the sprite. 
 
 First, add some new entries to the LayersEnum:
 
@@ -329,4 +330,4 @@ Then when we run it:
 
 Perfect! The debug information is being drawn above the player. 
 
-Hopefully this demonstration has served as a guide on creating you own sprites, a better understanding of layers and a visual explanation of debug layers!
+Hopefully this demonstration has served as a guide on creating your own sprites, a better understanding of layers and a visual explanation of debug layers!
