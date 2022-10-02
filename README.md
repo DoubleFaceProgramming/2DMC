@@ -26,7 +26,7 @@ Note that if you want to do any form of benchmarking or performance increases yo
 
 1) Install rust and cargo
 2) [Install mdbook](https://rust-lang.github.io/mdBook/guide/installation.html)
-3) Open a terminal in `dev/docs` and run `mdbook server --open`
+3) Open a terminal in `dev/docs` and run `mdbook serve --open`
 
 Your web browser will open with the docs loaded!
 
