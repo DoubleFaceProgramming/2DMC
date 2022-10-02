@@ -6,7 +6,7 @@ The text following "Takes:" are the arguments to `__init__`.
 The text following "Prints:" is whats returned from `__str__` (in pseudocode)
 They are as follows:
 
-- `NoLayerAttributeException` Takes: `Sprite` Prints: "Class `self.sprite.__class__` does not have a _layer / _debug_layer attribute!"
+- `NoLayerAttributeException` Takes: `Sprite` Prints: "Class `self.sprite.__class__` does not have a \_layer / \_debug_layer attribute!"
 
 - `LayerNotFoundException` Takes: `int | Sprite`
   
