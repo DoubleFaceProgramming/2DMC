@@ -21,8 +21,9 @@ from src.management.scenes import Scene
 from src.utils.utils import inttup, BPS
 from src.entities.player import Player
 from src.world.block import Location
+from build.exe_comp import pathof
 
-FONT24 = pygame.font.Font("assets/fonts/regular.ttf", 24)
+FONT24 = pygame.font.Font(pathof("assets/fonts/regular.ttf"), 24)
 # so temporary you wouldnt even believe
 def text(text: str, color: tuple=(0, 0, 0)):
     """Returns a surface which has the given text argument rendered using font 24 in the given colour (default black)"""
