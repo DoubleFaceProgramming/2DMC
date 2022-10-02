@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING: # Type annotations without causing circular imports
     from src.management.game_manager import GameManager
 
+from math import floor, ceil
 import pygame
 
 from src.common.constants import TERMINAL_VEL, VEC, BLOCK_SIZE, CHUNK_SIZE
@@ -25,7 +26,7 @@ class Entity(Sprite):
         self.pos = VEC(pos)
         self.vel = VEC(0, 0)
         self.acc = VEC(0, 0)
-        self.rect = pygame.Rect(pos, size)
+        self.rect = pygame.Rect(self.pos, self.size)
         self.image = pygame.Surface((0, 0))
         self.coords = self.pos // BLOCK_SIZE
         self.chunk_coords = self.coords // CHUNK_SIZE
@@ -39,11 +40,11 @@ class Entity(Sprite):
 
     def update_pos_x(self) -> None:
         self.pos.x += self.vel.x * self.manager.dt
-        self.rect.left = self.pos.x
+        self.rect.left = floor(self.pos.x)
 
     def update_pos_y(self) -> None:
         self.pos.y += self.vel.y * self.manager.dt
-        self.rect.top = self.pos.y
+        self.rect.top = floor(self.pos.y)
 
     def update_coords(self) -> None:
         self.coords = self.pos // BLOCK_SIZE

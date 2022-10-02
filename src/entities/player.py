@@ -12,6 +12,7 @@ if TYPE_CHECKING: # Type annotations without causing circular imports
     from src.management.game_manager import GameManager
     from src.world.block import Location
 
+from math import floor, ceil
 import pygame
 
 from src.common.constants import CHUNK_SIZE, VEC, GRAVITY, BLOCK_SIZE, SCR_DIM, TERMINAL_VEL
@@ -60,11 +61,11 @@ class Player(Entity):
     """A sprite that represents the game's player """
 
     def __init__(self, manager: GameManager) -> None:
-        super().__init__(VEC(0, -3) * BLOCK_SIZE, VEC(0.225 * BLOCK_SIZE, 1.8 * BLOCK_SIZE), manager, LayersEnum.PLAYER)
+        super().__init__(VEC(0, -3) * BLOCK_SIZE, VEC(int(0.225 * BLOCK_SIZE), int(1.8 * BLOCK_SIZE)), manager, LayersEnum.PLAYER)
         self.camera = Camera(self.manager, self)
-        self.slide = 1200 # Speed of acceleration and deceleration
-        self.speed = to_pps(5.6) # Max speed (5.6 is the minecraft sprinting speed)
-        self.jump_vel = -620 # Velocity at start of jump
+        self.slide = to_pps(26) # Speed of acceleration and deceleration
+        self.speed = to_pps(5.6) # Max speed
+        self.jump_vel = -537 # Velocity at start of jump
         self.on_ground = False
 
     def update(self) -> None:
@@ -87,10 +88,11 @@ class Player(Entity):
         self.update_pos_x()
         for y in range(int(self.coords.y - 1), int(self.coords.y + 3)):
             for x in range(int(self.coords.x - 1), int(self.coords.x + 2)):
-                # if (x, y) == self.coords or (x, y) == self.coords + (0, 1): continue
                 if not (location := self.scene.locations[(x, y)]): continue
                 self.detecting_locations[(x, y)] = location
-                if not self.rect.colliderect(location.rect): continue
+                # Creates a new rect where the width is increased by one which solves a rounding problem
+                modified_rect = pygame.Rect(self.rect.left, self.rect.top, self.rect.width + 1, self.rect.height)
+                if not modified_rect.colliderect(location.rect): continue
                 if self.vel.x < 0:
                     self.set_pos(VEC(location.rect.right, self.pos.y))
                 elif self.vel.x > 0:
@@ -100,7 +102,9 @@ class Player(Entity):
         self.on_ground = False
         self.update_pos_y()
         for location in self.detecting_locations.values():
-            if not self.rect.colliderect(location.rect): continue
+            # Creates a new rect where the height is increased by one which solves a rounding problem
+            modified_rect = pygame.Rect(self.rect.left, self.rect.top, self.rect.width, self.rect.height + 1)
+            if not modified_rect.colliderect(location.rect): continue
             if self.vel.y < 0:
                 self.set_pos(VEC(self.pos.x, location.rect.bottom))
             elif self.vel.y > 0:
