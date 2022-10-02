@@ -16,7 +16,7 @@ from math import floor, ceil
 import pygame
 
 from src.common.constants import CHUNK_SIZE, VEC, GRAVITY, BLOCK_SIZE, SCR_DIM, TERMINAL_VEL
-from src.effects.spawn_particles import walk_particles
+from src.effects.spawn_particles import walk_particles, fall_particles
 from src.management.sprite import Sprite, LayersEnum
 from src.common.utils import sign, to_pps, to_bps
 from src.entities.entity import Entity
@@ -67,6 +67,7 @@ class Player(Entity):
         self.speed = to_pps(5.6) # Max speed
         self.jump_vel = -537 # Velocity at start of jump
         self.on_ground = False
+        self.start_fall = self.pos.y
 
     def update(self) -> None:
         keys = pygame.key.get_pressed()
@@ -115,8 +116,12 @@ class Player(Entity):
         self.update_coords()
         self.camera.update()
 
-        if abs(self.vel.x) >= to_pps(3):
-            walk_particles(self.manager, self.scene.locations[self.coords + VEC(0, 2)])
+        walk_particles(self.manager, self.scene.locations[self.coords + VEC(0, 2)])
+
+        if self.on_ground:
+            if self.pos.y - self.start_fall >= 4 * BLOCK_SIZE:
+                fall_particles(self.manager, int((self.pos.y - self.start_fall) // BLOCK_SIZE), self.scene.locations[self.coords + VEC(0, 2)])
+            self.start_fall = self.pos.y
 
     def draw(self) -> None:
         pygame.draw.rect(self.manager.screen, (255, 0, 0), (*(self.pos - self.camera.pos), *self.size))

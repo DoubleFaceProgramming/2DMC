@@ -69,14 +69,14 @@ class PhysicsParticle(Particle):
         # Fall
         self.vel.y += GRAVITY * self.manager.dt
         # X-velocity gets decreased over time
-        self.vel.x -= self.vel.x * 5 * self.manager.dt
+        self.vel.x -= self.vel.x * 6 * self.manager.dt
 
 class BlockParticle(PhysicsParticle):
-    def __init__(self, manager: GameManager, pos: tuple[int, int], block: Block, subsurface: Rect = Rect(0, 0, BLOCK_SIZE, BLOCK_SIZE)):
+    def __init__(self, manager: GameManager, pos: tuple[int, int], block: Block, subsurface: Rect = Rect(0, 0, BLOCK_SIZE, BLOCK_SIZE), vel_range: tuple[tuple[float, float], tuple[float, float]] = ((-1.5, 1.5), (-3, 0.5))):
         sub = block.image.subsurface(subsurface)
         color = sub.get_at((randint(0, sub.get_width() - 1), randint(0, sub.get_height() - 1)))
         image = filled_surf((s := randint(6, 8), s), color, 0)
 
         super().__init__(manager, pos, image, block.worldslice)
-        self.vel = VEC(to_pps(uniform(-1.5, 1.5)), to_pps(uniform(-3, 0.5)))
+        self.vel = VEC(to_pps(uniform(*vel_range[0])), to_pps(uniform(*vel_range[1])))
         self.survive_time = uniform(0.3, 0.6)

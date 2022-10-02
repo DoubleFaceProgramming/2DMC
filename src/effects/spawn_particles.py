@@ -15,6 +15,7 @@ import time
 from src.common.utils import to_pps, WorldSlices, sign
 from src.effects.particles import BlockParticle
 from src.common.constants import BLOCK_SIZE
+from src.common.clamps import clamp_max
 
 @dataclass
 class GradualData:
@@ -29,21 +30,17 @@ class GradualData:
             return (self._freq_raw, self._freq_raw)
         return self._freq_raw
 
-# cond = ...
-# data = ...
-# for _ in range(gradual_spawn(cond, data)):
-#     ...
-def gradual_spawn(condition: bool, data: GradualData) -> bool:
-    if not condition:
-        data.start_time = time.time()
-        return 0
+    def gradual_spawn(self, condition: bool) -> bool:
+        if not condition:
+            self.start_time = time.time()
+            return 0
 
-    freq = uniform(*data.freq)
-    elapsed = time.time() - data.start_time
-    if elapsed < freq: return 0
+        freq = uniform(*self.freq)
+        elapsed = time.time() - self.start_time
+        if elapsed < freq: return 0
 
-    data.start_time = time.time()
-    return round(elapsed / freq)
+        self.start_time = time.time()
+        return round(elapsed / freq)
 
 def block_break_particles(manager: GameManager, loc: Location, ws: WorldSlices):
     spawn_range = (
@@ -56,8 +53,20 @@ def block_break_particles(manager: GameManager, loc: Location, ws: WorldSlices):
 
 WALK_PC_DATA = GradualData(0.1)
 def walk_particles(manager: GameManager, loc: Location):
-    if not loc[WorldSlices.MIDDLEGROUND]: return
+    if loc and not loc[WorldSlices.MIDDLEGROUND]: return
     player = manager.scene.player
-    for _ in range(gradual_spawn(abs(player.vel.x) > player.speed * 0.5, WALK_PC_DATA)):
-        spawn_pos = (player.rect.centerx - sign(player.vel.x) * 8, player.rect.bottom - 2)
+    spawn_pos = (player.rect.centerx - sign(player.vel.x) * 8, player.rect.bottom - 2)
+    for _ in range(WALK_PC_DATA.gradual_spawn(abs(player.vel.x) > player.speed * 0.5)):
         BlockParticle(manager, spawn_pos, loc[WorldSlices.MIDDLEGROUND], Rect(0, 0, BLOCK_SIZE, BLOCK_SIZE // 4))
+
+def fall_particles(manager: GameManager, fall_dist: int, loc: Location):
+    player = manager.scene.player
+    # If the amount of particles spawned is higher than 16, clamp it to 16
+    spawn_amount = (lower_bound := clamp_max(fall_dist, 16)[0], lower_bound + 3)
+    # "- sign(player.vel.x) * 8" to spawn the particles slightly behind the player
+    # "- 2" to spawn the particles slightly above the ground so that they don't glitch into the ground
+    spawn_pos = (player.rect.centerx - sign(player.vel.x) * 8, player.rect.bottom - 2)
+    # Range of possible velocities, x and y
+    spawn_vel_range = ((-4, 4), (-7, 2))
+    for _ in range(randint(*spawn_amount)):
+        BlockParticle(manager, spawn_pos, loc[WorldSlices.MIDDLEGROUND], Rect(0, 0, BLOCK_SIZE, BLOCK_SIZE // 4), spawn_vel_range)
