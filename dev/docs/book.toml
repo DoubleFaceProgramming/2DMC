@@ -1,0 +1,6 @@
+[book]
+authors = ["^-^ Trevor", "DaNub"]
+language = "en"
+multilingual = false
+src = "src"
+title = "2DMC Docs"

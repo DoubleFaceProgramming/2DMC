@@ -6,3 +6,4 @@ __pycache__/
 .vscode/
 
 src/lang/rust/target
+dev/docs/book

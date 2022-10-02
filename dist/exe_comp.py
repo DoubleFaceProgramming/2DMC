@@ -2,7 +2,6 @@ from pathlib import Path
 import sys
 import os
 
-
 BUNDLE_DIR = getattr(sys, '_MEIPASS', Path(os.path.abspath(os.path.dirname(__file__))).parent)
 
 def pathof(file: str) -> str:
