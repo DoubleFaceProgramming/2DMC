@@ -18,6 +18,7 @@ import pygame
 from src.common.constants import TERMINAL_VEL, VEC, BLOCK_SIZE, CHUNK_SIZE
 from src.management.sprite import LayersEnum, Sprite
 from src.common.clamps import clamp, snap, clamp_max
+from src.common.utils import sign
 
 class Entity(Sprite):
     def __init__(self, pos, size, manager: GameManager, layer: int | LayersEnum | None = None, debug_layer: int | LayersEnum | None = None) -> None:
@@ -45,6 +46,20 @@ class Entity(Sprite):
     def update_pos_y(self) -> None:
         self.pos.y += self.vel.y * self.manager.dt
         self.rect.top = floor(self.pos.y)
+
+    def update_pos_x_fake(self) -> pygame.Rect:
+        fake_pos = self.pos.copy()
+        fake_pos.x += ceil(self.vel.x * self.manager.dt)
+        fake_rect = self.rect.copy()
+        fake_rect.left = floor(fake_pos.x) + sign(self.vel.x)
+        return fake_rect
+
+    def update_pos_y_fake(self) -> pygame.Rect:
+        fake_pos = self.pos.copy()
+        fake_pos.y += ceil(self.vel.y * self.manager.dt)
+        fake_rect = self.rect.copy()
+        fake_rect.top = floor(fake_pos.y) + sign(self.vel.y)
+        return fake_rect
 
     def update_coords(self) -> None:
         self.coords = self.pos // BLOCK_SIZE

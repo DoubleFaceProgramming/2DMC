@@ -86,32 +86,34 @@ class Player(Entity):
         super().update_vel()
 
         self.detecting_locations: dict[tuple[int, int], Location] = {}
-        self.update_pos_x()
+        fake_rect = self.update_pos_x_fake()
+        can_move = True
         for y in range(int(self.coords.y - 1), int(self.coords.y + 3)):
             for x in range(int(self.coords.x - 1), int(self.coords.x + 2)):
                 if not (location := self.scene.locations[(x, y)]): continue
                 self.detecting_locations[(x, y)] = location
-                # Creates a new rect where the width is increased by one which solves a rounding problem
-                modified_rect = pygame.Rect(self.rect.left, self.rect.top, self.rect.width + 1, self.rect.height)
-                if not modified_rect.colliderect(location.rect): continue
+                if not fake_rect.colliderect(location.rect): continue
                 if self.vel.x < 0:
                     self.set_pos(VEC(location.rect.right, self.pos.y))
                 elif self.vel.x > 0:
                     self.set_pos(VEC(location.rect.left - self.size.x, self.pos.y))
                 self.vel.x = 0
+                can_move = False
+        if can_move: self.update_pos_x()
 
+        fake_rect = self.update_pos_y_fake()
         self.on_ground = False
-        self.update_pos_y()
+        can_move = True
         for location in self.detecting_locations.values():
-            # Creates a new rect where the height is increased by one which solves a rounding problem
-            modified_rect = pygame.Rect(self.rect.left, self.rect.top, self.rect.width, self.rect.height + 1)
-            if not modified_rect.colliderect(location.rect): continue
+            if not fake_rect.colliderect(location.rect): continue
             if self.vel.y < 0:
                 self.set_pos(VEC(self.pos.x, location.rect.bottom))
             elif self.vel.y > 0:
                 self.set_pos(VEC(self.pos.x, location.rect.top - self.size.y))
                 self.on_ground = True
             self.vel.y = 0
+            can_move = False
+        if can_move: self.update_pos_y()
 
         self.update_coords()
         self.camera.update()
@@ -127,4 +129,5 @@ class Player(Entity):
         pygame.draw.rect(self.manager.screen, (255, 0, 0), (*(self.pos - self.camera.pos), *self.size))
 
     def debug(self) -> None:
+        # Not implemented (yet)
         pass
