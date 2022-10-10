@@ -2,7 +2,7 @@
 name = "2dmc"
 version = "0.3.0"
 description = "A passion project to recreate the game Minecraft in 2D."
-authors = [ "tr3v0r", "DaNub" ]
+authors = ["^-^ Trevor <secret@secret.com>", "DaNub <secret@secret.com>"]
 license = "GPL-3.0-only"
 readme = "README.md"
 

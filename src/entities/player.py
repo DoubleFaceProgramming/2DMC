@@ -61,7 +61,8 @@ class Player(Entity):
     """A sprite that represents the game's player """
 
     def __init__(self, manager: GameManager) -> None:
-        super().__init__(VEC(0, -3) * BLOCK_SIZE, VEC(int(0.225 * BLOCK_SIZE), int(1.8 * BLOCK_SIZE)), manager, LayersEnum.PLAYER)
+        # super().__init__(VEC(0, -3) * BLOCK_SIZE, VEC(int(0.225 * BLOCK_SIZE), int(1.8 * BLOCK_SIZE)), manager, LayersEnum.PLAYER)
+        super().__init__(VEC(0, 900) * BLOCK_SIZE, VEC(int(0.225 * BLOCK_SIZE), int(1.8 * BLOCK_SIZE)), manager, LayersEnum.PLAYER)
         self.camera = Camera(self.manager, self)
         self.slide = to_pps(26) # Speed of acceleration and deceleration
         self.speed = to_pps(5.6) # Max speed

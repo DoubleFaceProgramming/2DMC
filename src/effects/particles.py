@@ -80,3 +80,7 @@ class BlockParticle(PhysicsParticle):
         super().__init__(manager, pos, image, block.worldslice)
         self.vel = VEC(to_pps(uniform(*vel_range[0])), to_pps(uniform(*vel_range[1])))
         self.survive_time = uniform(0.3, 0.6)
+
+class AtmosphericParticle(Particle):
+    def __init__(self, manager: GameManager, pos: tuple[int, int], image: Surface):
+        super().__init__(manager, pos, image)

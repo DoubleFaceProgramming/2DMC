@@ -116,13 +116,20 @@ def generate_location(coords: tuple[int, int]) -> tuple[str | None, str | None, 
     #     name = None
     # return (name,) * slices + (None,) * (3 - slices) # Veru temporary - we want all slices to be the same
 
+
     coords = VEC(coords)
+
+    if 1024 > coords.y > 800:
+        return (None, None, None)
+
     if coords.y == 0:
         name = "grass_block"
     elif 0 < coords.y <= 4:
         name = "dirt"
     elif coords.y > 4:
         name = choice(["stone", "andesite"])
+    elif coords.y > 1024:
+        name = "bedrock"
     else:
         name = None
 

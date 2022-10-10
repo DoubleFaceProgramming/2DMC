@@ -16,6 +16,7 @@ CHUNK_SIZE = 8
 CHUNK_PIXEL_SIZE = CHUNK_SIZE * BLOCK_SIZE
 GRAVITY = 1800
 DEBUG_SPACING = 24
+MAX_Y = 1024
 
 PROFILES = pathof("dev/profiles/")
 ASSETS = pathof("assets")

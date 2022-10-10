@@ -6,20 +6,22 @@ if TYPE_CHECKING: # Type annotations without causing circular imports
     from src.management.game_manager import GameManager
     from src.common.utils import WorldSlices
     from src.world.block import Location
+    from types import LambdaType
 
 from random import randint, uniform
 from dataclasses import dataclass
-from pygame import Rect
+from types import LambdaType
+from pygame import Rect, Surface
 import time
 
+from src.effects.particles import BlockParticle, AtmosphericParticle
+from src.common.constants import BLOCK_SIZE, SCR_DIM, VEC, MAX_Y
 from src.common.utils import to_pps, WorldSlices, sign
-from src.effects.particles import BlockParticle
-from src.common.constants import BLOCK_SIZE
 from src.common.clamps import clamp_max
 
 @dataclass
 class GradualData:
-    _freq_raw: tuple[float, float] | float
+    _freq_raw: tuple[float, float] | float | Callable
 
     def __post_init__(self):
         self.next_freq = uniform(*self.freq)
@@ -27,6 +29,7 @@ class GradualData:
 
     @property
     def freq(self):
+        # Allows freq to be given as a (lower, upper) *or* (lower, lower) (ie. will always be lower)
         if isinstance(self._freq_raw, float):
             return (self._freq_raw, self._freq_raw)
         return self._freq_raw
@@ -40,6 +43,33 @@ class GradualData:
         if elapsed < self.next_freq: return 0
 
         self.next_freq = uniform(*self.freq)
+        self.start_time = time.time()
+        return round(elapsed / self.next_freq)
+
+@dataclass
+class LambdaGradualData:
+    default_args: dict[str, ...]
+    _calc: LambdaType
+
+    def __post_init__(self):
+        self.next_freq = 0
+        self.start_time = time.time()
+
+    def freq(self, args: dict) -> float:
+        args.update(self.default_args)
+        return self._calc(args)
+
+    def gradual_spawn(self, condition: bool, args) -> int:
+        # We need to reset time if the condition is false, so we decided that this would be a cleaner implementation
+        if not condition:
+            self.start_time = time.time()
+            return 0 # Return 0 -> the consumer does not loop, thus no particles are spawned
+
+        # If not enough time has passed, just exit
+        elapsed = time.time() - self.start_time
+        if elapsed < self.next_freq: return 0
+
+        self.next_freq = uniform(self.freq(args), self.freq(args))
         self.start_time = time.time()
         return round(elapsed / self.next_freq)
 
@@ -72,3 +102,17 @@ def fall_particles(manager: GameManager, fall_dist: int, loc: Location):
     spawn_vel_range = ((-4, 4), (-7, 2))
     for _ in range(randint(*spawn_amount)):
         BlockParticle(manager, spawn_pos, loc[WorldSlices.MIDDLEGROUND], Rect(0, 0, BLOCK_SIZE, BLOCK_SIZE // 4), spawn_vel_range)
+
+VOID_FOG_DATA = LambdaGradualData({"max_freq": 0.0027}, lambda args: args["max_freq"] + args["perc"] * 0.02)
+def void_fog_particles(manager: GameManager) -> None:
+    player_y = manager.scene.player.coords.y
+    perc = (MAX_Y - player_y) / (MAX_Y / 8)
+
+    offset = VEC(randint(0, SCR_DIM[0]), randint(0, SCR_DIM[1]))
+    pos = manager.scene.player.camera.pos + offset
+
+    image = Surface((20, 20))
+    image.fill((70, 70, 70))
+
+    for _ in range(VOID_FOG_DATA.gradual_spawn(True, {"perc": perc})):
+        AtmosphericParticle(manager, pos, image)

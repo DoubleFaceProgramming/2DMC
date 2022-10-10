@@ -17,7 +17,7 @@ from typing import Any
 
 class LayersEnum(Enum):
     BACKGROUND = auto()
-    ENV_PARTICLES = auto()
+    ATM_PARTICLES = auto() # Atmospheric particles
     BLOCKS = auto()
     REG_PARTICLES = auto()
     BLOCK_SELECTION = auto()

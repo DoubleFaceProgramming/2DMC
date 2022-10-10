@@ -15,7 +15,7 @@ from random import randint
 import pygame
 
 from src.common.constants import SCR_DIM, BLOCK_SIZE, CHUNK_SIZE, VEC, DEBUG_SPACING, BLUE_SKY
-from src.effects.spawn_particles import block_break_particles
+from src.effects.spawn_particles import block_break_particles, void_fog_particles
 from src.common.utils import inttup, to_bps
 from src.world.chunk import ChunkManager
 from src.management.scenes import Scene
@@ -54,6 +54,7 @@ class Game(Scene):
                         block_break_particles(self.manager, location, highest) # TODO: Change this to take the player's selected worldslice? or midground? idk man
                         del location[highest]
 
+        void_fog_particles(self.manager)
         self.chunk_manager.update()
 
     def draw(self):
