@@ -3,3 +3,5 @@ screenshots/*
 build/dist/*
 __pycache__/
 /.vscode
+
+src/lang/rust/target
