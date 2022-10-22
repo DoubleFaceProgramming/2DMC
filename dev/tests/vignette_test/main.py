@@ -60,7 +60,7 @@ class Block:
 
     def draw(self) -> None:
         if self.coords == (3, 2): # Temporary for testing purposes
-            self.image = apply_vignette(self.block.value, kernel_2x3_top) # Very annoying scenerio, can't be easily solved with a simple gaussian kernel
+            self.image = apply_vignette(self.block.value, kernel_2x3_top, darken=0.8) # Very annoying scenerio, can't be easily solved with a simple gaussian kernel
         else:
             self.image = apply_vignette(self.block.value, vignette_lookup[self.neighbors], darken=SliceDarken[self.worldslice.name].value)
         screen.blit(self.image, self.pos)

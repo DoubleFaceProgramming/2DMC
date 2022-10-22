@@ -28,9 +28,9 @@ kernel_1x3 = vertical_kernel * horizontal_kernel
 kernel_1x3 /= kernel_1x3.max()
 kernel_1x3 = np.expand_dims(kernel_1x3, axis=2)
 
-# Vertical 2x3
-vertical_kernel = cv2.getGaussianKernel(64 * 3, 90).reshape([1, -1])
-horizontal_kernel = cv2.getGaussianKernel(64 * 2, 50)
+# Vertical 2x2
+vertical_kernel = cv2.getGaussianKernel(64 * 2, 150).reshape([1, -1])
+horizontal_kernel = cv2.getGaussianKernel(64 * 2, 60)
 kernel_2x3 = vertical_kernel * horizontal_kernel
 kernel_2x3 /= kernel_2x3.max()
 kernel_2x3 = np.expand_dims(kernel_2x3, axis=2)
@@ -60,7 +60,7 @@ kernel_3x1_left = kernel_3x1[: 64, : 64]
 kernel_3x1_middle = kernel_3x1[: 64, 64 : 64 * 2]
 kernel_3x1_right = kernel_3x1[: 64, 64 * 2 : 64 * 3]
 
-kernel_2x3_top = kernel_2x3[32 : 64 + 32, 24 : 64 + 24] # Only way I can think of to do this, very scuffed
+kernel_2x3_top = kernel_2x3[32 : 64 + 32, : 64] # Only way I can think of to do this, very scuffed
 
 vignette_lookup = {
     (top, left): kernel_3x3_topleft,
