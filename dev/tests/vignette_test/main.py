@@ -35,8 +35,8 @@ class WorldSlice(Enum):
     foreground = auto()
 
 class SliceDarken(Enum):
-    background = 0.78
-    middleground = 0.88
+    background = 0.74
+    middleground = 0.86
     foreground = 1
 
 class Block:
@@ -51,18 +51,16 @@ class Block:
 
     def update(self) -> None:
         instances = self.__class__.instances
-        neighbors = []
+        self.neighbors = []
         for offset in NEIGHBORS:
             block_pos = inttup(self.coords + offset)
             if block_pos in instances and instances[block_pos].worldslice.value > self.worldslice.value:
-                neighbors.append(inttup(offset))
-        self.neighbors = tuple(neighbors)
+                self.neighbors.append(inttup(offset))
+        self.vignette = overlap_vignette([vignette_lookup[neighbor] for neighbor in self.neighbors])
 
     def draw(self) -> None:
-        if self.coords == (3, 2): # Temporary for testing purposes
-            self.image = apply_vignette(self.block.value, kernel_2x3_top, darken=0.8) # Very annoying scenerio, can't be easily solved with a simple gaussian kernel
-        else:
-            self.image = apply_vignette(self.block.value, vignette_lookup[self.neighbors], darken=SliceDarken[self.worldslice.name].value)
+        darken = SliceDarken[self.worldslice.name].value * (0.93 if not self.neighbors else 1)
+        self.image = apply_vignette(self.block.value, self.vignette, darken)
         screen.blit(self.image, self.pos)
 
     def kill(self) -> None:
@@ -79,10 +77,10 @@ blocks = [
     "4444444",
     "1212121",
     "1122211",
-    "0233320",
-    "0233320",
-    "0122210",
-    "0000000"
+    "1223221",
+    "2233321",
+    "2233322",
+    "1122211",
 ]
 
 for y, row in enumerate(blocks):
