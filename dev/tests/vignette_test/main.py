@@ -14,6 +14,7 @@ inttup = lambda tup: (int(tup[0]), int(tup[1]))
 FPS = 144
 WIDTH, HEIGHT = 448, 448
 BLOCK_SIZE = 64
+NEIGHBORS = [VEC(0, -1), VEC(-1, 0), VEC(1, 0), VEC(0, 1)]
 
 pygame.init()
 screen = pygame.display.set_mode((WIDTH, HEIGHT), DOUBLEBUF | HWSURFACE)
@@ -33,10 +34,10 @@ class WorldSlice(Enum):
     middleground = auto()
     foreground = auto()
 
-class SliceOverlay(Enum):
-    background = filled_surf((BLOCK_SIZE, BLOCK_SIZE), (0, 0, 0, 70))
-    middleground = filled_surf((BLOCK_SIZE, BLOCK_SIZE), (0, 0, 0, 40))
-    foreground = pygame.Surface((0, 0))
+class SliceDarken(Enum):
+    background = 0.78
+    middleground = 0.88
+    foreground = 1
 
 class Block:
     instances = {}
@@ -47,64 +48,52 @@ class Block:
         self.pos = self.coords * BLOCK_SIZE
         self.block = block
         self.worldslice = worldslice
-        if self.coords == (2, 2):
-            self.image = apply_vignette(self.block.value, kernel_3x3_1)
-        elif self.coords == (4, 2):
-            self.image = apply_vignette(self.block.value, kernel_3x3_3)
-        elif self.coords == (2, 4):
-            self.image = apply_vignette(self.block.value, kernel_3x3_7)
-        elif self.coords == (4, 4):
-            self.image = apply_vignette(self.block.value, kernel_3x3_9)
-        elif self.coords.x == 2:
-            self.image = apply_vignette(self.block.value, kernel_3x3_4)
-        elif self.coords.x == 4:
-            self.image = apply_vignette(self.block.value, kernel_3x3_6)
-        elif self.coords.y == 2:
-            self.image = apply_vignette(self.block.value, kernel_3x3_2)
-        elif self.coords.y == 4:
-            self.image = apply_vignette(self.block.value, kernel_3x3_8)
-        else:
-            self.image = apply_vignette(self.block.value, kernel_3x3_5)
 
     def update(self) -> None:
-        pass
+        instances = self.__class__.instances
+        neighbors = []
+        for offset in NEIGHBORS:
+            block_pos = inttup(self.coords + offset)
+            if block_pos in instances and instances[block_pos].worldslice.value > self.worldslice.value:
+                neighbors.append(inttup(offset))
+        self.neighbors = tuple(neighbors)
 
     def draw(self) -> None:
+        if self.coords == (3, 2): # Temporary for testing purposes
+            self.image = apply_vignette(self.block.value, kernel_2x3_top) # Very annoying scenerio, can't be easily solved with a simple gaussian kernel
+        else:
+            self.image = apply_vignette(self.block.value, vignette_lookup[self.neighbors], darken=SliceDarken[self.worldslice.name].value)
         screen.blit(self.image, self.pos)
 
     def kill(self) -> None:
         self.__class__.instances[inttup(self.coords)]
 
-Block((1, 1), Blocks.grass_block, WorldSlice.middleground)
-Block((2, 1), Blocks.grass_block, WorldSlice.middleground)
-Block((3, 1), Blocks.grass_block, WorldSlice.middleground)
-Block((4, 1), Blocks.grass_block, WorldSlice.middleground)
-Block((5, 1), Blocks.grass_block, WorldSlice.middleground)
-Block((5, 2), Blocks.dirt, WorldSlice.middleground)
-Block((5, 3), Blocks.dirt, WorldSlice.middleground)
-Block((5, 4), Blocks.dirt, WorldSlice.middleground)
-Block((5, 5), Blocks.dirt, WorldSlice.middleground)
-Block((4, 5), Blocks.dirt, WorldSlice.middleground)
-Block((3, 5), Blocks.dirt, WorldSlice.middleground)
-Block((2, 5), Blocks.dirt, WorldSlice.middleground)
-Block((1, 5), Blocks.dirt, WorldSlice.middleground)
-Block((1, 4), Blocks.dirt, WorldSlice.middleground)
-Block((1, 3), Blocks.dirt, WorldSlice.middleground)
-Block((1, 2), Blocks.dirt, WorldSlice.middleground)
+legend = {
+    "1": (Blocks.dirt, WorldSlice.foreground),
+    "2": (Blocks.dirt, WorldSlice.middleground),
+    "3": (Blocks.dirt, WorldSlice.background),
+    "4": (Blocks.grass_block, WorldSlice.foreground),
+    "5": (Blocks.grass_block, WorldSlice.middleground),
+}
+blocks = [
+    "4444444",
+    "1212121",
+    "1122211",
+    "0233320",
+    "0233320",
+    "0122210",
+    "0000000"
+]
 
-Block((2, 2), Blocks.dirt, WorldSlice.background)
-Block((3, 2), Blocks.dirt, WorldSlice.background)
-Block((4, 2), Blocks.dirt, WorldSlice.background)
-Block((2, 3), Blocks.dirt, WorldSlice.background)
-Block((3, 3), Blocks.dirt, WorldSlice.background)
-Block((4, 3), Blocks.dirt, WorldSlice.background)
-Block((2, 4), Blocks.dirt, WorldSlice.background)
-Block((3, 4), Blocks.dirt, WorldSlice.background)
-Block((4, 4), Blocks.dirt, WorldSlice.background)
+for y, row in enumerate(blocks):
+    for x, ch in enumerate(row):
+        if ch not in legend: continue
+        Block((x, y), *legend[ch])
 
 running = True
 while running:
     clock.tick_busy_loop(FPS)
+    pygame.display.set_caption(f"Vignette Test | {clock.get_fps():.2f}")
 
     for event in pygame.event.get():
         if event.type == QUIT:
