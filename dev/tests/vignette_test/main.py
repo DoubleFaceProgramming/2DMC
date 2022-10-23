@@ -43,13 +43,13 @@ legend = {
     "5": (Blocks.grass_block, WorldSlice.middleground),
 }
 blocks = [
-    "4444444",
+    "1111111",
     "1212121",
     "1122211",
     "1223221",
     "2233322",
     "2233322",
-    "4455544",
+    "1122211",
 ]
 
 for y, row in enumerate(blocks):
@@ -60,11 +60,27 @@ for y, row in enumerate(blocks):
 running = True
 while running:
     clock.tick_busy_loop(FPS)
-    pygame.display.set_caption(f"Vignette Test | {clock.get_fps():.2f}")
+    pygame.display.set_caption(f"Vignette Test | {clock.get_fps():.0f}")
 
     for event in pygame.event.get():
         if event.type == QUIT:
             running = False
+        if event.type == MOUSEBUTTONDOWN:
+            m_pos = VEC(pygame.mouse.get_pos())
+            block_pos = inttup(m_pos // BLOCK_SIZE)
+            block = Block.instances[block_pos] if block_pos in Block.instances else None
+            if event.button == 1:
+                if block:
+                    if block.ws.value != 1:
+                        block.ws = WorldSlice(block.ws.value - 1)
+                    else:
+                        block.kill()
+            elif event.button == 3:
+                if block:
+                    if block.ws.value != 3:
+                        block.ws = WorldSlice(block.ws.value + 1)
+                else:
+                    Block(block_pos, "dirt")
 
     for block in Block.instances.values():
         block.update()

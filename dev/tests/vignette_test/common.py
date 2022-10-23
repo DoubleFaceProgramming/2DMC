@@ -31,6 +31,6 @@ class WorldSlice(Enum):
     foreground = auto()
 
 class SliceDarken(Enum):
-    background = 0.74
+    background = 0.72
     middleground = 0.86
     foreground = 1
