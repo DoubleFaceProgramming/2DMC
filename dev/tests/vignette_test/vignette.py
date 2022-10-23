@@ -5,7 +5,7 @@ import cv2
 
 from common import *
 
-kernel_top = cv2.getGaussianKernel(64 * 2, 70).reshape([1, -1]) # Create gaussian kernel
+kernel_top = cv2.getGaussianKernel(64 * 2 - 40, 45).reshape([1, -1]) # Create gaussian kernel
 kernel_top /= kernel_top.max() # Normalize the kernel
 kernel_top = kernel_top[: 64, : 64] # Cut out the top half
 kernel_top = np.expand_dims(kernel_top, axis=2) # Reshape to [h, w, 1]

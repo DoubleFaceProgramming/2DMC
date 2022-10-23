@@ -28,7 +28,7 @@ class Block:
         self.neighbors = tuple(self.neighbors)
 
     def draw(self) -> None:
-        darken = SliceDarken[self.ws.name].value * (0.93 if not self.neighbors else 1)
+        darken = SliceDarken[self.ws.name].value * (0.95 if not self.neighbors else 1)
         self.image = apply_vignette(self.block.name, self.neighbors, darken)
         screen.blit(self.image, self.pos)
 
@@ -42,21 +42,63 @@ legend = {
     "4": (Blocks.grass_block, WorldSlice.foreground),
     "5": (Blocks.grass_block, WorldSlice.middleground),
 }
-blocks = [
-    "1111111",
-    "1212121",
-    "1122211",
-    "1223221",
-    "2233322",
-    "2233322",
-    "1122211",
+maps = [
+    [
+        "1111111",
+        "1212121",
+        "1122211",
+        "1223221",
+        "2233322",
+        "2233322",
+        "1122211",
+    ],
+    [
+        "1111111",
+        "1333331",
+        "1313131",
+        "1333331",
+        "1313131",
+        "1333331",
+        "1111111",
+    ],
+    [
+        "1112222",
+        "1122332",
+        "1123333",
+        "1223333",
+        "2233333",
+        "2333322",
+        "2332111",
+    ],
+    [
+        "1133311",
+        "1133311",
+        "3333333",
+        "3332333",
+        "3333333",
+        "1133311",
+        "1133311",
+    ],
+    [
+        "1122112",
+        "1232223",
+        "2332233",
+        "3333233",
+        "3333333",
+        "2333332",
+        "1132211",
+    ],
 ]
 
-for y, row in enumerate(blocks):
-    for x, ch in enumerate(row):
-        if ch not in legend: continue
-        Block((x, y), *legend[ch])
+def set_to_map(n):
+    for y, row in enumerate(maps[n]):
+        for x, ch in enumerate(row):
+            if ch not in legend: continue
+            Block((x, y), *legend[ch])
 
+set_to_map(0)
+
+current_map = 0
 running = True
 while running:
     clock.tick_busy_loop(FPS)
@@ -81,6 +123,11 @@ while running:
                         block.ws = WorldSlice(block.ws.value + 1)
                 else:
                     Block(block_pos, "dirt")
+        if event.type == KEYDOWN:
+            if event.key == K_SPACE:
+                current_map += 1
+                current_map %= len(maps)
+                set_to_map(current_map)
 
     for block in Block.instances.values():
         block.update()
