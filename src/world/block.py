@@ -16,7 +16,8 @@ if TYPE_CHECKING: # Type annotations without causing circular imports
 from pygame.locals import SRCALPHA
 import pygame
 
-from src.utils.utils import PosDict, WorldSlices, SliceOverlay
+from src.utils.utils import PosDict, WorldSlices, SliceDarken, inttup
+from src.effects.block_shadow import apply_vignette
 from src.utils.constants import BLOCK_SIZE, VEC
 from src.utils.images import BLOCK_TEXTURES
 import src.utils.hooks
@@ -86,10 +87,20 @@ class Location:
 
     def update_image(self):
         self.image.fill((0, 0, 0, 0))
+        instances = self.__class__.instances
+        neighbors = []
+        for offset in [VEC(0, -1), VEC(-1, 0), VEC(1, 0), VEC(0, 1)]:
+            block_pos = inttup(self.coords + offset)
+            if block_pos not in instances: continue
+            if not (highest := instances[block_pos].get_highest()): continue
+            if highest.value <= self.get_highest().value: continue
+            neighbors.append(inttup(offset))
+        if self.coords == (0, 2):
+            print(self.master.chunk_data)
         for block in self.highest_opaque_block():
-            if block:
-                self.image.blit(block.image, (0, 0))
-                self.image.blit(SliceOverlay[block.worldslice.name].value, (0, 0))
+            if not block: continue
+            darken = SliceDarken[block.worldslice.name].value * (0.95 if not neighbors else 1)
+            self.image = apply_vignette(block.name, tuple(neighbors), darken)
 
     def get_highest(self) -> None | WorldSlices:
         for block in self.blocks.reverse_nip():

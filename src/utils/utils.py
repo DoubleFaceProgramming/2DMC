@@ -34,10 +34,10 @@ def filled_surf(size, color, tags=SRCALPHA):
     surf.fill(color)
     return surf
 
-class SliceOverlay(Enum):
-    BACKGROUND = filled_surf((BLOCK_SIZE, BLOCK_SIZE), (0, 0, 0, 70))
-    MIDDLEGROUND = filled_surf((BLOCK_SIZE, BLOCK_SIZE), (0, 0, 0, 40))
-    FOREGROUND = pygame.Surface((0, 0))
+class SliceDarken(Enum):
+    BACKGROUND = 0.72
+    MIDDLEGROUND = 0.86
+    FOREGROUND = 1
 
 class PosDict(dict):
     """Custom dictionary that can take Vectors and turn them into tuples for hashing"""
